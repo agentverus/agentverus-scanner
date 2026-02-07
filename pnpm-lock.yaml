@@ -40,7 +40,7 @@ importers:
         specifier: ^1.26.0
         version: 1.26.0(zod@4.3.6)
       agentverus-scanner:
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../..
       zod:
         specifier: ^4.3.6

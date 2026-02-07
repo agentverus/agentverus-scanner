@@ -27,7 +27,7 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.26.0",
-		"agentverus-scanner": "workspace:*",
+		"agentverus-scanner": "workspace:^",
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
