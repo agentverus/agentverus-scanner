@@ -1,7 +1,7 @@
 import { z } from "zod/v4";
 
 const envSchema = z.object({
-	DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+	DATABASE_URL: z.string().optional().default(""),
 	RESEND_API_KEY: z.string().optional().default(""),
 	API_SIGNING_KEY: z.string().optional().default(""),
 	NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
