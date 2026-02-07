@@ -1,0 +1,39 @@
+{
+	"name": "agent-trust",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"dev": "tsx watch src/index.ts",
+		"build": "tsc",
+		"test": "vitest run",
+		"lint": "biome lint .",
+		"format": "biome format . --write",
+		"typecheck": "tsc --noEmit",
+		"db:migrate": "drizzle-kit migrate",
+		"db:push": "drizzle-kit push",
+		"scan": "tsx src/scanner/cli.ts",
+		"bulk-scan": "tsx scripts/bulk-scan.ts",
+		"collect-skills": "tsx scripts/collect-skills.ts"
+	},
+	"packageManager": "pnpm@10.28.0",
+	"dependencies": {
+		"@hono/node-server": "^1.19.9",
+		"@neondatabase/serverless": "^1.0.2",
+		"drizzle-orm": "^0.45.1",
+		"hono": "^4.11.8",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.14",
+		"@types/node": "^25.2.1",
+		"@vitest/coverage-v8": "^4.0.18",
+		"drizzle-kit": "^0.31.8",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.18"
+	}
+}
