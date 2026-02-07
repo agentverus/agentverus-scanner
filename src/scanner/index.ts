@@ -58,6 +58,8 @@ export async function scanSkill(content: string, _options?: ScanOptions): Promis
 		scannerVersion: SCANNER_VERSION,
 		durationMs,
 		skillFormat: skill.format,
+		skillName: skill.name || "Unknown Skill",
+		skillDescription: skill.description || "",
 	};
 
 	const categories: Record<Category, CategoryScore> = {

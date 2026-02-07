@@ -60,6 +60,8 @@ export interface ScanMetadata {
 	readonly scannerVersion: string;
 	readonly durationMs: number;
 	readonly skillFormat: SkillFormat;
+	readonly skillName: string;
+	readonly skillDescription: string;
 }
 
 /** Complete trust report */
