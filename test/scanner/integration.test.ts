@@ -83,10 +83,10 @@ describe("scanSkill (integration)", () => {
 		expect(report.categories).toHaveProperty("content");
 	});
 
-	it("obfuscated skill should score below 90", async () => {
+	it("obfuscated skill should score below 80", async () => {
 		const report = await scanSkill(loadFixture("obfuscated-skill.md"));
 
-		expect(report.overall).toBeLessThan(90);
+		expect(report.overall).toBeLessThan(80);
 	});
 
 	it("concealment skill should score below 70", async () => {
