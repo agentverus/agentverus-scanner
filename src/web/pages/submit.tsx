@@ -71,7 +71,7 @@ permissions:
 
 						<button
 							type="submit"
-							class="w-full bg-certified hover:bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg transition"
+							class="w-full bg-certified hover:bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg transition font-display"
 						>
 							🔍 Scan Skill — Free
 						</button>

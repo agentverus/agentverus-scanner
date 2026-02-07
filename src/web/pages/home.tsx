@@ -12,7 +12,7 @@ homeApp.get("/", (c) => {
 			{/* Hero */}
 			<section class="py-20 px-4">
 				<div class="max-w-4xl mx-auto text-center">
-					<h1 class="text-5xl md:text-7xl font-bold text-white mb-6">
+					<h1 class="text-5xl md:text-7xl font-bold text-white mb-6 font-display">
 						Trust, but <span class="text-certified">verify</span>.
 					</h1>
 					<p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
@@ -22,13 +22,13 @@ homeApp.get("/", (c) => {
 					<div class="flex gap-4 justify-center">
 						<a
 							href="/submit"
-							class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition"
+							class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition font-display"
 						>
 							Scan a Skill Free
 						</a>
 						<a
 							href="/registry"
-							class="border border-gray-600 hover:border-gray-400 text-white px-8 py-3 rounded-lg font-semibold text-lg transition"
+							class="border border-gray-600 hover:border-gray-400 text-white px-8 py-3 rounded-lg font-semibold text-lg transition font-display"
 						>
 							Browse Registry
 						</a>
@@ -40,17 +40,17 @@ homeApp.get("/", (c) => {
 			<section class="py-12 border-y border-gray-800 bg-gray-900/30">
 				<div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
 					<div>
-						<p class="text-4xl font-bold text-white" id="stat-total">
+						<p class="text-4xl font-bold text-white font-display" id="stat-total">
 							—
 						</p>
 						<p class="text-gray-400 mt-1">Skills Scanned</p>
 					</div>
 					<div>
-						<p class="text-4xl font-bold text-rejected">15%</p>
+						<p class="text-4xl font-bold text-rejected font-display">15%</p>
 						<p class="text-gray-400 mt-1">Found Dangerous</p>
 					</div>
 					<div>
-						<p class="text-4xl font-bold text-certified">Free</p>
+						<p class="text-4xl font-bold text-certified font-display">Free</p>
 						<p class="text-gray-400 mt-1">For All Scans</p>
 					</div>
 				</div>
@@ -59,7 +59,7 @@ homeApp.get("/", (c) => {
 			{/* How it works */}
 			<section class="py-20 px-4">
 				<div class="max-w-7xl mx-auto">
-					<h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
+					<h2 class="text-3xl font-bold text-center mb-12 font-display">How It Works</h2>
 					<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 						{[
 							{
@@ -79,10 +79,10 @@ homeApp.get("/", (c) => {
 							},
 						].map((item) => (
 							<div class="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
-								<div class="w-12 h-12 bg-certified/20 text-certified rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
+								<div class="w-12 h-12 bg-certified/20 text-certified rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 font-display">
 									{item.step}
 								</div>
-								<h3 class="text-xl font-semibold mb-3">{item.title}</h3>
+								<h3 class="text-xl font-semibold mb-3 font-display">{item.title}</h3>
 								<p class="text-gray-400">{item.desc}</p>
 							</div>
 						))}
@@ -93,7 +93,7 @@ homeApp.get("/", (c) => {
 			{/* Features */}
 			<section class="py-20 px-4 bg-gray-900/30">
 				<div class="max-w-7xl mx-auto">
-					<h2 class="text-3xl font-bold text-center mb-12">What We Detect</h2>
+					<h2 class="text-3xl font-bold text-center mb-12 font-display">What We Detect</h2>
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 						{[
 							{
@@ -129,7 +129,7 @@ homeApp.get("/", (c) => {
 						].map((feature) => (
 							<div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
 								<span class="text-3xl mb-3 block">{feature.icon}</span>
-								<h3 class="text-lg font-semibold mb-2">{feature.title}</h3>
+								<h3 class="text-lg font-semibold mb-2 font-display">{feature.title}</h3>
 								<p class="text-gray-400 text-sm">{feature.desc}</p>
 							</div>
 						))}
@@ -154,14 +154,14 @@ homeApp.get("/", (c) => {
 			{/* CTA */}
 			<section class="py-16 px-4 bg-gray-900/30 border-t border-gray-800">
 				<div class="max-w-3xl mx-auto text-center">
-					<h2 class="text-3xl font-bold mb-4">Scan your first skill free</h2>
+					<h2 class="text-3xl font-bold mb-4 font-display">Scan your first skill free</h2>
 					<p class="text-gray-400 mb-8">
 						No account required. No payment. Just paste your SKILL.md and get a trust report in
 						seconds.
 					</p>
 					<a
 						href="/submit"
-						class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition inline-block"
+						class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition inline-block font-display"
 					>
 						Start Scanning →
 					</a>

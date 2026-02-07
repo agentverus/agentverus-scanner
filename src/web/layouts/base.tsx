@@ -14,6 +14,12 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
 				<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 				<title>{title} | AgentVerus</title>
 				{description && <meta name="description" content={description} />}
+				<link rel="preconnect" href="https://fonts.googleapis.com" />
+				<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+				<link
+					href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+					rel="stylesheet"
+				/>
 				<script src="https://cdn.tailwindcss.com" />
 				<script src="https://unpkg.com/htmx.org@2.0.4" />
 				<script
@@ -22,6 +28,11 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
 							darkMode: 'class',
 							theme: {
 								extend: {
+									fontFamily: {
+										display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+										body: ['"Inter"', 'system-ui', 'sans-serif'],
+										mono: ['"JetBrains Mono"', 'monospace'],
+									},
 									colors: {
 										certified: '#3B82F6',
 										conditional: '#F59E0B',
@@ -35,10 +46,10 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
 					}}
 				/>
 			</head>
-			<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col">
+			<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col font-body">
 				<header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-50">
 					<nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-						<a href="/" class="text-xl font-bold text-white flex items-center gap-2">
+						<a href="/" class="text-xl font-bold text-white flex items-center gap-2 font-display">
 							<span class="text-2xl">🛡️</span> AgentVerus
 						</a>
 						<div class="flex items-center gap-6">

@@ -69,7 +69,7 @@ statsApp.get("/stats", (c) => {
 					<div class="text-center py-8">
 						<a
 							href="/submit"
-							class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition"
+							class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition font-display"
 						>
 							Contribute — Scan a Skill
 						</a>
