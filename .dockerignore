@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+*.md
+!package.json
+test
+coverage
+.learnings
+research
+docs
+*.pdf
+*.png
+*.jpg
+.env*
+.DS_Store
