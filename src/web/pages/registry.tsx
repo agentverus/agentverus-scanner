@@ -11,17 +11,21 @@ registryApp.get("/registry", (c) => {
 		<BaseLayout title="Skill Registry" description="Browse and search certified AI agent skills.">
 			<section class="py-12 px-4">
 				<div class="max-w-7xl mx-auto">
-					<h1 class="text-3xl font-bold mb-8">Skill Trust Registry</h1>
+					<div class="inline-block border border-white/30 px-3 py-1 text-xs uppercase tracking-widest text-white/60 mb-6">
+						Public Registry
+					</div>
+					<h1 class="text-2xl font-extrabold mb-3 uppercase tracking-wider">Skill Trust Registry</h1>
+					<div class="w-full h-px bg-white/20 mb-8" />
 
 					{/* Search */}
 					<form method="get" action="/registry" class="mb-8">
-						<div class="flex gap-3">
+						<div class="flex gap-0">
 							<input
 								type="text"
 								name="q"
 								value={q}
 								placeholder="Search skills by name, description, or URL..."
-								class="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-certified"
+								class="flex-1 bg-black border border-white/20 px-4 py-3 text-white text-sm placeholder-white/30 focus:outline-none focus:border-white"
 								hx-get="/registry"
 								hx-trigger="input changed delay:300ms"
 								hx-target="#results"
@@ -29,7 +33,7 @@ registryApp.get("/registry", (c) => {
 							/>
 							<button
 								type="submit"
-								class="bg-gray-800 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition font-display"
+								class="border border-white/20 border-l-0 bg-white/5 hover:bg-white/10 text-white px-6 py-3 font-bold text-xs uppercase tracking-widest transition"
 							>
 								Search
 							</button>
@@ -37,20 +41,20 @@ registryApp.get("/registry", (c) => {
 					</form>
 
 					{/* Badge filters */}
-					<div class="flex gap-3 mb-8 flex-wrap">
+					<div class="flex gap-2 mb-8 flex-wrap">
 						{[
-							{ value: "", label: "All", color: "bg-gray-700" },
-							{ value: "certified", label: "Certified", color: "bg-certified" },
-							{ value: "conditional", label: "Conditional", color: "bg-conditional" },
-							{ value: "suspicious", label: "Suspicious", color: "bg-suspicious" },
-							{ value: "rejected", label: "Rejected", color: "bg-rejected" },
+							{ value: "", label: "All", color: "" },
+							{ value: "certified", label: "Certified", color: "text-certified border-certified" },
+							{ value: "conditional", label: "Conditional", color: "text-conditional border-conditional" },
+							{ value: "suspicious", label: "Suspicious", color: "text-suspicious border-suspicious" },
+							{ value: "rejected", label: "Rejected", color: "text-rejected border-rejected" },
 						].map((filter) => (
 							<a
 								href={`/registry?badge=${filter.value}${q ? `&q=${q}` : ""}`}
-								class={`px-4 py-2 rounded-full text-sm font-medium text-white transition ${
+								class={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest border transition ${
 									badge === filter.value
-										? `${filter.color} ring-2 ring-white`
-										: `${filter.color}/20 hover:${filter.color}/40`
+										? `${filter.color || "text-white border-white"} bg-white/10`
+										: `${filter.color || "text-white/40 border-white/20"} hover:bg-white/5`
 								}`}
 							>
 								{filter.label}
@@ -60,13 +64,13 @@ registryApp.get("/registry", (c) => {
 
 					{/* Results */}
 					<div id="results">
-						<div class="text-center py-16 text-gray-500">
-							<p class="text-5xl mb-4">📭</p>
-							<p class="text-xl mb-2">No skills found yet.</p>
-							<p class="mb-6">Be the first to submit a skill for scanning.</p>
+						<div class="border border-white/20 py-16 text-center">
+							<p class="text-3xl mb-4 text-white/20">∅</p>
+							<p class="text-sm font-bold uppercase tracking-wider mb-2">No skills found yet.</p>
+							<p class="text-white/40 text-xs uppercase tracking-wide mb-6">Be the first to submit a skill for scanning.</p>
 							<a
 								href="/submit"
-								class="bg-certified hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition font-display"
+								class="inline-block border-2 border-white bg-white text-black px-6 py-2 font-bold text-xs uppercase tracking-widest hover:bg-transparent hover:text-white transition"
 							>
 								Submit a Skill
 							</a>

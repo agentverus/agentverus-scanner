@@ -10,91 +10,117 @@ homeApp.get("/", (c) => {
 			description="The trust certification service for AI agent skills."
 		>
 			{/* Hero */}
-			<section class="py-20 px-4">
-				<div class="max-w-4xl mx-auto text-center">
-					<h1 class="text-5xl md:text-7xl font-bold text-white mb-6 font-display">
-						Trust, but <span class="text-certified">verify</span>.
-					</h1>
-					<p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
-						The trust certification service for AI agent skills. Scan, audit, and certify skills
-						before they access your data.
-					</p>
-					<div class="flex gap-4 justify-center">
-						<a
-							href="/submit"
-							class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition font-display"
-						>
-							Scan a Skill Free
-						</a>
-						<a
-							href="/registry"
-							class="border border-gray-600 hover:border-gray-400 text-white px-8 py-3 rounded-lg font-semibold text-lg transition font-display"
-						>
-							Browse Registry
-						</a>
+			<section class="border-b-2 border-white/20">
+				<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+					<div>
+						<div class="inline-block border border-white/30 px-3 py-1 text-xs uppercase tracking-widest text-white/60 mb-6">
+							Trust Certification Engine
+						</div>
+						<h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 uppercase leading-none tracking-tight">
+							Trust,<br />but verify.
+						</h1>
+						<p class="text-sm text-white/50 mb-10 max-w-lg leading-relaxed uppercase tracking-wide">
+							The trust certification service for AI agent skills. Scan, audit, and certify skills
+							before they access your data.
+						</p>
+						<div class="flex gap-4">
+							<a
+								href="/submit"
+								class="border-2 border-white bg-white text-black px-8 py-3 font-bold text-sm uppercase tracking-widest hover:bg-transparent hover:text-white transition"
+							>
+								Scan a Skill
+							</a>
+							<a
+								href="/registry"
+								class="border-2 border-white/40 text-white px-8 py-3 font-bold text-sm uppercase tracking-widest hover:border-white transition"
+							>
+								Registry
+							</a>
+						</div>
+					</div>
+					<div class="border border-white/20 bg-black p-0 font-mono text-xs">
+						<div class="border-b border-white/20 px-4 py-2 flex justify-between text-white/50 uppercase text-[10px] tracking-widest">
+							<span>Exec: AgentVerus Scan</span>
+							<span>Status: <span class="text-certified">Running</span></span>
+						</div>
+						<div class="p-4 text-white/70 leading-relaxed">
+							<div class="text-white/30 mb-2">─────────────────────────────────────────────────</div>
+							<div>{">"} Parsing SKILL.md...</div>
+							<div>{">"} Running 5 analyzers...</div>
+							<div class="text-white/30 my-2">{">"} ─────────────────────────────────</div>
+							<div>{">"} Score: <span class="text-certified font-bold">94/100</span> | Badge: <span class="text-certified font-bold">CERTIFIED</span></div>
+							<div>{">"} Findings: 2 (0 critical, 1 high, 1 medium)</div>
+							<div class="text-white/30 my-2">{">"} ─────────────────────────────────</div>
+							<div>{">"} Badge generated: certified-94.svg</div>
+							<div class="mt-2 text-white/40">{">"} Waiting for next scan<span class="animate-pulse">_</span></div>
+						</div>
 					</div>
 				</div>
 			</section>
 
 			{/* Stats */}
-			<section class="py-12 border-y border-gray-800 bg-gray-900/30">
-				<div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-					<div>
-						<p class="text-4xl font-bold text-white font-display" id="stat-total">
+			<section class="border-b-2 border-white/20">
+				<div class="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 divide-x divide-white/10">
+					<div class="py-12 text-center">
+						<p class="text-5xl font-extrabold text-white tracking-tight" id="stat-total">
 							—
 						</p>
-						<p class="text-gray-400 mt-1">Skills Scanned</p>
+						<p class="text-white/40 mt-2 text-xs uppercase tracking-widest">Skills Scanned</p>
 					</div>
-					<div>
-						<p class="text-4xl font-bold text-rejected font-display">15%</p>
-						<p class="text-gray-400 mt-1">Found Dangerous</p>
+					<div class="py-12 text-center">
+						<p class="text-5xl font-extrabold text-rejected tracking-tight">15%</p>
+						<p class="text-white/40 mt-2 text-xs uppercase tracking-widest">Found Dangerous</p>
 					</div>
-					<div>
-						<p class="text-4xl font-bold text-certified font-display">Free</p>
-						<p class="text-gray-400 mt-1">For All Scans</p>
+					<div class="py-12 text-center">
+						<p class="text-5xl font-extrabold text-certified tracking-tight">Free</p>
+						<p class="text-white/40 mt-2 text-xs uppercase tracking-widest">For All Scans</p>
 					</div>
 				</div>
 			</section>
 
-			{/* How it works */}
-			<section class="py-20 px-4">
+			{/* The Process */}
+			<section class="border-b-2 border-white/20 py-20 px-4">
 				<div class="max-w-7xl mx-auto">
-					<h2 class="text-3xl font-bold text-center mb-12 font-display">How It Works</h2>
-					<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+					<div class="mb-12">
+						<h2 class="text-2xl font-extrabold uppercase tracking-widest mb-4">The Process</h2>
+						<div class="w-full h-px bg-white/20" />
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-0">
 						{[
 							{
-								step: "1",
+								step: "01",
 								title: "Submit",
 								desc: "Paste your SKILL.md content or provide a URL. Our scanner supports OpenClaw, Claude Code, and generic markdown formats.",
 							},
 							{
-								step: "2",
+								step: "02",
 								title: "Scan",
 								desc: "Our engine runs 5 parallel analyzers: permissions, injection detection, dependency analysis, behavioral risk, and content safety.",
 							},
 							{
-								step: "3",
+								step: "03",
 								title: "Certify",
 								desc: "Get a trust score (0-100), embeddable SVG badge, and detailed findings report. Listed in the public registry.",
 							},
-						].map((item) => (
-							<div class="bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
-								<div class="w-12 h-12 bg-certified/20 text-certified rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4 font-display">
-									{item.step}
-								</div>
-								<h3 class="text-xl font-semibold mb-3 font-display">{item.title}</h3>
-								<p class="text-gray-400">{item.desc}</p>
+						].map((item, i) => (
+							<div class={`border border-white/20 p-8 ${i > 0 ? "md:border-l-0" : ""}`}>
+								<div class="text-white/30 text-xs uppercase tracking-widest mb-4">{item.step}</div>
+								<h3 class="text-lg font-bold uppercase tracking-wider mb-3">{item.title}</h3>
+								<p class="text-white/50 text-sm leading-relaxed">{item.desc}</p>
 							</div>
 						))}
 					</div>
 				</div>
 			</section>
 
-			{/* Features */}
-			<section class="py-20 px-4 bg-gray-900/30">
+			{/* Detection Capabilities */}
+			<section class="border-b-2 border-white/20 py-20 px-4">
 				<div class="max-w-7xl mx-auto">
-					<h2 class="text-3xl font-bold text-center mb-12 font-display">What We Detect</h2>
-					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+					<div class="mb-12">
+						<h2 class="text-2xl font-extrabold uppercase tracking-widest mb-4">Detection Capabilities</h2>
+						<div class="w-full h-px bg-white/20" />
+					</div>
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0">
 						{[
 							{
 								icon: "/icons/permission.png",
@@ -127,14 +153,14 @@ homeApp.get("/", (c) => {
 								desc: "Embeddable SVG badges showing trust score. CERTIFIED, CONDITIONAL, SUSPICIOUS, or REJECTED.",
 							},
 						].map((feature) => (
-							<div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+							<div class="border border-white/20 p-6 -mt-px -ml-px">
 								<img
 									src={feature.icon}
 									alt={feature.title}
-									class="w-10 h-10 mb-3 rounded"
+									class="w-8 h-8 mb-4 opacity-60"
 								/>
-								<h3 class="text-lg font-semibold mb-2 font-display">{feature.title}</h3>
-								<p class="text-gray-400 text-sm">{feature.desc}</p>
+								<h3 class="text-sm font-bold uppercase tracking-wider mb-2">{feature.title}</h3>
+								<p class="text-white/50 text-xs leading-relaxed">{feature.desc}</p>
 							</div>
 						))}
 					</div>
@@ -142,30 +168,33 @@ homeApp.get("/", (c) => {
 			</section>
 
 			{/* Social proof */}
-			<section class="py-20 px-4">
-				<div class="max-w-3xl mx-auto text-center">
-					<blockquote class="text-2xl font-medium text-gray-300 italic mb-4">
-						"Gen Digital found 15% of OpenClaw skills contain malicious instructions."
-					</blockquote>
-					<p class="text-gray-500">
-						Our scanner catches what they catch — and more. We use the{" "}
-						<strong class="text-gray-300">ASST</strong> (Agent Skill Security Threats) taxonomy, our
-						OWASP-style categorization of 10 threat categories specific to AI agent skills.
-					</p>
+			<section class="border-b-2 border-white/20 py-20 px-4">
+				<div class="max-w-3xl mx-auto">
+					<div class="border border-white/20 p-8 font-mono text-sm">
+						<div class="text-white/30 text-xs uppercase tracking-widest mb-4">// Intelligence Report</div>
+						<div class="text-white/70 leading-relaxed">
+							<p class="mb-3">{">"} "Gen Digital found 15% of OpenClaw skills contain malicious instructions."</p>
+							<p class="text-white/40">
+								{">"} Our scanner catches what they catch — and more. We use the{" "}
+								<span class="text-white font-bold">ASST</span> (Agent Skill Security Threats) taxonomy,
+								our OWASP-style categorization of 10 threat categories specific to AI agent skills.
+							</p>
+						</div>
+					</div>
 				</div>
 			</section>
 
 			{/* CTA */}
-			<section class="py-16 px-4 bg-gray-900/30 border-t border-gray-800">
+			<section class="py-20 px-4">
 				<div class="max-w-3xl mx-auto text-center">
-					<h2 class="text-3xl font-bold mb-4 font-display">Scan your first skill free</h2>
-					<p class="text-gray-400 mb-8">
-						No account required. No payment. Just paste your SKILL.md and get a trust report in
-						seconds.
+					<h2 class="text-3xl font-extrabold mb-4 uppercase tracking-wider">Scan Your First Skill</h2>
+					<div class="w-24 h-px bg-white/20 mx-auto mb-6" />
+					<p class="text-white/50 mb-8 text-sm uppercase tracking-wide">
+						No account required. No payment. Paste your SKILL.md and get a trust report in seconds.
 					</p>
 					<a
 						href="/submit"
-						class="bg-certified hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition inline-block font-display"
+						class="inline-block border-2 border-white bg-white text-black px-10 py-3 font-bold text-sm uppercase tracking-widest hover:bg-transparent hover:text-white transition"
 					>
 						Start Scanning →
 					</a>

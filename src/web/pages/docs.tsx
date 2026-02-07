@@ -8,22 +8,27 @@ docsApp.get("/docs", (c) => {
 		<BaseLayout title="API Documentation" description="REST API documentation for AgentVerus.">
 			<section class="py-12 px-4">
 				<div class="max-w-4xl mx-auto">
-					<h1 class="text-3xl font-bold mb-3">API Documentation</h1>
-					<p class="text-gray-400 mb-8">
-						The AgentVerus REST API. Base URL:{" "}
-						<code class="bg-gray-800 px-2 py-1 rounded text-certified">
+					<div class="inline-block border border-white/30 px-3 py-1 text-xs uppercase tracking-widest text-white/60 mb-6">
+						API Reference
+					</div>
+					<h1 class="text-2xl font-extrabold mb-3 uppercase tracking-wider">API Documentation</h1>
+					<div class="w-full h-px bg-white/20 mb-6" />
+					<p class="text-white/50 text-sm mb-8">
+						Base URL:{" "}
+						<code class="border border-white/20 px-2 py-1 text-certified text-xs">
 							{c.req.url.split("/docs")[0]}/api/v1
 						</code>
 					</p>
 
 					{/* Authentication */}
 					<div class="mb-12">
-						<h2 class="text-2xl font-semibold mb-4">Authentication</h2>
-						<p class="text-gray-400 mb-3">Some endpoints require an API key. Pass it via header:</p>
-						<pre class="bg-gray-900 border border-gray-800 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-							<code class="text-blue-400">Authorization: Bearer at_your_api_key_here</code>
+						<h2 class="text-lg font-bold uppercase tracking-wider mb-4">Authentication</h2>
+						<div class="w-full h-px bg-white/10 mb-4" />
+						<p class="text-white/50 text-sm mb-3">Some endpoints require an API key. Pass it via header:</p>
+						<pre class="border border-white/20 p-4 text-xs overflow-x-auto mb-4">
+							<code class="text-certified">Authorization: Bearer at_your_api_key_here</code>
 						</pre>
-						<p class="text-gray-400">
+						<p class="text-white/50 text-sm">
 							Public endpoints (GET) don't require authentication. POST endpoints require a valid
 							API key.
 						</p>
@@ -112,42 +117,42 @@ docsApp.get("/docs", (c) => {
   -d '{"url": "https://...", "email": "me@example.com"}'`,
 						},
 					].map((endpoint) => (
-						<div class="mb-10 bg-gray-900 border border-gray-800 rounded-xl p-6">
+						<div class="mb-8 border border-white/20 p-6">
 							<div class="flex items-center gap-3 mb-3">
 								<span
-									class={`px-3 py-1 rounded text-sm font-bold ${
+									class={`px-3 py-1 text-xs font-bold uppercase tracking-widest ${
 										endpoint.method === "GET"
-											? "bg-blue-700 text-blue-100"
-											: "bg-blue-700 text-blue-100"
+											? "border border-certified text-certified"
+											: "border border-conditional text-conditional"
 									}`}
 								>
 									{endpoint.method}
 								</span>
-								<code class="text-lg font-mono">{endpoint.path}</code>
-								<span class="text-gray-500 text-sm ml-auto">Auth: {endpoint.auth}</span>
+								<code class="text-sm">{endpoint.path}</code>
+								<span class="text-white/30 text-xs ml-auto uppercase tracking-wider">Auth: {endpoint.auth}</span>
 							</div>
-							<p class="text-gray-400 mb-4">{endpoint.desc}</p>
+							<p class="text-white/50 text-sm mb-4">{endpoint.desc}</p>
 
 							{endpoint.body && (
 								<div class="mb-4">
-									<p class="text-sm font-medium mb-1">Request Body:</p>
-									<pre class="bg-gray-800 rounded-lg p-3 text-sm overflow-x-auto">
-										<code class="text-yellow-300">{endpoint.body}</code>
+									<p class="text-xs font-bold uppercase tracking-wider mb-1 text-white/60">Request Body:</p>
+									<pre class="border border-white/10 p-3 text-xs overflow-x-auto">
+										<code class="text-conditional">{endpoint.body}</code>
 									</pre>
 								</div>
 							)}
 
 							<div class="mb-4">
-								<p class="text-sm font-medium mb-1">Response:</p>
-								<pre class="bg-gray-800 rounded-lg p-3 text-sm overflow-x-auto">
-									<code class="text-blue-300">{endpoint.response}</code>
+								<p class="text-xs font-bold uppercase tracking-wider mb-1 text-white/60">Response:</p>
+								<pre class="border border-white/10 p-3 text-xs overflow-x-auto">
+									<code class="text-certified">{endpoint.response}</code>
 								</pre>
 							</div>
 
 							<div>
-								<p class="text-sm font-medium mb-1">Example:</p>
-								<pre class="bg-gray-800 rounded-lg p-3 text-sm overflow-x-auto">
-									<code class="text-cyan-300">{endpoint.curl}</code>
+								<p class="text-xs font-bold uppercase tracking-wider mb-1 text-white/60">Example:</p>
+								<pre class="border border-white/10 p-3 text-xs overflow-x-auto">
+									<code class="text-white/70">{endpoint.curl}</code>
 								</pre>
 							</div>
 						</div>
@@ -155,28 +160,29 @@ docsApp.get("/docs", (c) => {
 
 					{/* Rate Limits */}
 					<div class="mt-12">
-						<h2 class="text-2xl font-semibold mb-4">Rate Limits</h2>
-						<div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
-							<table class="w-full text-sm">
+						<h2 class="text-lg font-bold uppercase tracking-wider mb-4">Rate Limits</h2>
+						<div class="w-full h-px bg-white/10 mb-4" />
+						<div class="border border-white/20 p-6">
+							<table class="w-full text-xs">
 								<thead>
-									<tr class="border-b border-gray-700">
-										<th class="text-left py-2">Tier</th>
-										<th class="text-left py-2">Limit</th>
-										<th class="text-left py-2">Price</th>
+									<tr class="border-b border-white/20">
+										<th class="text-left py-2 uppercase tracking-wider text-white/60">Tier</th>
+										<th class="text-left py-2 uppercase tracking-wider text-white/60">Limit</th>
+										<th class="text-left py-2 uppercase tracking-wider text-white/60">Price</th>
 									</tr>
 								</thead>
-								<tbody class="text-gray-400">
-									<tr class="border-b border-gray-800">
+								<tbody class="text-white/50">
+									<tr class="border-b border-white/10">
 										<td class="py-2">Unauthenticated</td>
 										<td>60 requests/minute</td>
 										<td>Free</td>
 									</tr>
-									<tr class="border-b border-gray-800">
+									<tr class="border-b border-white/10">
 										<td class="py-2">Free API Key</td>
 										<td>100 requests/day</td>
 										<td>Free</td>
 									</tr>
-									<tr class="border-b border-gray-800">
+									<tr class="border-b border-white/10">
 										<td class="py-2">Pro</td>
 										<td>10,000 requests/day</td>
 										<td>Coming soon</td>
@@ -193,38 +199,39 @@ docsApp.get("/docs", (c) => {
 
 					{/* Error Codes */}
 					<div class="mt-12 mb-12">
-						<h2 class="text-2xl font-semibold mb-4">Error Codes</h2>
-						<div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
-							<table class="w-full text-sm">
+						<h2 class="text-lg font-bold uppercase tracking-wider mb-4">Error Codes</h2>
+						<div class="w-full h-px bg-white/10 mb-4" />
+						<div class="border border-white/20 p-6">
+							<table class="w-full text-xs">
 								<thead>
-									<tr class="border-b border-gray-700">
-										<th class="text-left py-2">Code</th>
-										<th class="text-left py-2">Status</th>
-										<th class="text-left py-2">Description</th>
+									<tr class="border-b border-white/20">
+										<th class="text-left py-2 uppercase tracking-wider text-white/60">Code</th>
+										<th class="text-left py-2 uppercase tracking-wider text-white/60">Status</th>
+										<th class="text-left py-2 uppercase tracking-wider text-white/60">Description</th>
 									</tr>
 								</thead>
-								<tbody class="text-gray-400">
-									<tr class="border-b border-gray-800">
+								<tbody class="text-white/50">
+									<tr class="border-b border-white/10">
 										<td class="py-2">VALIDATION_ERROR</td>
 										<td>400</td>
 										<td>Invalid request body or parameters</td>
 									</tr>
-									<tr class="border-b border-gray-800">
+									<tr class="border-b border-white/10">
 										<td class="py-2">UNAUTHORIZED</td>
 										<td>401</td>
 										<td>Missing or invalid API key</td>
 									</tr>
-									<tr class="border-b border-gray-800">
+									<tr class="border-b border-white/10">
 										<td class="py-2">FORBIDDEN</td>
 										<td>403</td>
 										<td>Insufficient permissions</td>
 									</tr>
-									<tr class="border-b border-gray-800">
+									<tr class="border-b border-white/10">
 										<td class="py-2">NOT_FOUND</td>
 										<td>404</td>
 										<td>Resource not found</td>
 									</tr>
-									<tr class="border-b border-gray-800">
+									<tr class="border-b border-white/10">
 										<td class="py-2">RATE_LIMIT_EXCEEDED</td>
 										<td>429</td>
 										<td>Too many requests</td>
