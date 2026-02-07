@@ -21,7 +21,7 @@
 	],
 	"scripts": {
 		"dev": "tsx src/server.ts",
-		"build": "tsc",
+		"build": "node ../../scripts/clean-dist.mjs && tsc",
 		"typecheck": "tsc --noEmit",
 		"prepublishOnly": "pnpm build"
 	},

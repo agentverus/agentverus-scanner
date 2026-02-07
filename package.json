@@ -29,7 +29,7 @@
 	],
 	"scripts": {
 		"dev": "tsx watch src/scanner/cli.ts",
-		"build": "tsc",
+		"build": "node scripts/clean-dist.mjs && tsc",
 		"build:actions": "pnpm build && node scripts/build-actions.mjs",
 		"test": "vitest run",
 		"lint": "biome lint .",
