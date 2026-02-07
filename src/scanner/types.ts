@@ -74,6 +74,8 @@ export interface TrustReport {
 /** Options for running a scan */
 export interface ScanOptions {
 	readonly timeout?: number;
+	readonly retries?: number;
+	readonly retryDelayMs?: number;
 }
 
 /** ASST Taxonomy categories */
