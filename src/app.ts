@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { errorHandler } from "./api/middleware/errors.js";
 // Middleware
 import { rateLimit } from "./api/middleware/rateLimit.js";
@@ -26,6 +27,9 @@ const app = new Hono();
 app.use("*", cors());
 app.use("*", logger());
 app.use("/api/*", rateLimit({ windowMs: 60_000, max: 60 }));
+
+// Static files
+app.use("/icons/*", serveStatic({ root: "./public" }));
 
 // Health checks
 app.get("/health", (c) => c.json({ status: "ok", version: "0.1.0" }));

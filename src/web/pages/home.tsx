@@ -97,38 +97,42 @@ homeApp.get("/", (c) => {
 					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 						{[
 							{
-								icon: "🔐",
+								icon: "/icons/permission.png",
 								title: "Permission Analysis",
 								desc: "Flags excessive or mismatched permissions for the skill's stated purpose.",
 							},
 							{
-								icon: "💉",
+								icon: "/icons/injection.png",
 								title: "Injection Detection",
 								desc: "Catches prompt injection, instruction override, and social engineering attacks.",
 							},
 							{
-								icon: "🔗",
+								icon: "/icons/dependency.png",
 								title: "Dependency Scanning",
 								desc: "Identifies suspicious URLs, IP addresses, and download-and-execute patterns.",
 							},
 							{
-								icon: "🎭",
+								icon: "/icons/behavioral.png",
 								title: "Behavioral Risk",
 								desc: "Detects unrestricted scope, system modification, and autonomous action risks.",
 							},
 							{
-								icon: "📝",
+								icon: "/icons/content.png",
 								title: "Content Safety",
 								desc: "Checks for safety boundaries, harmful content, and documentation quality.",
 							},
 							{
-								icon: "🏅",
+								icon: "/icons/badge.png",
 								title: "Trust Badges",
 								desc: "Embeddable SVG badges showing trust score. CERTIFIED, CONDITIONAL, SUSPICIOUS, or REJECTED.",
 							},
 						].map((feature) => (
 							<div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
-								<span class="text-3xl mb-3 block">{feature.icon}</span>
+								<img
+									src={feature.icon}
+									alt={feature.title}
+									class="w-10 h-10 mb-3 rounded"
+								/>
 								<h3 class="text-lg font-semibold mb-2 font-display">{feature.title}</h3>
 								<p class="text-gray-400 text-sm">{feature.desc}</p>
 							</div>

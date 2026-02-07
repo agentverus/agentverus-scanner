@@ -9,7 +9,5 @@ coverage
 research
 docs
 *.pdf
-*.png
-*.jpg
 .env*
 .DS_Store

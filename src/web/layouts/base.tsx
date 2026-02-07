@@ -50,7 +50,8 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
 				<header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm sticky top-0 z-50">
 					<nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 						<a href="/" class="text-xl font-bold text-white flex items-center gap-2 font-display">
-							<span class="text-2xl">🛡️</span> AgentVerus
+							<img src="/icons/shield-logo.png" alt="AgentVerus" class="w-7 h-7 rounded" />
+							AgentVerus
 						</a>
 						<div class="flex items-center gap-6">
 							<a href="/registry" class="text-gray-300 hover:text-white transition">
