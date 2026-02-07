@@ -18,7 +18,7 @@ import { homeApp } from "./web/pages/home.js";
 import { registryApp } from "./web/pages/registry.js";
 import { statsApp } from "./web/pages/stats.js";
 import { submitApp } from "./web/pages/submit.js";
-import { fontTestApp } from "./web/pages/font-test.js";
+// import { fontTestApp } from "./web/pages/font-test.js";
 
 const app = new Hono();
 
@@ -51,7 +51,7 @@ app.route("", registryApp);
 app.route("", submitApp);
 app.route("", docsApp);
 app.route("", statsApp);
-app.route("", fontTestApp);
+// app.route("", fontTestApp);
 
 // Global error handler
 app.onError(errorHandler);

@@ -17,7 +17,7 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
 				<link rel="preconnect" href="https://fonts.googleapis.com" />
 				<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
 				<link
-					href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+					href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
 					rel="stylesheet"
 				/>
 				<script src="https://cdn.tailwindcss.com" />
@@ -29,7 +29,7 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
 							theme: {
 								extend: {
 									fontFamily: {
-										display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+										display: ['"Jost"', 'system-ui', 'sans-serif'],
 										body: ['"Inter"', 'system-ui', 'sans-serif'],
 										mono: ['"JetBrains Mono"', 'monospace'],
 									},
