@@ -70,7 +70,7 @@ export const BaseLayout: FC<BaseLayoutProps> = ({ title, description, children }
 								API
 							</a>
 							<a
-								href="https://github.com/agentverus"
+								href="https://github.com/jdrhyne/agentverus"
 								class="text-gray-500 hover:text-gray-300 text-sm transition"
 							>
 								GitHub
