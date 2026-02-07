@@ -143,7 +143,7 @@ async function main(): Promise<void> {
 
 	if (urlIndex !== -1 && args[urlIndex + 1]) {
 		const url = args[urlIndex + 1] as string;
-		console.log(`Scanning URL: ${url}`);
+		if (!jsonFlag) console.log(`Scanning URL: ${url}`);
 		report = await scanSkillFromUrl(url);
 	} else {
 		const filePath = args.find((a) => !a.startsWith("--"));
@@ -151,7 +151,7 @@ async function main(): Promise<void> {
 			console.error("Error: No file path provided");
 			process.exit(1);
 		}
-		console.log(`Scanning file: ${filePath}`);
+		if (!jsonFlag) console.log(`Scanning file: ${filePath}`);
 		const content = await readFile(filePath, "utf-8");
 		report = await scanSkill(content);
 	}
