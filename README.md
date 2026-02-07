@@ -1,4 +1,4 @@
-# AgentTrust
+# AgentVerus
 
 **Trust, but verify.** The trust certification service for AI agent skills.
 
@@ -6,11 +6,11 @@
 
 ---
 
-## What is AgentTrust?
+## What is AgentVerus?
 
-AgentTrust scans, audits, and certifies AI agent skills. It analyzes skill files (SKILL.md) for security threats, behavioral risks, and compliance issues — then produces a transparent trust score and embeddable badge.
+AgentVerus scans, audits, and certifies AI agent skills. It analyzes skill files (SKILL.md) for security threats, behavioral risks, and compliance issues — then produces a transparent trust score and embeddable badge.
 
-**Why?** Gen Digital found that **15% of OpenClaw skills contain malicious instructions**. Agent skills are the new npm packages — open publishing, dependency chains, and supply chain risk. AgentTrust is the trust layer the agentic web is missing.
+**Why?** Gen Digital found that **15% of OpenClaw skills contain malicious instructions**. Agent skills are the new npm packages — open publishing, dependency chains, and supply chain risk. AgentVerus is the trust layer the agentic web is missing.
 
 ## How It Works
 
@@ -54,18 +54,18 @@ Our OWASP-style taxonomy for agent skill security:
 
 ```bash
 # Scan a skill
-curl -X POST https://agenttrust.dev/api/v1/skill/scan \
+curl -X POST https://agentverus.ai/api/v1/skill/scan \
   -H "Content-Type: application/json" \
   -d '{"url": "https://github.com/user/repo/blob/main/SKILL.md"}'
 
 # Get trust report
-curl https://agenttrust.dev/api/v1/skill/{id}/trust
+curl https://agentverus.ai/api/v1/skill/{id}/trust
 
 # Get embeddable badge
-# Use in markdown: ![AgentTrust](https://agenttrust.dev/api/v1/skill/{id}/badge)
+# Use in markdown: ![AgentVerus](https://agentverus.ai/api/v1/skill/{id}/badge)
 
 # Search the registry
-curl "https://agenttrust.dev/api/v1/skills?q=weather&grade=A"
+curl "https://agentverus.ai/api/v1/skills?q=weather&grade=A"
 ```
 
 ## Certification Tiers
@@ -81,7 +81,7 @@ curl "https://agenttrust.dev/api/v1/skills?q=weather&grade=A"
 Embed a trust badge in your README:
 
 ```markdown
-[![AgentTrust Score](https://agenttrust.dev/api/v1/skill/{id}/badge)](https://agenttrust.dev/skill/{id})
+[![AgentVerus Score](https://agentverus.ai/api/v1/skill/{id}/badge)](https://agentverus.ai/skill/{id})
 ```
 
 ## Tech Stack

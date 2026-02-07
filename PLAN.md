@@ -1,4 +1,4 @@
-# AgentTrust — Project Plan
+# AgentVerus — Project Plan
 
 **Version:** 1.0
 **Created:** February 6, 2026
@@ -27,7 +27,7 @@
 
 ## 1. Product Vision
 
-**AgentTrust** is an agent and skill trust certification service. It scans AI agent skill files (SKILL.md, markdown-based skill definitions), produces detailed security and behavioral trust reports, and issues verifiable trust certifications with embeddable badges.
+**AgentVerus** is an agent and skill trust certification service. It scans AI agent skill files (SKILL.md, markdown-based skill definitions), produces detailed security and behavioral trust reports, and issues verifiable trust certifications with embeddable badges.
 
 ### Why This Exists
 
@@ -51,7 +51,7 @@
 | Component | Description |
 |-----------|-------------|
 | **Skill Scanner** | Automated security + behavior analysis engine. Input: skill URL or SKILL.md content. Output: structured JSON trust report. |
-| **Trust Registry** | Searchable web database of scanned skills with trust scores at agenttrust.dev |
+| **Trust Registry** | Searchable web database of scanned skills with trust scores at agentverus.ai |
 | **Trust API** | REST API: `GET /v1/skill/{id}/trust`, `POST /v1/skill/scan` |
 | **Certification Flow** | Submit skill → automated scan → trust score + badge issued |
 | **Badge System** | Embeddable SVG badges (shields.io style) + cryptographic attestation |
@@ -63,7 +63,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     agenttrust.dev                           │
+│                     agentverus.ai                           │
 │                                                             │
 │  ┌──────────┐  ┌──────────────┐  ┌────────────────────┐    │
 │  │ Landing  │  │ Registry UI  │  │ Skill Detail Page  │    │
@@ -137,7 +137,7 @@
 ### Directory Structure
 
 ```
-agent-trust/
+agent-verus/
 ├── PLAN.md                    # This file
 ├── AGENTS.md                  # Codex agent instructions
 ├── README.md                  # Project overview
@@ -358,7 +358,7 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
   - Dependencies installed: `hono`, `drizzle-orm`, `@neondatabase/serverless`, `zod`, `stripe`
   - Dev dependencies: `typescript`, `vitest`, `@biomejs/biome`, `drizzle-kit`, `wrangler`, `@types/node`
 - **Validation:** `pnpm install && pnpm typecheck` passes
-- **Codex Prompt:** "Initialize a TypeScript ESM project with pnpm. Install hono, drizzle-orm, @neondatabase/serverless, zod, and stripe as dependencies. Install typescript, vitest, @biomejs/biome, drizzle-kit, wrangler, and @types/node as dev dependencies. Configure package.json with type: module and scripts for dev, build, test, lint, typecheck, db:migrate, db:push. The project is called agent-trust."
+- **Codex Prompt:** "Initialize a TypeScript ESM project with pnpm. Install hono, drizzle-orm, @neondatabase/serverless, zod, and stripe as dependencies. Install typescript, vitest, @biomejs/biome, drizzle-kit, wrangler, and @types/node as dev dependencies. Configure package.json with type: module and scripts for dev, build, test, lint, typecheck, db:migrate, db:push. The project is called agent-verus."
 
 ### Task 0.2: TypeScript Configuration
 
@@ -792,13 +792,13 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
 - **Dependencies:** 0.8
 - **Acceptance Criteria:**
   - Base layout with: `<html>`, `<head>` (meta, title, Tailwind CDN, htmx CDN), `<body>` with header navigation and main content slot
-  - Navigation: Logo ("AgentTrust"), Registry, Submit Skill, Pricing, API Docs
+  - Navigation: Logo ("AgentVerus"), Registry, Submit Skill, Pricing, API Docs
   - Footer: Copyright, GitHub link, API link
   - Responsive layout (mobile-friendly)
   - Dark mode support via Tailwind dark: classes
   - Props: `title`, `description`, `children`
 - **Validation:** Route returning `<BaseLayout title="Test"><p>Hello</p></BaseLayout>` renders valid HTML
-- **Codex Prompt:** "Create src/web/layouts/base.tsx using Hono JSX (import { html } from 'hono/html' and JSX components). The layout takes title, description, and children props. Include Tailwind CSS CDN (v3) and htmx CDN in head. Header has nav: AgentTrust logo, Registry link, Submit Skill link, Pricing link, API Docs link. Clean, modern design with dark mode support. Footer with copyright 2026 and links. Use Tailwind for all styling."
+- **Codex Prompt:** "Create src/web/layouts/base.tsx using Hono JSX (import { html } from 'hono/html' and JSX components). The layout takes title, description, and children props. Include Tailwind CSS CDN (v3) and htmx CDN in head. Header has nav: AgentVerus logo, Registry link, Submit Skill link, Pricing link, API Docs link. Clean, modern design with dark mode support. Footer with copyright 2026 and links. Use Tailwind for all styling."
 
 ### Task 2.9: Web UI — Skill Registry Page
 
@@ -871,14 +871,14 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
 - **Dependencies:** None
 - **Acceptance Criteria:**
   - `generateBadge(score: number, badge: BadgeTier): string` returns SVG string
-  - Badge shows: "AgentTrust" label (left side, dark) + score/grade (right side, colored)
+  - Badge shows: "AgentVerus" label (left side, dark) + score/grade (right side, colored)
   - Colors match badge tiers: CERTIFIED=#2ECC40 green, CONDITIONAL=#DFB317 yellow, SUSPICIOUS=#FE7D37 orange, REJECTED=#E05D44 red
   - Badge dimensions: 150x20 standard, with optional `?style=flat|flat-square|plastic`
   - SVG is valid and renders in all browsers
   - Optional: `?label=custom-label` to customize left side text
   - Also generate "certified" variant with checkmark icon for paid certifications
 - **Validation:** Generated SVGs render correctly in browser; validate with SVG validator
-- **Codex Prompt:** "Create src/badges/generator.ts and src/badges/templates.ts. The generator exports generateBadge(options: { score: number, badge: BadgeTier, style?: 'flat' | 'flat-square' | 'plastic', label?: string, certified?: boolean }): string. Generate shields.io-style SVG badges. Left side shows label (default 'AgentTrust'), right side shows badge tier and score (e.g., 'CERTIFIED 95'). Color the right side based on grade: CERTIFIED = #2ECC40 (green), CONDITIONAL = #DFB317 (yellow), SUSPICIOUS = #FE7D37 (orange), REJECTED = #E05D44 (red). Support flat style (default): rounded corners, gradient fill. flat-square: no rounded corners. If certified is true, add a small checkmark icon. The SVG should be self-contained (no external refs), accessible, and valid."
+- **Codex Prompt:** "Create src/badges/generator.ts and src/badges/templates.ts. The generator exports generateBadge(options: { score: number, badge: BadgeTier, style?: 'flat' | 'flat-square' | 'plastic', label?: string, certified?: boolean }): string. Generate shields.io-style SVG badges. Left side shows label (default 'AgentVerus'), right side shows badge tier and score (e.g., 'CERTIFIED 95'). Color the right side based on grade: CERTIFIED = #2ECC40 (green), CONDITIONAL = #DFB317 (yellow), SUSPICIOUS = #FE7D37 (orange), REJECTED = #E05D44 (red). Support flat style (default): rounded corners, gradient fill. flat-square: no rounded corners. If certified is true, add a small checkmark icon. The SVG should be self-contained (no external refs), accessible, and valid."
 
 ### Task 3.2: Badge API Endpoint
 
@@ -893,7 +893,7 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
   - ETag header for conditional requests
   - Returns placeholder "not scanned" badge if skill has no scan results
   - Returns 404 only if skill ID is completely invalid
-- **Validation:** Badge renders when embedded in markdown: `![trust](https://agenttrust.dev/api/v1/skill/:id/badge)`
+- **Validation:** Badge renders when embedded in markdown: `![trust](https://agentverus.ai/api/v1/skill/:id/badge)`
 - **Codex Prompt:** "Create src/api/v1/badge.ts as a Hono route. GET /skill/:id/badge looks up the skill's latest scan result. If found, generate an SVG badge using generateBadge(). Return with Content-Type: image/svg+xml, Cache-Control: max-age=3600, and ETag header. Support ?style and ?label query params. If skill exists but has no scan results, return a gray 'not scanned' badge. If skill ID is invalid UUID format, return 404. Write tests."
 
 ### Task 3.3: Certification Submission Flow
@@ -916,18 +916,18 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
 ### Task 3.4: Cryptographic Attestation
 
 - **Location:** `src/lib/crypto.ts`
-- **Description:** Generate a cryptographic attestation for certified skills — a signed JSON document that proves a certification was issued by AgentTrust.
+- **Description:** Generate a cryptographic attestation for certified skills — a signed JSON document that proves a certification was issued by AgentVerus.
 - **Complexity:** 5/10
 - **Dependencies:** 0.6
 - **Acceptance Criteria:**
   - Generate an ECDSA P-256 signing key pair (from `API_SIGNING_KEY` env var, or generate and store)
-  - Attestation document contains: skill ID, skill URL, content hash, trust score, grade, scan date, certification ID, expiry date, issuer ("AgentTrust")
+  - Attestation document contains: skill ID, skill URL, content hash, trust score, grade, scan date, certification ID, expiry date, issuer ("AgentVerus")
   - Document is signed with ECDSA P-256
   - `verifyAttestation(attestation: string): boolean` verifies the signature
-  - Public key published at `/.well-known/agenttrust-public-key`
+  - Public key published at `/.well-known/agentverus-public-key`
   - Attestation stored in certification record
 - **Validation:** Create attestation → verify → returns true; tamper with attestation → verify → returns false
-- **Codex Prompt:** "Create src/lib/crypto.ts with functions for cryptographic attestation. Use Node.js crypto module with ECDSA P-256. Export: createAttestation(data: AttestationData, privateKey: string): string — serializes data to canonical JSON, signs with ECDSA, returns base64url encoded JSON { data, signature, publicKeyId }. Export verifyAttestation(attestation: string, publicKey: string): boolean — verifies the signature. Export getOrCreateKeyPair() that reads from API_SIGNING_KEY env or generates a new key pair. Add a route at /.well-known/agenttrust-public-key that serves the public key in JWK format. Write tests for sign → verify round-trip and tamper detection."
+- **Codex Prompt:** "Create src/lib/crypto.ts with functions for cryptographic attestation. Use Node.js crypto module with ECDSA P-256. Export: createAttestation(data: AttestationData, privateKey: string): string — serializes data to canonical JSON, signs with ECDSA, returns base64url encoded JSON { data, signature, publicKeyId }. Export verifyAttestation(attestation: string, publicKey: string): boolean — verifies the signature. Export getOrCreateKeyPair() that reads from API_SIGNING_KEY env or generates a new key pair. Add a route at /.well-known/agentverus-public-key that serves the public key in JWK format. Write tests for sign → verify round-trip and tamper detection."
 
 ### Task 3.5: Email Notifications
 
@@ -939,10 +939,10 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
   - Resend client configured with `RESEND_API_KEY`
   - Templates: certification complete (score, grade, badge URL, attestation URL), certification failed (findings summary), certification expiring (30 days before expiry)
   - Emails are HTML formatted with inline CSS (Tailwind via @tailwindcss/typography or inline styles)
-  - From address: `trust@agenttrust.dev`
+  - From address: `hello@agentverus.ai`
   - All emails include unsubscribe link
 - **Validation:** Send test email → arrives with correct formatting and content
-- **Codex Prompt:** "Create src/email/client.ts wrapping the Resend SDK with RESEND_API_KEY from config. Export sendCertificationComplete(to: string, data: { skillName, score, grade, badgeUrl, attestationUrl, certificationId }): Promise<void> that sends a well-formatted HTML email congratulating the publisher, showing their score and grade with color, and including the badge embed code and attestation URL. Export sendCertificationFailed(to, data) for failed certifications with findings summary. From address: trust@agenttrust.dev. Write tests using mocked Resend client."
+- **Codex Prompt:** "Create src/email/client.ts wrapping the Resend SDK with RESEND_API_KEY from config. Export sendCertificationComplete(to: string, data: { skillName, score, grade, badgeUrl, attestationUrl, certificationId }): Promise<void> that sends a well-formatted HTML email congratulating the publisher, showing their score and grade with color, and including the badge embed code and attestation URL. Export sendCertificationFailed(to, data) for failed certifications with findings summary. From address: hello@agentverus.ai. Write tests using mocked Resend client."
 
 ### Task 3.6: Stripe Webhooks
 
@@ -982,7 +982,7 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
 ### Task 4.2: Landing Page
 
 - **Location:** `src/web/pages/home.tsx`
-- **Description:** Marketing landing page for agenttrust.dev.
+- **Description:** Marketing landing page for agentverus.ai.
 - **Complexity:** 4/10
 - **Dependencies:** 2.8
 - **Acceptance Criteria:**
@@ -1040,12 +1040,12 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
 - **Acceptance Criteria:**
   - Working deployment configuration for the chosen platform
   - Environment variables configured as secrets
-  - Custom domain setup instructions (agenttrust.dev)
+  - Custom domain setup instructions (agentverus.ai)
   - Database connection works from edge/serverless environment
   - Build step produces deployable artifact
   - `pnpm deploy` script for one-command deployment
 - **Validation:** `pnpm deploy` succeeds; app accessible at deployed URL; all endpoints work
-- **Codex Prompt:** "Create deployment configuration for Cloudflare Workers. Create wrangler.toml with: name 'agent-trust', compatibility_date (today), main 'src/index.ts', node_compat true. Add [vars] section for non-secret config and note that secrets (DATABASE_URL, STRIPE_SECRET_KEY, etc.) should be set via wrangler secret put. Create a deploy script in package.json that runs wrangler deploy. If Hono needs an adapter, update src/index.ts to export default app.fetch for Workers. Document custom domain setup for agenttrust.dev in a DEPLOY.md file."
+- **Codex Prompt:** "Create deployment configuration for Cloudflare Workers. Create wrangler.toml with: name 'agent-verus', compatibility_date (today), main 'src/index.ts', node_compat true. Add [vars] section for non-secret config and note that secrets (DATABASE_URL, STRIPE_SECRET_KEY, etc.) should be set via wrangler secret put. Create a deploy script in package.json that runs wrangler deploy. If Hono needs an adapter, update src/index.ts to export default app.fetch for Workers. Document custom domain setup for agentverus.ai in a DEPLOY.md file."
 
 ---
 
@@ -1127,11 +1127,11 @@ Modeled after OWASP Top 10, specifically for AI agent skill files.
     6. Comparison to Gen Digital's Findings
     7. Recommendations for Skill Publishers
     8. Recommendations for Skill Consumers
-    9. About AgentTrust + CTA
+    9. About AgentVerus + CTA
   - Professional, data-driven tone
   - Includes CTA for scanning/certification at the end
 - **Validation:** Template is well-structured with clear placeholder locations
-- **Codex Prompt:** "Create data/blog-post-template.md — a research blog post template titled 'State of Agent Skill Security: We Scanned {TOTAL_SKILLS} AI Agent Skills. Here's What We Found.' Write the full template with these sections: Executive Summary (headline stats as placeholders: {TOTAL_SKILLS}, {PCT_CRITICAL}, {PCT_HIGH}, {AVG_SCORE}), Methodology (explain the ASST taxonomy and scanning approach), Key Findings ({GRADE_DISTRIBUTION_CHART}, {TOP_FINDINGS_TABLE}), The Injection Problem (narrative about ASST-01 injection attacks with {INJECTION_STATS}), Permission Sprawl (ASST-03/08 analysis with {PERMISSION_STATS}), Comparison to Gen Digital ('Gen Digital reported 15% malicious; we found {PCT_DANGEROUS}%'), Recommendations for Skill Publishers (concrete steps), Recommendations for Skill Consumers (how to check skills), About AgentTrust (brief product description + CTA to scan skills at agenttrust.dev). Write the narrative text between placeholders — it should read as a compelling, data-driven industry report."
+- **Codex Prompt:** "Create data/blog-post-template.md — a research blog post template titled 'State of Agent Skill Security: We Scanned {TOTAL_SKILLS} AI Agent Skills. Here's What We Found.' Write the full template with these sections: Executive Summary (headline stats as placeholders: {TOTAL_SKILLS}, {PCT_CRITICAL}, {PCT_HIGH}, {AVG_SCORE}), Methodology (explain the ASST taxonomy and scanning approach), Key Findings ({GRADE_DISTRIBUTION_CHART}, {TOP_FINDINGS_TABLE}), The Injection Problem (narrative about ASST-01 injection attacks with {INJECTION_STATS}), Permission Sprawl (ASST-03/08 analysis with {PERMISSION_STATS}), Comparison to Gen Digital ('Gen Digital reported 15% malicious; we found {PCT_DANGEROUS}%'), Recommendations for Skill Publishers (concrete steps), Recommendations for Skill Consumers (how to check skills), About AgentVerus (brief product description + CTA to scan skills at agentverus.ai). Write the narrative text between placeholders — it should read as a compelling, data-driven industry report."
 
 ---
 
@@ -1361,4 +1361,4 @@ submit voluntarily              ↓
 - 50+ voluntary submissions from publishers
 - 1 platform integration conversation
 - "State of Agent Skill Security" report gets 10K+ views
-- AgentTrust badges appearing in 20+ skill READMEs organically
+- AgentVerus badges appearing in 20+ skill READMEs organically

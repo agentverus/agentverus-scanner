@@ -1,14 +1,14 @@
-# AGENTS.md — AgentTrust
+# AGENTS.md — AgentVerus
 
 ## Project Overview
 
-**AgentTrust** is an agent and skill trust certification service. It scans AI agent skill files (SKILL.md format and variants), produces detailed security and behavioral trust reports with scores 0-100, and issues verifiable certifications with embeddable SVG badges.
+**AgentVerus** is an agent and skill trust certification service. It scans AI agent skill files (SKILL.md format and variants), produces detailed security and behavioral trust reports with scores 0-100, and issues verifiable certifications with embeddable SVG badges.
 
 This is a **production product**, not a prototype. Code quality, security, and reliability matter.
 
 ### Core Problem
 
-Gen Digital found 15% of OpenClaw skills contain malicious instructions. There is no cross-platform reputation or trust verification system for AI agent skills. AgentTrust fills that gap by providing automated scanning, a public trust registry, and a certification service.
+Gen Digital found 15% of OpenClaw skills contain malicious instructions. There is no cross-platform reputation or trust verification system for AI agent skills. AgentVerus fills that gap by providing automated scanning, a public trust registry, and a certification service.
 
 ---
 

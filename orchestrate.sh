@@ -1,12 +1,12 @@
 #!/bin/bash
-# AgentTrust Overnight Build Orchestrator
+# AgentVerus Overnight Build Orchestrator
 # Runs Codex GPT-5.3-codex xhigh agents in tmux sessions
 # Each sprint runs sequentially, tasks within sprints run in parallel where possible
 
 set -euo pipefail
 
 PROJECT_DIR="/Users/nuthome/Projects/agent-trust"
-SOCKET="/tmp/agenttrust-build.sock"
+SOCKET="/tmp/agentverus-build.sock"
 MODEL="gpt-5.3-codex"
 REASONING="xhigh"
 SANDBOX="workspace-write"
@@ -90,7 +90,7 @@ wait_for_sessions() {
 # ═══════════════════════════════════════════════════════════
 log "═══ SPRINT 0: Project Scaffolding ═══"
 
-run_codex_task "s0-scaffold" "You are building AgentTrust — an agent skill trust certification service.
+run_codex_task "s0-scaffold" "You are building AgentVerus — an agent skill trust certification service.
 
 Read PLAN.md and AGENTS.md for full context.
 
@@ -120,7 +120,7 @@ success "Sprint 0 complete"
 log "═══ SPRINT 1: Skill Scanner Engine ═══"
 
 # 1A: Parser + test fixtures (independent)
-run_codex_task "s1-parser" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s1-parser" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete Tasks 1.1 and 1.2 from Sprint 1:
 
@@ -145,7 +145,7 @@ Create 8 test fixtures in test/fixtures/:
 Write comprehensive tests. Commit when done."
 
 # 1B: Permission + Injection analyzers (independent, can parallel)
-run_codex_task "s1-analyzers-a" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s1-analyzers-a" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete Tasks 1.3 and 1.4 from Sprint 1:
 
@@ -170,7 +170,7 @@ Score starts at 100, deductions per finding. Weight: 0.30 (highest — biggest t
 Use the ASST taxonomy from PLAN.md Section 5. Write thorough tests using the fixture files. Commit when done."
 
 # 1C: Dependency + Behavioral + Content analyzers
-run_codex_task "s1-analyzers-b" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s1-analyzers-b" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete Tasks 1.5, 1.6, and 1.7 from Sprint 1:
 
@@ -210,7 +210,7 @@ log "  Waiting for Sprint 1 parallel tasks..."
 wait_for_sessions "s1-parser" "s1-analyzers-a" "s1-analyzers-b"
 
 # 1D: Score aggregator + orchestrator + CLI (depends on above)
-run_codex_task "s1-scoring" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s1-scoring" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete Tasks 1.8, 1.9, and 1.10 from Sprint 1:
 
@@ -260,7 +260,7 @@ success "Sprint 1 complete — Scanner engine built"
 # ═══════════════════════════════════════════════════════════
 log "═══ SPRINT 2: Trust Registry + API ═══"
 
-run_codex_task "s2-api" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s2-api" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete ALL Sprint 2 tasks (2.1 through 2.11):
 
@@ -289,12 +289,12 @@ success "Sprint 2 complete — Registry + API built"
 # ═══════════════════════════════════════════════════════════
 log "═══ SPRINT 3: Badges + Free Certification ═══"
 
-run_codex_task "s3-badges" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s3-badges" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete Sprint 3 tasks — NOTE: This is the FREE version (no Stripe/payments):
 
 Task 3.1 — SVG Badge Generator (src/badges/generator.ts, templates.ts):
-Generate shields.io-style SVG badges. Left side 'AgentTrust', right side shows badge tier + score.
+Generate shields.io-style SVG badges. Left side 'AgentVerus', right side shows badge tier + score.
 Colors: CERTIFIED=#2ECC40, CONDITIONAL=#DFB317, SUSPICIOUS=#FE7D37, REJECTED=#E05D44.
 Support flat and flat-square styles.
 
@@ -309,7 +309,7 @@ Task 3.3 (revised) — FREE Submission Flow:
 Task 3.4 — Cryptographic Attestation (src/lib/crypto.ts):
 - ECDSA P-256 signing for certified skills
 - Attestation document: skill ID, URL, content hash, score, badge tier, scan date, issuer
-- Verify function + public key at /.well-known/agenttrust-public-key
+- Verify function + public key at /.well-known/agentverus-public-key
 
 Task 3.5 — Email Notification (simplified):
 - Using Resend SDK, send scan-complete email if email was provided
@@ -326,7 +326,7 @@ success "Sprint 3 complete — Badges + certification flow"
 # ═══════════════════════════════════════════════════════════
 log "═══ SPRINT 4: Launch ═══"
 
-run_codex_task "s4-launch" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s4-launch" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete Sprint 4 tasks (revised — NO payment integration):
 
@@ -357,7 +357,7 @@ success "Sprint 4 complete — Ready to launch"
 # ═══════════════════════════════════════════════════════════
 log "═══ SPRINT 5: Bulk Scan + Research Publication ═══"
 
-run_codex_task "s5-research" "You are building AgentTrust. Read PLAN.md and AGENTS.md.
+run_codex_task "s5-research" "You are building AgentVerus. Read PLAN.md and AGENTS.md.
 
 Complete Sprint 5 tasks:
 
