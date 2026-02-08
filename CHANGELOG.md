@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`agentverus check` command**: Check any ClawHub skill by slug — downloads the skill ZIP, extracts SKILL.md, scans it, and prints a formatted trust report with category bars, findings, and a verdict. Supports `--json` output and multiple slugs.
+- **Registry batch scanner** (`src/registry/batch-scanner.ts`): Scans the entire ClawHub registry at scale with configurable concurrency (default 25, tested at 50). Outputs JSON results, CSV spreadsheet, summary statistics, and error log. 4,929 skills scanned in ~100 seconds.
+- **Registry report generator** (`src/registry/report-generator.ts`): Generates a comprehensive markdown analysis report from scan results — "We Analyzed N AI Agent Skills — Here's What We Found" — with executive summary, badge distribution, VT gap analysis, top findings, and methodology.
+- **Registry static site generator** (`src/registry/site-generator.ts`): Produces a single-page interactive HTML dashboard with search, badge filtering, sortable columns, category bar charts, finding pills, and pagination. Includes OpenGraph meta tags.
+- **Registry CLI commands**: `agentverus registry scan`, `agentverus registry report`, `agentverus registry site` for the full pipeline.
+- **VT gap detection**: The batch scanner identifies skills with critical/high-severity text-based threats (prompt injection, credential exfiltration, deceptive functionality) that fall outside VirusTotal's detection capabilities.
+- **`agentverus` bin alias**: The CLI is now available as both `agentverus` and `agentverus-scanner`.
 - **Context-aware analysis** (`src/scanner/analyzers/context.ts`): New shared utility that all analyzers use to understand _where_ a pattern match occurs:
   - **Code block detection**: Patterns inside fenced code blocks (` ``` `) or inline code spans are downgraded (severity reduced, deduction at 30%).
   - **Safety section detection**: Patterns inside safety boundary sections (e.g., `## Safety Boundaries`, `## Limitations`) are fully neutralized (zero deduction) — these are positive declarations, not threats.

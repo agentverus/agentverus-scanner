@@ -1,6 +1,13 @@
 #!/usr/bin/env node
 import { writeFile } from "node:fs/promises";
 import { basename } from "node:path";
+import {
+	handleCheck,
+	handleRegistryReport,
+	handleRegistryScan,
+	handleRegistrySite,
+	printRegistryUsage,
+} from "../registry/cli.js";
 import { scanTargetsBatch } from "./runner.js";
 import { buildSarifLog } from "./sarif.js";
 import { expandScanTargets } from "./targets.js";
@@ -195,14 +202,21 @@ ${COLORS.bold}AgentVerus Scanner v${SCANNER_VERSION}${COLORS.reset}
 Security and trust analysis for AI agent skills.
 
 ${COLORS.bold}USAGE${COLORS.reset}
-  agentverus-scanner scan <target...> [options]
-  agentverus-scanner --help
-  agentverus-scanner --version
+  agentverus scan <target...> [options]
+  agentverus check <slug...> [--json]
+  agentverus registry scan [options]
+  agentverus registry report [options]
+  agentverus registry site [options]
+  agentverus --help | --version
 
 ${COLORS.bold}COMMANDS${COLORS.reset}
-  scan <target...> Scan a skill file, URL, or directory (directories are searched for SKILL.md)
+  scan <target...>     Scan a skill file, URL, or directory
+  check <slug...>      Check a ClawHub skill by slug (downloads and scans)
+  registry scan        Batch scan all skills from the registry URL list
+  registry report      Generate markdown analysis report from scan results
+  registry site        Generate static HTML dashboard from scan results
 
-${COLORS.bold}OPTIONS${COLORS.reset}
+${COLORS.bold}SCAN OPTIONS${COLORS.reset}
   --json           Output raw JSON report
   --report [path]  Generate markdown report (default: <name>-trust-report.md)
   --sarif [path]   Write SARIF 2.1.0 output (default: agentverus-scanner.sarif)
@@ -215,16 +229,17 @@ ${COLORS.bold}OPTIONS${COLORS.reset}
   --version, -v    Show version
 
 ${COLORS.bold}EXAMPLES${COLORS.reset}
-  agentverus-scanner scan ./SKILL.md
-  agentverus-scanner scan . --sarif
-  agentverus-scanner scan https://raw.githubusercontent.com/user/repo/main/SKILL.md
-  agentverus-scanner scan ./SKILL.md --json
-  agentverus-scanner scan ./SKILL.md --report
-  agentverus-scanner scan ./SKILL.md --report my-report.md
-  agentverus-scanner scan ./SKILL.md --sarif results.sarif --fail-on-severity high
+  agentverus scan ./SKILL.md
+  agentverus scan . --sarif
+  agentverus scan https://raw.githubusercontent.com/user/repo/main/SKILL.md
+  agentverus check web-search
+  agentverus check git-commit docker-build --json
+  agentverus registry scan --concurrency 50 --limit 100
+  agentverus registry report
+  agentverus registry site --title "ClawHub Security Audit"
 
 ${COLORS.bold}EXIT CODES${COLORS.reset}
-  0  Scan passed
+  0  Scan passed / check passed
   1  Scan completed but policy failed
   2  One or more targets failed to scan
 
@@ -285,6 +300,36 @@ async function main(): Promise<void> {
 	}
 
 	const command = args[0];
+
+	// Dispatch to registry commands
+	if (command === "check") {
+		const code = await handleCheck(args.slice(1));
+		process.exit(code);
+	}
+
+	if (command === "registry") {
+		const subcommand = args[1];
+		if (!subcommand || subcommand === "--help" || subcommand === "-h") {
+			printRegistryUsage();
+			process.exit(0);
+		}
+		if (subcommand === "scan") {
+			const code = await handleRegistryScan(args.slice(2));
+			process.exit(code);
+		}
+		if (subcommand === "report") {
+			const code = await handleRegistryReport(args.slice(2));
+			process.exit(code);
+		}
+		if (subcommand === "site") {
+			const code = await handleRegistrySite(args.slice(2));
+			process.exit(code);
+		}
+		console.error(`Unknown registry subcommand: ${subcommand}`);
+		printRegistryUsage();
+		process.exit(1);
+	}
+
 	if (command !== "scan") {
 		// Backward compat: treat first arg as file path if not a command
 		if (command && !command.startsWith("-")) {

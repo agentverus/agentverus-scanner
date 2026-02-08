@@ -15,11 +15,13 @@
 		".": "./dist/scanner/index.js",
 		"./types": "./dist/scanner/types.js",
 		"./parser": "./dist/scanner/parser.js",
-		"./source": "./dist/scanner/source.js"
+		"./source": "./dist/scanner/source.js",
+		"./registry": "./dist/registry/index.js"
 	},
 	"main": "./dist/scanner/index.js",
 	"types": "./dist/scanner/index.d.ts",
 	"bin": {
+		"agentverus": "dist/scanner/cli.js",
 		"agentverus-scanner": "dist/scanner/cli.js"
 	},
 	"files": [

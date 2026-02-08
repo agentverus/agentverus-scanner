@@ -24,23 +24,57 @@ npm install --save-dev agentverus-scanner
 
 ```bash
 # Scan a local skill file
-npx agentverus-scanner scan ./SKILL.md
+npx agentverus scan ./SKILL.md
 
 # Scan a directory (recursively finds SKILL.md / SKILLS.md)
-npx agentverus-scanner scan .
+npx agentverus scan .
 
 # Scan from URL (GitHub blob/tree/repo URLs + ClawHub pages are normalized)
-npx agentverus-scanner scan https://github.com/user/repo/blob/main/SKILL.md
-npx agentverus-scanner scan https://github.com/user/repo/tree/main/skills/my-skill
-npx agentverus-scanner scan https://github.com/user/repo
-npx agentverus-scanner scan https://clawhub.ai/<owner>/<slug>
+npx agentverus scan https://github.com/user/repo/blob/main/SKILL.md
+npx agentverus scan https://clawhub.ai/<owner>/<slug>
 
 # JSON output
-npx agentverus-scanner scan ./SKILL.md --json
+npx agentverus scan ./SKILL.md --json
 
-# SARIF output for GitHub Code Scanning (fail the job on high/critical findings)
-npx agentverus-scanner scan . --sarif agentverus-scanner.sarif --fail-on-severity high
+# SARIF output for GitHub Code Scanning
+npx agentverus scan . --sarif agentverus-scanner.sarif --fail-on-severity high
 ```
+
+### Check a ClawHub Skill
+
+Check any skill from the ClawHub registry by slug — downloads, scans, and prints a trust report:
+
+```bash
+# Check a single skill
+npx agentverus check web-search
+
+# Check multiple skills
+npx agentverus check git-commit docker-build
+
+# JSON output
+npx agentverus check web-search --json
+```
+
+### Registry Scanning
+
+Batch scan the entire registry, generate reports, and build a static dashboard:
+
+```bash
+# Scan all skills in the registry (4,929 skills, ~100s at 50x concurrency)
+npx agentverus registry scan --concurrency 50
+
+# Generate the markdown analysis report
+npx agentverus registry report
+
+# Generate the interactive HTML dashboard
+npx agentverus registry site --title "ClawHub Security Analysis"
+```
+
+Registry scan options:
+- `--urls <path>` — Path to skill URL list (default: `data/skill-urls.txt`)
+- `--out <dir>` — Output directory (default: `data/scan-results`)
+- `--concurrency <n>` — Parallel downloads (default: 25)
+- `--limit <n>` — Scan only first N skills (for testing)
 
 Exit codes:
 
