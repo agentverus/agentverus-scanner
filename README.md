@@ -2,7 +2,9 @@
 
 Open-source security and behavioral trust scanner for AI agent skills (`SKILL.md` and variants).
 
+[![npm version](https://img.shields.io/npm/v/agentverus-scanner)](https://www.npmjs.com/package/agentverus-scanner)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE.md)
+[![GitHub Release](https://img.shields.io/github/v/release/agentverus/agentverus-scanner)](https://github.com/agentverus/agentverus-scanner/releases/latest)
 
 <p align="center">
   <img src="assets/social-preview.png" alt="AgentVerus Scanner — detecting hidden threats in AI agent skill files" width="800" />
