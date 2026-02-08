@@ -108,6 +108,71 @@ jobs:
           upload_sarif: true
 ```
 
+## Trust Tier Badges (GitHub Pages)
+
+Generate **repo-level** and **per-skill** trust tier badges as [Shields.io endpoint](https://shields.io/endpoint) JSON:
+
+```bash
+# Writes:
+# - badges/repo-certified.json
+# - badges/repo-certified-pct.json
+# - badges/skills/<slug>.json
+npx agentverus scan . --badges
+```
+
+Badge meanings:
+
+- `repo-certified.json` — **CERTIFIED** only if *every* skill in the repo is `CERTIFIED` (and there are no scan failures). Otherwise **NOT CERTIFIED**.
+- `repo-certified-pct.json` — percent of skills that are `CERTIFIED` (e.g. `Certified 83%`).
+- `skills/<slug>.json` — per-skill badge (canonical). `slug` is derived from the scanned file path (e.g. `skills/web-search/SKILL.md` → `skills__web-search__SKILL.md.json`).
+
+Embed in your README (example URLs assume you deploy the `badges/` directory as the **GitHub Pages site root**):
+
+```md
+![AgentVerus Repo Certified](https://img.shields.io/endpoint?url=https://<owner>.github.io/<repo>/repo-certified.json)
+![AgentVerus Certified %](https://img.shields.io/endpoint?url=https://<owner>.github.io/<repo>/repo-certified-pct.json)
+```
+
+Per-skill badge:
+
+```md
+![AgentVerus Skill](https://img.shields.io/endpoint?url=https://<owner>.github.io/<repo>/skills/<slug>.json)
+```
+
+To publish with GitHub Pages, run the badge generation on `push` to `main` and deploy the `badges/` directory:
+
+```yaml
+name: Publish AgentVerus Badges
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npx agentverus scan . --badges
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: badges
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/deploy-pages@v4
+```
+
 ## MCP Server (Agent Integration)
 
 For agent/framework integration via MCP, use the companion package:

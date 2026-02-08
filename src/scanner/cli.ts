@@ -9,6 +9,7 @@ import {
 	handleSkillsShScan,
 	printRegistryUsage,
 } from "../registry/cli.js";
+import { writeBadgeBundle } from "./badges.js";
 import { scanTargetsBatch } from "./runner.js";
 import { buildSarifLog } from "./sarif.js";
 import { expandScanTargets } from "./targets.js";
@@ -221,6 +222,7 @@ ${COLORS.bold}SCAN OPTIONS${COLORS.reset}
   --json           Output raw JSON report
   --report [path]  Generate markdown report (default: <name>-trust-report.md)
   --sarif [path]   Write SARIF 2.1.0 output (default: agentverus-scanner.sarif)
+  --badges [dir]  Write Shields.io endpoint badge JSON for repo + each skill (default: badges)
   --semantic        Enable LLM-assisted semantic analysis (requires AGENTVERUS_LLM_API_KEY)
   --fail-on-severity <level>  Fail if findings at/above level exist (critical|high|medium|low|info|none)
   --timeout <ms>    URL fetch timeout in ms (default varies by source; set <=0 to disable)
@@ -297,7 +299,8 @@ function parseOptionalInt(value: string | undefined, flag: string): number | und
 }
 
 async function main(): Promise<void> {
-	const args = process.argv.slice(2);
+	// Some runners (e.g. pnpm + tsx) may inject a standalone "--" before the real args.
+	const args = process.argv.slice(2).filter((a) => a !== "--");
 
 	if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
 		printUsage();
@@ -362,6 +365,8 @@ async function main(): Promise<void> {
 	let reportPath: string | undefined;
 	let sarifFlag = false;
 	let sarifPath: string | undefined;
+	let badgesFlag = false;
+	let badgesDir: string | undefined;
 	let failOnSeverity: FailOnSeverity | undefined;
 	let semanticFlag = false;
 	let timeout: number | undefined;
@@ -394,6 +399,16 @@ async function main(): Promise<void> {
 			const next = scanArgs[i + 1];
 			if (next && !next.startsWith("-")) {
 				sarifPath = next;
+				i += 1;
+			}
+			continue;
+		}
+
+		if (arg === "--badges") {
+			badgesFlag = true;
+			const next = scanArgs[i + 1];
+			if (next && !next.startsWith("-")) {
+				badgesDir = next;
 				i += 1;
 			}
 			continue;
@@ -523,6 +538,18 @@ async function main(): Promise<void> {
 		const sarif = buildSarifLog(scanned, failures);
 		await writeFile(outPath, JSON.stringify(sarif, null, 2), "utf-8");
 		if (!jsonFlag) console.log(`\n${COLORS.green}SARIF saved to: ${outPath}${COLORS.reset}`);
+	}
+
+	if (badgesFlag) {
+		const outDir = (badgesDir ?? "badges").trim() || "badges";
+		const index = await writeBadgeBundle(scanned, failures, outDir, { label: "AgentVerus", cacheSeconds: 3600 });
+		if (!jsonFlag) {
+			console.log(`\n${COLORS.green}Badges written to: ${outDir}${COLORS.reset}`);
+			console.log(`${COLORS.gray}- Skills: ${index.totalSkills}, Certified: ${index.percentCertified}%${COLORS.reset}`);
+			if (index.failures.length > 0) {
+				console.log(`${COLORS.gray}- Failures: ${index.failures.length}${COLORS.reset}`);
+			}
+		}
 	}
 
 	const scannedReports: TrustReport[] = scanned.map((s) => s.report);

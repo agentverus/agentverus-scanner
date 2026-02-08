@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { batchScanRegistry } from "../../src/registry/batch-scanner.js";
+import { SCANNER_VERSION } from "../../src/scanner/types.js";
 
 const tmpDirs: string[] = [];
 
@@ -62,7 +63,7 @@ describe("batchScanRegistry", () => {
 
 		expect(summary.totalSkills).toBe(3);
 		expect(summary.scanned).toBeGreaterThanOrEqual(2);
-		expect(summary.scannerVersion).toBe("0.2.0");
+		expect(summary.scannerVersion).toBe(SCANNER_VERSION);
 		expect(summary.badges).toBeDefined();
 		expect(summary.averageScore).toBeGreaterThanOrEqual(0);
 		expect(summary.averageScore).toBeLessThanOrEqual(100);

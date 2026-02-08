@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-02-08
+
+### Added
+
+- **Trust tier badge bundle generation** (`agentverus scan . --badges [dir]`): writes Shields.io endpoint JSON for:
+  - Repo-level **CERTIFIED/NOT CERTIFIED** badge (strict: all skills must be certified, no failures)
+  - Repo-level **Certified %** badge
+  - Per-skill canonical badges (`badges/skills/<slug>.json`) + `badges/skills/index.json`
+
+### Changed
+
+- CLI now ignores a standalone `--` argument (improves compatibility with some runners).
+
 ## [0.2.0] - 2026-02-08
 
 ### Added
