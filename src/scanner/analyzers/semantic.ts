@@ -114,7 +114,7 @@ async function callLlm(
 ): Promise<LlmResponse | null> {
 	const apiBase = (options.apiBase ?? "https://api.openai.com/v1").replace(/\/+$/, "");
 	const apiKey = options.apiKey ?? process.env.AGENTVERUS_LLM_API_KEY;
-	const model = options.model ?? "gpt-4o-mini";
+	const model = options.model ?? "gpt-4o";
 	const timeout = options.timeout ?? 30_000;
 
 	if (!apiKey) return null;
