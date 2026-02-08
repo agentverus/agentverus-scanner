@@ -192,13 +192,16 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 			// Check if this is a well-known installer or in a prerequisites section
 			const isKnownInstaller = KNOWN_INSTALLERS.test(trapMatch[0]);
 			const hasRawIp = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(trapMatch[0]);
+			const usesHttps = /https:\/\//.test(trapMatch[0]);
+			const hasKnownTld = /\.(com|org|io|dev|sh|rs|land|cloud|app|ai|so|net|co)\//.test(trapMatch[0]);
 			const preceding = content.slice(Math.max(0, trapMatch.index - 1000), trapMatch.index);
 			const headings = preceding.match(/^#{1,4}\s+.+$/gm);
 			const lastHeading = headings?.[headings.length - 1]?.toLowerCase() ?? "";
 			const isInSetupHeading = /\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading);
 			const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
 			const isInYamlInstall = /\b(?:install|command|compatibility|setup)\s*:/i.test(nearbyLines);
-			const isInSetupSection = !hasRawIp && (isInSetupHeading || isInYamlInstall);
+			// Only downgrade for setup sections if URL looks legitimate (HTTPS + known TLD, no raw IP)
+			const isInSetupSection = !hasRawIp && usesHttps && hasKnownTld && (isInSetupHeading || isInYamlInstall);
 
 			if (isKnownInstaller || isInSetupSection) {
 				// Downgrade to informational — legitimate setup instruction

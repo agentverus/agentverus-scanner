@@ -19,7 +19,7 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			/ignore\s+(all\s+)?previous\s+instructions/i,
 			/disregard\s+(all\s+)?(above|previous|prior)/i,
 			/new\s+system\s+prompt/i,
-			/you\s+are\s+now\s+(?:an?\s+)?(?:unrestricted|unfiltered|unlimited)/i,
+			/you\s+are\s+now\s+(?:an?\s+|in\s+)?(?:unrestricted|unfiltered|unlimited)/i,
 			/forget\s+everything\s+(?:you(?:'ve)?|about|that|i['']?ve)\b/i,
 			/override\s+(?:your|all)\s+(?:instructions|rules|guidelines)/i,
 			/you\s+(?:have\s+been|are)\s+freed/i,
@@ -317,7 +317,7 @@ function isInThreatListingContext(content: string, matchIndex: number): boolean 
 	// Check preceding lines for context clues
 	const precedingText = content.slice(Math.max(0, lineStart - 500), lineStart);
 	const precedingLines = precedingText.split("\n").slice(-5).join(" ");
-	if (/\b(?:detect(?:s|ion|ed)?|scan(?:s|ning)?|flag(?:s|ged)?|block(?:s|ed)?|watch\s+for|monitor(?:s|ing)?|reject(?:s|ed)?|filter(?:s|ed)?|high-confidence\s+injection|attack\s+pattern|common\s+(?:attack|pattern)|malicious\s+(?:pattern|user|content)|example\s+indicator|dangerous\s+command|threat\s+pattern|what\s+it\s+detect|prompt(?:s|ed)?\s+that\s+attempt)\b/i.test(precedingLines)) {
+	if (/\b(?:detect(?:s|ion|ed)?|scan(?:s|ning)?|flag(?:s|ged)?|block(?:s|ed)?|watch\s+for|monitor(?:s|ing)?|reject(?:s|ed)?|filter(?:s|ed)?|high-confidence\s+injection|attack\s+(?:pattern|vector|coverage|surface)|common\s+(?:attack|pattern)|malicious\s+(?:pattern|user|content)|example\s+indicator|dangerous\s+command|threat\s+(?:pattern|categor)|what\s+(?:it|we)\s+detect|prompt(?:s|ed)?\s+that\s+attempt|direct\s+injection|injection\s+(?:type|categor|pattern|vector))\b/i.test(precedingLines)) {
 		return true;
 	}
 
@@ -353,7 +353,8 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				);
 
 				// Skip findings fully neutralized by context (safety sections, negation)
-				if (severityMultiplier === 0) break;
+				// Use continue, not break — a later match of the same pattern may be real
+				if (severityMultiplier === 0) continue;
 
 				// Security/defense skills listing threat patterns they detect: suppress or heavily reduce
 				if (isDefenseSkill && isInThreatListingContext(content, match.index)) {
@@ -368,7 +369,7 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 					reason = "inside threat-listing context";
 				}
 
-				if (severityMultiplier === 0) break;
+				if (severityMultiplier === 0) continue;
 
 				const effectiveDeduction = Math.round(pattern.deduction * severityMultiplier);
 				const effectiveSeverity =

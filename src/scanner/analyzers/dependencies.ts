@@ -115,8 +115,15 @@ function isLegitimateInstaller(content: string, matchIndex: number, matchText: s
 	// If the URL contains a raw IP address, it's never legitimate
 	if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(matchText)) return false;
 
+	// If URL is a known installer domain, it's always legitimate regardless of section
+	// For unknown URLs, only downgrade if in a setup section AND the URL uses HTTPS
+	// (raw IPs and HTTP are never legitimate even in setup sections)
+	const usesHttps = /https:\/\//.test(matchText);
+	const hasKnownTld = /\.(com|org|io|dev|sh|rs|land|cloud|app|ai|so|net|co)\//.test(matchText);
+
+	if (!usesHttps || !hasKnownTld) return false;
+
 	// Check if the match is inside a prerequisites/setup/installation section
-	// by looking at nearby headings
 	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
 	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
 	if (headings && headings.length > 0) {
@@ -254,32 +261,38 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				break;
 			}
 
-			// Skip matches inside code blocks (educational examples)
-			const inCodeBlock = isInsideCodeBlock(matchIndex, ctx);
-			if (inCodeBlock && isInsideSafetySection(matchIndex, ctx)) {
-				break;
-			}
-
-			// Reduce severity for known legitimate installers or prerequisite sections
+			// Reduce severity for known legitimate installers
 			const isLegit = isLegitimateInstaller(content, matchIndex, match[0]);
-			// Also reduce if inside a code block (likely a setup example)
-			const isEducational = inCodeBlock;
-			// Check if this is a description of threats to detect (security skill)
+			// Check if this is a description of threats to detect (security skill context)
+			const inCodeBlock = isInsideCodeBlock(matchIndex, ctx);
 			const isInThreatDesc = (() => {
+				// Check the line itself — is it in a table row or list describing threats?
+				let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+				if (lineStart < 0) lineStart = 0;
+				let lineEnd = content.indexOf("\n", matchIndex);
+				if (lineEnd < 0) lineEnd = content.length;
+				const fullLine = content.slice(lineStart, lineEnd);
+
+				// Table rows describing patterns/risks
+				if (/^\s*\|.*\|/.test(fullLine) && /\b(?:critical|high|risk|dangerous|pattern|severity|pipe.to.shell)\b/i.test(fullLine)) return true;
+
+				// Check preceding text for scan/detect/threat context
 				const precText = content.slice(Math.max(0, matchIndex - 500), matchIndex);
-				return /\b(?:scan|detect|flag|block|dangerous|malicious|threat|attack|what\s+it\s+detect|why\s+(?:it['']?s|this\s+(?:is|exists)))\b/i.test(precText);
+				return /\b(?:scan\b.*\b(?:for|skill)|detect|flag|block|dangerous\s+(?:instruction|pattern|command)|malicious|malware|threat\s+pattern|what\s+(?:it|we)\s+detect|why\s+(?:it['']?s|this\s+(?:is|exists))\s+dangerous|findings?:|pattern.*risk|catch\s+them)\b/i.test(precText);
 			})();
 
-			if (isLegit || isEducational || isInThreatDesc) {
-				// Downgrade to informational — not a real threat
+			if (isLegit || isInThreatDesc) {
+				// Downgrade to informational — known installer or threat documentation
 				findings.push({
 					id: `DEP-DL-EXEC-${findings.length + 1}`,
 					category: "dependencies",
 					severity: "low",
-					title: "Download-and-execute pattern detected (in setup/prerequisites)",
+					title: isLegit
+						? "Download-and-execute pattern detected (known installer)"
+						: "Download-and-execute pattern detected (in threat documentation)",
 					description: isLegit
 						? "The skill references a well-known installer script in its setup instructions."
-						: "The skill contains a download-and-execute pattern inside a code block or setup section.",
+						: "The skill describes a download-and-execute pattern as part of threat documentation.",
 					evidence: match[0].slice(0, 200),
 					lineNumber,
 					deduction: 0,

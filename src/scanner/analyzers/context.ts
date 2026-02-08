@@ -58,9 +58,10 @@ export function buildContentContext(content: string): ContentContext {
 		codeBlocks.push({ start: match.index, end: match.index + match[0].length });
 	}
 
-	// Find safety boundary sections
+	// Find safety boundary sections — must be subsection headings (##+), not the title
+	// Match only headings that are clearly about safety constraints/limitations
 	const safetyHeadingRegex =
-		/^#{1,4}\s+(?:safety\s+boundar|limitation|restriction|constraint|prohibited|forbidden|do\s+not|don'?t|must\s+not|will\s+not|cannot|never|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not)/gim;
+		/^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not)/gim;
 	while ((match = safetyHeadingRegex.exec(content)) !== null) {
 		const sectionStart = match.index;
 		// Find the end of this section (next heading of same or higher level, or EOF)
