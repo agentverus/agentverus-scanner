@@ -13,8 +13,48 @@ const TRUSTED_DOMAINS = [
 	/^docs\.python\.org/,
 	/^developer\.mozilla\.org/,
 	/^learn\.microsoft\.com/,
-	/^cloud\.google\.com\/docs/,
+	/^cloud\.google\.com/,
 	/^stackoverflow\.com/,
+	/^(?:www\.)?google\.com/,
+	/^developers\.google\.com/,
+	/^support\.google\.com/,
+	/^(?:[\w-]+\.)?microsoft\.com/,
+	/^(?:[\w-]+\.)?amazon\.com/,
+	/^(?:[\w-]+\.)?aws\.amazon\.com/,
+	/^(?:[\w-]+\.)?googleapis\.com/,
+	/^(?:[\w-]+\.)?linkedin\.com/,
+	/^(?:[\w-]+\.)?twitter\.com/,
+	/^(?:[\w-]+\.)?x\.com/,
+	/^(?:[\w-]+\.)?openai\.com/,
+	/^(?:[\w-]+\.)?anthropic\.com/,
+	/^(?:[\w-]+\.)?supabase\.co/,
+	/^(?:[\w-]+\.)?vercel\.app/,
+	/^(?:[\w-]+\.)?netlify\.app/,
+	/^(?:[\w-]+\.)?heroku\.com/,
+	/^(?:[\w-]+\.)?stripe\.com/,
+	/^(?:[\w-]+\.)?slack\.com/,
+	/^(?:[\w-]+\.)?discord\.com/,
+	/^(?:[\w-]+\.)?notion\.so/,
+	/^(?:[\w-]+\.)?gitlab\.com/,
+	/^(?:[\w-]+\.)?bitbucket\.org/,
+	/^(?:[\w-]+\.)?wikipedia\.org/,
+	/^(?:[\w-]+\.)?w3\.org/,
+	/^(?:[\w-]+\.)?json\.org/,
+	/^(?:[\w-]+\.)?yaml\.org/,
+	/^(?:[\w-]+\.)?mozilla\.org/,
+	/^(?:[\w-]+\.)?apache\.org/,
+	/^(?:[\w-]+\.)?readthedocs\.io/,
+	/^(?:[\w-]+\.)?mintlify\.app/,
+	/^(?:[\w-]+\.)?gitbook\.io/,
+	/^(?:[\w-]+\.)?medium\.com/,
+	/^(?:[\w-]+\.)?npm\.pkg\.github\.com/,
+	/^(?:[\w-]+\.)?docker\.com/,
+	/^(?:[\w-]+\.)?hub\.docker\.com/,
+	/^crates\.io/,
+	/^rubygems\.org/,
+	/^pkg\.go\.dev/,
+	/^example\.com/,
+	/^example\.org/,
 ] as const;
 
 /** Raw content domains — medium risk */
@@ -30,6 +70,9 @@ const RAW_CONTENT_DOMAINS = [
 
 /** IP address pattern */
 const IP_ADDRESS_REGEX = /^(?:\d{1,3}\.){3}\d{1,3}/;
+
+/** Private/localhost IP patterns — not suspicious */
+const PRIVATE_IP_REGEX = /^(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|0\.0\.0\.0|localhost)/;
 
 /** Download-and-execute patterns */
 const DOWNLOAD_EXECUTE_PATTERNS = [
@@ -64,6 +107,10 @@ function classifyUrl(url: string): {
 	const hostname = getHostname(url);
 
 	if (IP_ADDRESS_REGEX.test(hostname)) {
+		// Localhost and private IPs are not suspicious — they're local services
+		if (PRIVATE_IP_REGEX.test(hostname)) {
+			return { risk: "trusted", deduction: 0 };
+		}
 		return { risk: "ip", deduction: 20 };
 	}
 
@@ -90,12 +137,30 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 	let score = 100;
 	const content = skill.rawContent;
 
-	// Classify each URL
+	// Classify each URL, cap cumulative deduction for low-risk unknowns
+	let unknownUrlDeductionTotal = 0;
+	const UNKNOWN_URL_DEDUCTION_CAP = 15; // max total points lost from unknown (non-dangerous) URLs
+
 	for (const url of skill.urls) {
 		const classification = classifyUrl(url);
 
 		if (classification.deduction > 0) {
-			score = Math.max(0, score - classification.deduction);
+			// For low-risk unknown URLs, cap total deduction to avoid penalizing
+			// skills that document many legitimate API endpoints
+			let effectiveDeduction = classification.deduction;
+			if (classification.risk === "unknown") {
+				if (unknownUrlDeductionTotal >= UNKNOWN_URL_DEDUCTION_CAP) {
+					effectiveDeduction = 0;
+				} else {
+					effectiveDeduction = Math.min(
+						classification.deduction,
+						UNKNOWN_URL_DEDUCTION_CAP - unknownUrlDeductionTotal,
+					);
+				}
+				unknownUrlDeductionTotal += classification.deduction;
+			}
+
+			score = Math.max(0, score - effectiveDeduction);
 
 			const severity =
 				classification.risk === "ip" || classification.risk === "data"
@@ -111,7 +176,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : "Unknown external"} reference`,
 				description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : "an unknown external domain"} which is classified as ${severity} risk.`,
 				evidence: url.slice(0, 200),
-				deduction: classification.deduction,
+				deduction: effectiveDeduction,
 				recommendation:
 					classification.risk === "ip"
 						? "Replace direct IP addresses with proper domain names. IP-based URLs bypass DNS-based security controls."

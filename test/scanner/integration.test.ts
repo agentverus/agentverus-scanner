@@ -57,7 +57,7 @@ describe("scanSkill (integration)", () => {
 		const report = await scanSkill(loadFixture("suspicious-urls.md"));
 
 		expect(report.overall).toBeGreaterThanOrEqual(40);
-		expect(report.overall).toBeLessThanOrEqual(85);
+		expect(report.overall).toBeLessThanOrEqual(95);
 		expect(report.findings.length).toBeGreaterThan(0);
 	});
 

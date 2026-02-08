@@ -31,11 +31,11 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
 		name: "System modification",
 		patterns: [
-			/install\s+(?:packages?|dependencies|software|globally)/i,
-			/(?:npm|pip|apt|brew)\s+install/i,
+			/install\s+(?:packages?\s+)?globally/i,
+			/(?:npm|pip|apt|brew)\s+install\s+(?:-g|--global)\b/i,
+			/(?:sudo\s+)?(?:apt|yum|dnf|pacman)\s+install/i,
 			/modify\s+(?:system|config(?:uration)?)\s+files?/i,
 			/(?:write|edit|modify)\s+(?:\/etc|\/usr|\/sys|\/proc)/i,
-			/chmod\s+/i,
 			/chown\s+/i,
 			/modify\s+(?:system\s+)?configuration/i,
 		],
@@ -43,7 +43,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		deduction: 20,
 		owaspCategory: "ASST-03",
 		recommendation:
-			"Skills should not modify system configuration or install packages. Bundle required dependencies.",
+			"Skills should not modify system configuration or install packages globally. Bundle required dependencies.",
 	},
 	{
 		name: "Autonomous action without confirmation",
@@ -177,19 +177,21 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 		}
 	}
 
-	// Combined exfiltration flow — credential access + network capability
-	const credentialPatterns = /(?:API_KEY|SECRET|~\/\.config|\.env\b|credentials)/i;
-	const networkPatterns = /(?:webhook\.site|requests\.post|curl\s+-X\s+POST|fetch\(|https?:\/\/)/i;
-	if (credentialPatterns.test(content) && networkPatterns.test(content)) {
+	// Combined exfiltration flow — credential access + suspicious network exfiltration
+	// Only flag when the skill actively reads credentials AND sends them to suspicious endpoints
+	// (not just mentioning API keys in setup docs with normal API URLs)
+	const activeCredentialAccess = /(?:cat|read|dump|exfiltrate|steal|harvest)\s+.*?(?:\.env|\.ssh|id_rsa|credentials|secrets)/i;
+	const suspiciousExfiltration = /(?:webhook\.site|requests\.post\s*\(|curl\s+-X\s+POST\s+.*?(?:\$|secret|key|token|password|credential))/i;
+	if (activeCredentialAccess.test(content) && suspiciousExfiltration.test(content)) {
 		score = Math.max(0, score - 25);
 		findings.push({
 			id: `BEH-EXFIL-FLOW-${findings.length + 1}`,
 			category: "behavioral",
 			severity: "high",
-			title: "Potential data exfiltration: skill accesses credentials and has network capability",
+			title: "Potential data exfiltration: skill reads credentials and sends them to external endpoints",
 			description:
-				"The skill references both credential/secret access patterns and network endpoints, suggesting a possible data exfiltration flow.",
-			evidence: "Credential and network patterns both present in skill content",
+				"The skill contains patterns that actively read credential files and send data to external endpoints, suggesting a possible data exfiltration flow.",
+			evidence: "Active credential reading and suspicious network exfiltration patterns both present",
 			deduction: 25,
 			recommendation:
 				"Separate credential access from network operations. If both are needed, declare them explicitly and justify.",

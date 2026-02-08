@@ -34,11 +34,10 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Data exfiltration instruction",
 		patterns: [
-			/(?:send|post|transmit|upload|fetch|forward)\s+(?:the\s+)?(?:data|content|file|information|keys?|secrets?|credentials?|tokens?)\s+(?:to|at|via)\s+/i,
-			/(?:POST|PUT|PATCH)\s+(?:the\s+)?(?:.*?\s+)?(?:to\s+)?https?:\/\//i,
-			/curl\s+.*?-d\s+/i,
+			/(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+)?(?:data|content|file|information|keys?|secrets?|credentials?|tokens?)\s+(?:to|at|via)\s+https?:\/\//i,
+			/curl\s+.*?-d\s+.*?https?:\/\//i,
 			/wget\s+.*?--post-data/i,
-			/\.(?:env|ssh|credentials|secrets)/i,
+			/cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
 		],
 		severity: "critical",
 		deduction: 40,
@@ -49,11 +48,11 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Credential access",
 		patterns: [
-			/(?:read|access|get|cat|echo)\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)/i,
-			/(?:API[_-]?KEY|SECRET[_-]?KEY|ACCESS[_-]?TOKEN|PRIVATE[_-]?KEY|PASSWORD)/i,
-			/~\/\.ssh/i,
-			/credentials?\s*(?:file|store|manager)/i,
-			/(?:read|dump|export)\s+.*?environment\s+variables/i,
+			/(?:read|access|get|cat|echo)\s+.*?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
+			/(?:read|dump|exfiltrate|steal|harvest)\s+.*?(?:API[_-]?KEY|SECRET[_-]?KEY|ACCESS[_-]?TOKEN|PRIVATE[_-]?KEY|PASSWORD)/i,
+			/~\/\.ssh\/(?:id_rsa|id_ed25519|authorized_keys|config)\b/i,
+			/credentials?\s*(?:file|store|manager|dump)/i,
+			/(?:dump|exfiltrate|steal)\s+.*?environment\s+variables/i,
 		],
 		severity: "high",
 		deduction: 25,
