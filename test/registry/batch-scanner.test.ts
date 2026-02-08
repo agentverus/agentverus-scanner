@@ -1,4 +1,4 @@
-import { readFile, rm, stat } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -12,6 +12,30 @@ function tmpDir(): string {
 	return dir;
 }
 
+const SAMPLE_SKILL_MD = `# Sample Skill
+
+This is a test skill used by the batch scanner tests.
+
+## Tools
+- none
+
+`;
+
+function makeDataSkillUrl(slug: string, markdown: string): string {
+	// Note: query params are included in the fetched body for data: URLs in Node.
+	// That is OK for these tests; we only need a stable, offline source.
+	const encoded = encodeURIComponent(markdown);
+	return `data:text/markdown,${encoded}?slug=${encodeURIComponent(slug)}`;
+}
+
+async function writeTestUrlFile(filePath: string, count: number): Promise<void> {
+	const urls: string[] = [];
+	for (let i = 1; i <= count; i += 1) {
+		urls.push(makeDataSkillUrl(`skill-${i}`, SAMPLE_SKILL_MD));
+	}
+	await writeFile(filePath, urls.join("\n") + "\n", "utf-8");
+}
+
 afterEach(async () => {
 	for (const dir of tmpDirs) {
 		await rm(dir, { recursive: true, force: true }).catch(() => {});
@@ -22,10 +46,12 @@ afterEach(async () => {
 describe("batchScanRegistry", () => {
 	it("scans skills from a URL file and produces output files", async () => {
 		const outDir = tmpDir();
+		await mkdir(outDir, { recursive: true });
+		const urlFile = path.join(outDir, "skill-urls.txt");
+		await writeTestUrlFile(urlFile, 10);
 
-		// Use the real URL file but limit to 3 skills
 		const summary = await batchScanRegistry({
-			urlFile: "data/skill-urls.txt",
+			urlFile,
 			outDir,
 			limit: 3,
 			concurrency: 3,
@@ -74,10 +100,14 @@ describe("batchScanRegistry", () => {
 
 	it("reports progress and errors via callbacks", async () => {
 		const outDir = tmpDir();
+		await mkdir(outDir, { recursive: true });
+		const urlFile = path.join(outDir, "skill-urls.txt");
+		await writeTestUrlFile(urlFile, 10);
+
 		const progressCalls: { done: number; slug: string }[] = [];
 
 		await batchScanRegistry({
-			urlFile: "data/skill-urls.txt",
+			urlFile,
 			outDir,
 			limit: 2,
 			concurrency: 2,
@@ -96,9 +126,12 @@ describe("batchScanRegistry", () => {
 
 	it("computes correct badge distribution", async () => {
 		const outDir = tmpDir();
+		await mkdir(outDir, { recursive: true });
+		const urlFile = path.join(outDir, "skill-urls.txt");
+		await writeTestUrlFile(urlFile, 10);
 
 		const summary = await batchScanRegistry({
-			urlFile: "data/skill-urls.txt",
+			urlFile,
 			outDir,
 			limit: 5,
 			concurrency: 5,

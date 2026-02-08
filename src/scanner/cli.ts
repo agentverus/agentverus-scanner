@@ -204,7 +204,7 @@ Security and trust analysis for AI agent skills.
 
 ${COLORS.bold}USAGE${COLORS.reset}
   agentverus scan <target...> [options]
-  agentverus check <slug...> [--json]
+  agentverus check <source...> [options]
   agentverus registry scan [options]
   agentverus registry report [options]
   agentverus registry site [options]
@@ -212,7 +212,7 @@ ${COLORS.bold}USAGE${COLORS.reset}
 
 ${COLORS.bold}COMMANDS${COLORS.reset}
   scan <target...>     Scan a skill file, URL, or directory
-  check <slug...>      Check a ClawHub skill by slug (downloads and scans)
+  check <source...>    Universal pre-install gate for skills from ClawHub, GitHub, skills.sh, URLs, or local files
   registry scan        Batch scan all skills from the registry URL list
   registry report      Generate markdown analysis report from scan results
   registry site        Generate static HTML dashboard from scan results
@@ -229,12 +229,21 @@ ${COLORS.bold}SCAN OPTIONS${COLORS.reset}
   --help, -h       Show this help
   --version, -v    Show version
 
+${COLORS.bold}CHECK OPTIONS${COLORS.reset}
+  --json           Output JSON instead of formatted report (cannot combine with --install)
+  --install        Prompt to install via: npx skills add <source>
+  --yes            Skip confirmation prompts (assume yes)
+
 ${COLORS.bold}EXAMPLES${COLORS.reset}
   agentverus scan ./SKILL.md
   agentverus scan . --sarif
   agentverus scan https://raw.githubusercontent.com/user/repo/main/SKILL.md
   agentverus check web-search
-  agentverus check git-commit docker-build --json
+  agentverus check web-search --install
+  agentverus check vercel-labs/agent-skills
+  agentverus check vercel-labs/agent-skills/react-best-practices --install
+  agentverus check https://skills.sh/vercel-labs/agent-skills/react-best-practices
+  agentverus check ./SKILL.md
   agentverus registry scan --concurrency 50 --limit 100
   agentverus registry report
   agentverus registry site --title "ClawHub Security Audit"

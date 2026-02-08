@@ -184,6 +184,49 @@ async function probeSkillUrl(
 	return null;
 }
 
+export interface ResolveSkillsShUrlOptions {
+	/** Probe timeout in ms */
+	readonly timeout?: number;
+}
+
+/**
+ * Resolve a single skills.sh URL to a raw GitHub SKILL.md URL.
+ *
+ * Example:
+ *   https://skills.sh/owner/repo/skill-slug
+ */
+export async function resolveSkillsShUrl(
+	skillsShUrl: string,
+	opts?: ResolveSkillsShUrlOptions,
+): Promise<string> {
+	let parsed: URL;
+	try {
+		parsed = new URL(skillsShUrl);
+	} catch {
+		throw new Error(`Invalid skills.sh URL: ${skillsShUrl}`);
+	}
+
+	if (parsed.hostname !== "skills.sh") {
+		throw new Error(`Not a skills.sh URL: ${skillsShUrl}`);
+	}
+
+	const parts = parsed.pathname.split("/").filter(Boolean);
+	const owner = parts[0];
+	const repo = parts[1];
+	const slug = parts[2];
+
+	if (!owner || !repo || !slug) {
+		throw new Error(`Invalid skills.sh URL (expected /owner/repo/skill): ${skillsShUrl}`);
+	}
+
+	const timeout = opts?.timeout ?? 10_000;
+	const rawUrl = await probeSkillUrl(owner, repo, slug, timeout);
+	if (!rawUrl) {
+		throw new Error(`Could not resolve skills.sh URL to raw SKILL.md: ${skillsShUrl}`);
+	}
+	return rawUrl;
+}
+
 /**
  * Resolve all skills.sh entries to raw GitHub URLs.
  *

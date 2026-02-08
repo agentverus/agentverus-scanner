@@ -3,14 +3,20 @@
  * Registry CLI commands: check, registry scan, registry report, registry site
  */
 
+import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
+import { createInterface } from "node:readline/promises";
+
 import { scanSkill } from "../scanner/index.js";
-import { fetchSkillContentFromUrl } from "../scanner/source.js";
-import type { TrustReport } from "../scanner/types.js";
+import { fetchSkillContentFromUrl, normalizeSkillUrl } from "../scanner/source.js";
+import { SCANNER_VERSION } from "../scanner/types.js";
+import type { ScanOptions, TrustReport } from "../scanner/types.js";
 import { batchScanRegistry } from "./batch-scanner.js";
 import { generateAnalysisReport } from "./report-generator.js";
 import { generateSite } from "./site-generator.js";
 import {
 	fetchSkillsShSitemap,
+	resolveSkillsShUrl,
 	resolveSkillsShUrls,
 	writeResolvedUrls,
 } from "./skillssh-resolver.js";
@@ -115,76 +121,537 @@ function printCheckReport(slug: string, report: TrustReport): void {
 }
 
 /**
- * Handle `agentverus check <slug>` command.
- * Fetches a skill from ClawHub by slug and scans it.
+ * Handle `agentverus check <source...>` command.
+ *
+ * Supported inputs:
+ * - ClawHub slug:                   web-search
+ * - GitHub shorthand:               owner/repo
+ * - GitHub shorthand (multi-skill): owner/repo/skill-name
+ * - GitHub URL:                     https://github.com/owner/repo (and blob/tree URLs)
+ * - skills.sh URL:                  https://skills.sh/owner/repo/skill
+ * - Local file:                     ./path/to/SKILL.md
  */
-export async function handleCheck(args: string[]): Promise<number> {
-	const slugs: string[] = [];
-	let jsonFlag = false;
 
-	for (let i = 0; i < args.length; i++) {
-		const arg = args[i] as string;
-		if (arg === "--json") { jsonFlag = true; continue; }
-		if (arg.startsWith("-")) {
-			console.error(`Unknown option: ${arg}`);
-			return 1;
-		}
-		slugs.push(arg);
+const DEFAULT_CHECK_FETCH_OPTIONS: ScanOptions = {
+	timeout: 30_000,
+	retries: 2,
+	retryDelayMs: 750,
+};
+
+const CLAWHUB_CHECK_FETCH_OPTIONS: ScanOptions = {
+	timeout: 45_000,
+	retries: 2,
+	retryDelayMs: 750,
+};
+
+const GITHUB_API_HEADERS: Readonly<Record<string, string>> = {
+	Accept: "application/vnd.github+json",
+	"User-Agent": `AgentVerusScanner/${SCANNER_VERSION}`,
+};
+
+const GITHUB_SEGMENT_RE = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/;
+
+interface CheckedTarget {
+	readonly source: string;
+	readonly target: string;
+	readonly report: TrustReport;
+}
+
+interface CheckFailure {
+	readonly source: string;
+	readonly target: string;
+	readonly error: string;
+}
+
+function getCheckUsageText(): string {
+	return `
+${C.bold}USAGE${C.reset}
+  agentverus check <source...> [--json] [--install] [--yes]
+
+${C.bold}SOURCES${C.reset}
+  web-search                          ClawHub slug
+  owner/repo                          GitHub repo (single or multi-skill)
+  owner/repo/skill-name               Skill inside a multi-skill repo
+  https://github.com/owner/repo        GitHub URL (repo/blob/tree)
+  https://skills.sh/owner/repo/skill   skills.sh URL
+  ./path/to/SKILL.md                  Local file
+
+${C.bold}OPTIONS${C.reset}
+  --json      Output JSON instead of formatted report
+  --install   Prompt to run: npx skills add <source>
+  --yes       Assume "yes" to prompts (non-interactive / CI)
+
+${C.bold}EXAMPLES${C.reset}
+  agentverus check web-search --install
+  agentverus check vercel-labs/agent-skills
+  agentverus check vercel-labs/agent-skills/react-best-practices --install
+  agentverus check https://github.com/vercel-labs/agent-skills
+  agentverus check https://skills.sh/vercel-labs/agent-skills/react-best-practices
+  agentverus check ./SKILL.md
+`;
+}
+
+function isUrlLike(input: string): boolean {
+	return input.startsWith("http://") || input.startsWith("https://");
+}
+
+function looksLikeLocalPath(input: string): boolean {
+	if (input.startsWith("./") || input.startsWith("../") || input.startsWith("/")) return true;
+	if (input.toLowerCase().endsWith(".md")) return true;
+	// Windows drive paths: C:\path\to\SKILL.md
+	if (/^[A-Za-z]:\\/.test(input)) return true;
+	return false;
+}
+
+function parseGithubShorthand(
+	input: string,
+): { readonly owner: string; readonly repo: string; readonly skill: string | null } | null {
+	if (isUrlLike(input)) return null;
+	if (looksLikeLocalPath(input)) return null;
+
+	const rawParts = input.split("/").filter(Boolean);
+	if (rawParts.length !== 2 && rawParts.length !== 3) return null;
+
+	const owner = rawParts[0];
+	const repoRaw = rawParts[1];
+	const skill = rawParts[2] ?? null;
+	if (!owner || !repoRaw) return null;
+
+	const repo = repoRaw.replace(/\.git$/i, "");
+
+	if (!GITHUB_SEGMENT_RE.test(owner)) return null;
+	if (!GITHUB_SEGMENT_RE.test(repo)) return null;
+	if (skill && !GITHUB_SEGMENT_RE.test(skill)) return null;
+
+	return { owner, repo, skill };
+}
+
+function isNotFoundError(err: unknown): boolean {
+	if (!(err instanceof Error)) return false;
+	return /: 404\b/.test(err.message);
+}
+
+function isPassingBadge(badge: string): boolean {
+	return badge === "certified" || badge === "conditional";
+}
+
+function encodeGithubPath(path: string): string {
+	return path
+		.split("/")
+		.map((p) => encodeURIComponent(p))
+		.join("/");
+}
+
+function labelFromGithubPath(owner: string, repo: string, path: string): string {
+	const repoId = `${owner}/${repo}`;
+	const parts = path.split("/").filter(Boolean);
+
+	if (parts.length === 1) return repoId;
+
+	const first = parts[0]?.toLowerCase();
+	if (first === "skills" && parts.length >= 3) {
+		const slug = parts[1];
+		if (slug) return `${repoId}/${slug}`;
 	}
 
-	if (slugs.length === 0) {
-		console.error(`${C.red}Error: No skill slug provided${C.reset}`);
-		console.error(`\nUsage: agentverus check <slug> [--json]`);
-		console.error(`\nExamples:`);
-		console.error(`  agentverus check web-search`);
-		console.error(`  agentverus check git-commit --json`);
+	const dir = parts[parts.length - 2];
+	if (dir) return `${repoId}/${dir}`;
+
+	return `${repoId}#${path}`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+async function listGithubSkillFiles(
+	owner: string,
+	repo: string,
+	branch: string,
+): Promise<readonly string[]> {
+	const url = `https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
+
+	const response = await fetch(url, {
+		headers: GITHUB_API_HEADERS,
+		signal: AbortSignal.timeout(30_000),
+	});
+
+	if (response.status === 404) return [];
+
+	if (!response.ok) {
+		throw new Error(
+			`Failed to list repository tree for ${owner}/${repo}@${branch}: ${response.status} ${response.statusText}`,
+		);
+	}
+
+	const data = (await response.json()) as unknown;
+	if (!isRecord(data)) {
+		throw new Error(`Unexpected GitHub API response for ${owner}/${repo}@${branch}`);
+	}
+
+	const tree = data.tree;
+	if (!Array.isArray(tree)) {
+		throw new Error(`Unexpected GitHub API response shape (missing tree) for ${owner}/${repo}@${branch}`);
+	}
+
+	const out: string[] = [];
+	for (const item of tree) {
+		if (!isRecord(item)) continue;
+		const type = item.type;
+		const path = item.path;
+		if (type !== "blob") continue;
+		if (typeof path !== "string") continue;
+		const base = (path.split("/").pop() ?? path).toLowerCase();
+		if (base === "skill.md" || base === "skills.md") out.push(path);
+	}
+
+	return [...new Set(out)].sort((a, b) => a.localeCompare(b));
+}
+
+async function scanSkillFromUrl(url: string, opts: ScanOptions): Promise<TrustReport> {
+	const { content } = await fetchSkillContentFromUrl(url, opts);
+	return scanSkill(content);
+}
+
+async function scanGithubRepo(
+	source: string,
+	owner: string,
+	repo: string,
+): Promise<{ readonly scanned: readonly CheckedTarget[]; readonly failures: readonly CheckFailure[] }> {
+	const repoId = `${owner}/${repo}`;
+
+	for (const branch of ["main", "master"] as const) {
+		const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/SKILL.md`;
+		try {
+			const report = await scanSkillFromUrl(url, DEFAULT_CHECK_FETCH_OPTIONS);
+			return {
+				scanned: [{ source, target: repoId, report }],
+				failures: [],
+			};
+		} catch (err) {
+			if (isNotFoundError(err)) continue;
+			throw err;
+		}
+	}
+
+	let lastListError: unknown;
+	for (const branch of ["main", "master"] as const) {
+		let paths: readonly string[] = [];
+		try {
+			paths = await listGithubSkillFiles(owner, repo, branch);
+		} catch (err) {
+			lastListError = err;
+			continue;
+		}
+
+		if (paths.length === 0) continue;
+
+		const scanned: CheckedTarget[] = [];
+		const failures: CheckFailure[] = [];
+
+		for (const path of paths) {
+			const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${encodeGithubPath(path)}`;
+			const target = labelFromGithubPath(owner, repo, path);
+			try {
+				const report = await scanSkillFromUrl(rawUrl, DEFAULT_CHECK_FETCH_OPTIONS);
+				scanned.push({ source, target, report });
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err);
+				failures.push({ source, target, error: message });
+			}
+		}
+
+		if (scanned.length === 0 && failures.length > 0) {
+			throw new Error(
+				`Failed to fetch any SKILL.md files from ${repoId} (${failures.length} failures)`,
+			);
+		}
+
+		return { scanned, failures };
+	}
+
+	if (lastListError) {
+		const message = lastListError instanceof Error ? lastListError.message : String(lastListError);
+		throw new Error(`Could not scan ${repoId}: ${message}`);
+	}
+
+	throw new Error(`Could not find SKILL.md in ${repoId} (tried main/master)`);
+}
+
+async function scanGithubRepoSkill(
+	source: string,
+	owner: string,
+	repo: string,
+	skill: string,
+): Promise<{ readonly scanned: readonly CheckedTarget[]; readonly failures: readonly CheckFailure[] }> {
+	const repoId = `${owner}/${repo}`;
+	const target = `${repoId}/${skill}`;
+
+	const candidates = [
+		`https://raw.githubusercontent.com/${owner}/${repo}/main/skills/${skill}/SKILL.md`,
+		`https://raw.githubusercontent.com/${owner}/${repo}/main/${skill}/SKILL.md`,
+		`https://raw.githubusercontent.com/${owner}/${repo}/master/skills/${skill}/SKILL.md`,
+		`https://raw.githubusercontent.com/${owner}/${repo}/master/${skill}/SKILL.md`,
+	] as const;
+
+	let lastError: unknown;
+
+	for (const url of candidates) {
+		try {
+			const report = await scanSkillFromUrl(url, DEFAULT_CHECK_FETCH_OPTIONS);
+			return {
+				scanned: [{ source, target, report }],
+				failures: [],
+			};
+		} catch (err) {
+			lastError = err;
+			if (isNotFoundError(err)) continue;
+			break;
+		}
+	}
+
+	const message = lastError instanceof Error ? lastError.message : String(lastError);
+	throw new Error(`Could not find SKILL.md for ${target}: ${message}`);
+}
+
+async function scanCheckSource(
+	source: string,
+): Promise<{ readonly scanned: readonly CheckedTarget[]; readonly failures: readonly CheckFailure[] }> {
+	const gh = parseGithubShorthand(source);
+	if (gh) {
+		if (gh.skill) return scanGithubRepoSkill(source, gh.owner, gh.repo, gh.skill);
+		return scanGithubRepo(source, gh.owner, gh.repo);
+	}
+
+	if (source.startsWith("https://github.com")) {
+		let parsed: URL;
+		try {
+			parsed = new URL(source);
+		} catch {
+			throw new Error(`Invalid URL: ${source}`);
+		}
+
+		const parts = parsed.pathname.split("/").filter(Boolean);
+		const owner = parts[0];
+		const repo = parts[1]?.replace(/\.git$/i, "");
+
+		if (parts.length === 2 && owner && repo) {
+			return scanGithubRepo(source, owner, repo);
+		}
+
+		const normalized = normalizeSkillUrl(source);
+		const report = await scanSkillFromUrl(normalized, DEFAULT_CHECK_FETCH_OPTIONS);
+		return { scanned: [{ source, target: source, report }], failures: [] };
+	}
+
+	if (source.startsWith("https://skills.sh")) {
+		const rawUrl = await resolveSkillsShUrl(source, { timeout: 10_000 });
+		const report = await scanSkillFromUrl(rawUrl, DEFAULT_CHECK_FETCH_OPTIONS);
+		return { scanned: [{ source, target: source, report }], failures: [] };
+	}
+
+	if (looksLikeLocalPath(source)) {
+		const content = await readFile(source, "utf-8");
+		const report = await scanSkill(content);
+		return { scanned: [{ source, target: source, report }], failures: [] };
+	}
+
+	if (isUrlLike(source)) {
+		// Any other URL (raw GitHub, ClawHub page URL, etc.)
+		const normalized = normalizeSkillUrl(source);
+		const report = await scanSkillFromUrl(normalized, DEFAULT_CHECK_FETCH_OPTIONS);
+		return { scanned: [{ source, target: source, report }], failures: [] };
+	}
+
+	// Default: treat as ClawHub slug (backward compatible)
+	const downloadUrl = `https://auth.clawdhub.com/api/v1/download?slug=${encodeURIComponent(source)}`;
+	const report = await scanSkillFromUrl(downloadUrl, CLAWHUB_CHECK_FETCH_OPTIONS);
+	return { scanned: [{ source, target: source, report }], failures: [] };
+}
+
+type ReadlineInterface = ReturnType<typeof createInterface>;
+
+async function promptYesNo(rl: ReadlineInterface, question: string): Promise<boolean> {
+	const answer = (await rl.question(question)).trim().toLowerCase();
+	return answer === "y" || answer === "yes";
+}
+
+async function runSkillsInstall(source: string): Promise<number> {
+	const cmd = process.platform === "win32" ? "npx.cmd" : "npx";
+
+	const child = spawn(cmd, ["skills", "add", source], {
+		stdio: "inherit",
+	});
+
+	return await new Promise<number>((resolve) => {
+		child.on("error", () => resolve(1));
+		child.on("exit", (code) => resolve(code ?? 1));
+	});
+}
+
+function clearProgressLine(): void {
+	process.stdout.write(`\r${" ".repeat(120)}\r`);
+}
+
+export async function handleCheck(args: string[]): Promise<number> {
+	const sources: string[] = [];
+	let jsonFlag = false;
+	let installFlag = false;
+	let yesFlag = false;
+
+	for (let i = 0; i < args.length; i += 1) {
+		const arg = args[i];
+		if (!arg) continue;
+
+		if (arg === "--json") {
+			jsonFlag = true;
+			continue;
+		}
+
+		if (arg === "--install") {
+			installFlag = true;
+			continue;
+		}
+
+		if (arg === "--yes" || arg === "-y") {
+			yesFlag = true;
+			continue;
+		}
+
+		if (arg === "--help" || arg === "-h") {
+			console.log(getCheckUsageText());
+			return 0;
+		}
+
+		if (arg.startsWith("-")) {
+			console.error(`Unknown option: ${arg}`);
+			console.error(getCheckUsageText());
+			return 1;
+		}
+
+		sources.push(arg);
+	}
+
+	if (sources.length === 0) {
+		console.error(`${C.red}Error: No skill source provided${C.reset}`);
+		console.error(getCheckUsageText());
 		return 1;
 	}
 
-	const results: { slug: string; report: TrustReport }[] = [];
-	const failures: { slug: string; error: string }[] = [];
+	if (jsonFlag && installFlag) {
+		console.error(`${C.red}Error: --install cannot be used with --json${C.reset}`);
+		return 1;
+	}
 
-	for (const slug of slugs) {
-		const url = `https://auth.clawdhub.com/api/v1/download?slug=${encodeURIComponent(slug)}`;
+	if (installFlag && !yesFlag && !process.stdin.isTTY) {
+		console.error(
+			`${C.red}Error: --install requires an interactive TTY. Use --yes for non-interactive mode.${C.reset}`,
+		);
+		return 1;
+	}
 
-		if (!jsonFlag) {
-			process.stdout.write(`${C.gray}Checking ${slug}...${C.reset}`);
-		}
+	const scannedAll: CheckedTarget[] = [];
+	const failuresAll: CheckFailure[] = [];
+	let installFailures = 0;
+
+	let rl: ReadlineInterface | null = null;
+	if (installFlag && !yesFlag) {
+		rl = createInterface({ input: process.stdin, output: process.stdout });
+	}
+
+	for (const source of sources) {
+		if (!jsonFlag) process.stdout.write(`${C.gray}Checking ${source}...${C.reset}`);
+
+		let scanned: readonly CheckedTarget[] = [];
+		let failures: readonly CheckFailure[] = [];
 
 		try {
-			const { content } = await fetchSkillContentFromUrl(url, {
-				timeout: 45_000,
-				retries: 2,
-				retryDelayMs: 750,
-			});
-			const report = await scanSkill(content);
-			results.push({ slug, report });
-
-			if (!jsonFlag) {
-				// Clear the "Checking..." line
-				process.stdout.write(`\r${" ".repeat(60)}\r`);
-				printCheckReport(slug, report);
-			}
+			const res = await scanCheckSource(source);
+			scanned = res.scanned;
+			failures = res.failures;
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
-			failures.push({ slug, error: message });
+			failures = [{ source, target: source, error: message }];
+		}
 
-			if (!jsonFlag) {
-				process.stdout.write(`\r${" ".repeat(60)}\r`);
-				console.error(`${C.red}✖ Failed to check ${slug}: ${message}${C.reset}\n`);
+		scannedAll.push(...scanned);
+		failuresAll.push(...failures);
+
+		if (!jsonFlag) {
+			clearProgressLine();
+
+			for (const item of scanned) {
+				printCheckReport(item.target, item.report);
+			}
+
+			for (const f of failures) {
+				console.error(`${C.red}✖ Failed to check ${f.target}: ${f.error}${C.reset}\n`);
+			}
+		}
+
+		if (installFlag) {
+			const hasReports = scanned.length > 0;
+			const pass = hasReports && failures.length === 0 && scanned.every((s) => isPassingBadge(s.report.badge));
+
+			let confirmed = yesFlag;
+			if (!confirmed) {
+				const promptRl = rl;
+				if (!promptRl) {
+					console.error(
+						`${C.red}Error: Cannot prompt for confirmation (non-interactive). Use --yes.${C.reset}`,
+					);
+					confirmed = false;
+				} else if (pass) {
+					confirmed = await promptYesNo(
+						promptRl,
+						`Install with \`npx skills add ${source}\`? [y/N] `,
+					);
+				} else {
+					console.log(
+						`${C.yellow}${C.bold}⚠ Security check did not pass (or was incomplete).${C.reset}`,
+					);
+					confirmed = await promptYesNo(
+						promptRl,
+						`Install anyway with \`npx skills add ${source}\`? [y/N] `,
+					);
+				}
+			}
+
+			if (confirmed) {
+				const code = await runSkillsInstall(source);
+				if (code !== 0) {
+					installFailures += 1;
+					console.error(`${C.red}✖ Install failed for ${source} (exit code ${code})${C.reset}`);
+				}
 			}
 		}
 	}
 
+	if (rl) rl.close();
+
 	if (jsonFlag) {
-		const output = slugs.length === 1
-			? (results[0]?.report ?? { error: failures[0]?.error })
-			: { results: results.map(r => ({ slug: r.slug, ...r.report })), failures };
+		const output =
+			sources.length === 1 && scannedAll.length === 1 && failuresAll.length === 0
+				? scannedAll[0]?.report
+				: sources.length === 1 && scannedAll.length === 0 && failuresAll.length === 1
+					? { error: failuresAll[0]?.error }
+					: {
+						results: scannedAll.map((r) => ({
+							source: r.source,
+							target: r.target,
+							...r.report,
+						})),
+						failures: failuresAll,
+					};
+
 		console.log(JSON.stringify(output, null, 2));
 	}
 
-	if (failures.length > 0) return 2;
-	return results.some(r => r.report.badge === "rejected" || r.report.badge === "suspicious") ? 1 : 0;
+	if (installFailures > 0) return 2;
+	if (failuresAll.length > 0) return 2;
+
+	const anyBad = scannedAll.some((r) => r.report.badge === "rejected" || r.report.badge === "suspicious");
+	return anyBad ? 1 : 0;
 }
 
 /**
@@ -437,14 +904,16 @@ export function printRegistryUsage(): void {
 ${C.bold}AgentVerus Registry Commands${C.reset}
 
 ${C.bold}COMMANDS${C.reset}
-  check <slug...>       Check a ClawHub skill by slug (downloads and scans)
+  check <source...>     Universal pre-install gate (ClawHub, GitHub, skills.sh, URLs, local files)
   registry scan          Batch scan all skills from a URL list
   registry skillssh      Fetch, resolve, and scan all skills from skills.sh
   registry report        Generate markdown analysis report from scan results
   registry site          Generate static HTML dashboard from scan results
 
 ${C.bold}CHECK OPTIONS${C.reset}
-  --json                 Output JSON instead of formatted report
+  --json                 Output JSON instead of formatted report (cannot combine with --install)
+  --install              Prompt to run: npx skills add <source>
+  --yes                  Skip confirmation prompts (assume yes)
 
 ${C.bold}REGISTRY SCAN OPTIONS${C.reset}
   --urls <path>          Path to skill-urls.txt (default: data/skill-urls.txt)
@@ -471,7 +940,11 @@ ${C.bold}REGISTRY SITE OPTIONS${C.reset}
 
 ${C.bold}EXAMPLES${C.reset}
   agentverus check web-search
-  agentverus check git-commit docker-build --json
+  agentverus check web-search --install
+  agentverus check vercel-labs/agent-skills
+  agentverus check vercel-labs/agent-skills/react-best-practices --install
+  agentverus check https://skills.sh/vercel-labs/agent-skills/react-best-practices
+  agentverus check ./SKILL.md
   agentverus registry scan --concurrency 50 --limit 100
   agentverus registry skillssh --concurrency 50
   agentverus registry skillssh --resolve-only
