@@ -3,10 +3,18 @@ import { analyzeContent } from "./analyzers/content.js";
 import { analyzeDependencies } from "./analyzers/dependencies.js";
 import { analyzeInjection } from "./analyzers/injection.js";
 import { analyzePermissions } from "./analyzers/permissions.js";
+import { analyzeSemantic, isSemanticAvailable } from "./analyzers/semantic.js";
 import { parseSkill } from "./parser.js";
 import { aggregateScores } from "./scoring.js";
 import { fetchSkillContentFromUrl } from "./source.js";
-import type { Category, CategoryScore, ScanMetadata, ScanOptions, TrustReport } from "./types.js";
+import type {
+	Category,
+	CategoryScore,
+	ScanMetadata,
+	ScanOptions,
+	SemanticAnalyzerOptions,
+	TrustReport,
+} from "./types.js";
 import { SCANNER_VERSION } from "./types.js";
 
 /**
@@ -35,10 +43,45 @@ function fallbackScore(category: Category, weight: number, error: unknown): Cate
 }
 
 /**
+ * Resolve semantic analyzer options from ScanOptions.
+ */
+function resolveSemanticOptions(
+	scanOptions?: ScanOptions,
+): SemanticAnalyzerOptions | undefined {
+	if (!scanOptions?.semantic) return undefined;
+	if (scanOptions.semantic === true) return {};
+	return scanOptions.semantic;
+}
+
+/**
+ * Merge semantic findings into the injection category score.
+ * Semantic findings are additive — they can lower the score but the weight stays the same.
+ */
+function mergeSemanticFindings(
+	injection: CategoryScore,
+	semantic: CategoryScore | null,
+): CategoryScore {
+	if (!semantic || semantic.findings.length === 0) return injection;
+
+	const mergedFindings = [...injection.findings, ...semantic.findings];
+	let mergedScore = injection.score;
+	for (const f of semantic.findings) {
+		mergedScore = Math.max(0, mergedScore - f.deduction);
+	}
+
+	return {
+		score: mergedScore,
+		weight: injection.weight,
+		findings: mergedFindings,
+		summary: `${injection.summary} ${semantic.summary}`,
+	};
+}
+
+/**
  * Scan a skill from raw content string.
  * Parses the skill, runs all analyzers in parallel, and aggregates results.
  */
-export async function scanSkill(content: string, _options?: ScanOptions): Promise<TrustReport> {
+export async function scanSkill(content: string, options?: ScanOptions): Promise<TrustReport> {
 	const startTime = Date.now();
 	const skill = parseSkill(content);
 
@@ -50,6 +93,16 @@ export async function scanSkill(content: string, _options?: ScanOptions): Promis
 		analyzeBehavioral(skill).catch((e) => fallbackScore("behavioral", 0.15, e)),
 		analyzeContent(skill).catch((e) => fallbackScore("content", 0.1, e)),
 	]);
+
+	// Run semantic analyzer if configured (doesn't block the main pipeline)
+	const semanticOpts = resolveSemanticOptions(options);
+	let semanticResult: CategoryScore | null = null;
+	if (semanticOpts || isSemanticAvailable()) {
+		semanticResult = await analyzeSemantic(skill, semanticOpts).catch(() => null);
+	}
+
+	// Merge semantic findings into the injection category
+	const mergedInjection = mergeSemanticFindings(injection, semanticResult);
 
 	const durationMs = Date.now() - startTime;
 
@@ -64,7 +117,7 @@ export async function scanSkill(content: string, _options?: ScanOptions): Promis
 
 	const categories: Record<Category, CategoryScore> = {
 		permissions,
-		injection,
+		injection: mergedInjection,
 		dependencies,
 		behavioral,
 		content: contentResult,
@@ -84,6 +137,7 @@ export async function scanSkillFromUrl(url: string, options?: ScanOptions): Prom
 
 export { parseSkill } from "./parser.js";
 export { aggregateScores } from "./scoring.js";
+export { analyzeSemantic, isSemanticAvailable } from "./analyzers/semantic.js";
 export type {
 	BadgeTier,
 	Category,
@@ -91,6 +145,7 @@ export type {
 	Finding,
 	ParsedSkill,
 	ScanOptions,
+	SemanticAnalyzerOptions,
 	Severity,
 	TrustReport,
 } from "./types.js";

@@ -1,4 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { buildContentContext, isInsideCodeBlock, isInsideSafetySection } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Trusted domain patterns */
@@ -188,14 +189,22 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 		}
 	}
 
-	// Check for download-and-execute patterns
+	// Check for download-and-execute patterns (context-aware)
+	const ctx = buildContentContext(content);
 	for (const pattern of DOWNLOAD_EXECUTE_PATTERNS) {
-		const match = content.match(pattern);
-		if (match) {
+		const globalPattern = new RegExp(pattern.source, `${pattern.flags.replace("g", "")}g`);
+		let match: RegExpExecArray | null;
+		while ((match = globalPattern.exec(content)) !== null) {
+			const matchIndex = match.index;
+			const lineNumber = content.slice(0, matchIndex).split("\n").length;
+
+			// Skip matches inside code blocks or safety sections (educational examples)
+			if (isInsideCodeBlock(matchIndex, ctx) || isInsideSafetySection(matchIndex, ctx)) {
+				break;
+			}
+
 			const deduction = 25;
 			score = Math.max(0, score - deduction);
-
-			const lineNumber = content.slice(0, content.indexOf(match[0])).split("\n").length;
 
 			findings.push({
 				id: `DEP-DL-EXEC-${findings.length + 1}`,
@@ -211,6 +220,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 					"Never download and execute external code. Bundle all required functionality within the skill.",
 				owaspCategory: "ASST-04",
 			});
+			break;
 		}
 	}
 

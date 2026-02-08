@@ -1,4 +1,5 @@
-import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
+import { adjustForContext, buildContentContext } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Behavioral risk patterns */
@@ -115,12 +116,20 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	},
 ] as const;
 
+/** Downgrade a severity level by one tier */
+function downgradeSeverity(severity: "high" | "medium" | "low"): Severity {
+	if (severity === "high") return "medium";
+	if (severity === "medium") return "low";
+	return "info";
+}
+
 /** Analyze behavioral risk profile */
 export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
 	let score = 100;
 	const content = skill.rawContent;
 	const lines = content.split("\n");
+	const ctx = buildContentContext(content);
 
 	for (const pattern of BEHAVIORAL_PATTERNS) {
 		for (const regex of pattern.patterns) {
@@ -131,16 +140,31 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 				const lineNumber = content.slice(0, match.index).split("\n").length;
 				const line = lines[lineNumber - 1] ?? "";
 
-				score = Math.max(0, score - pattern.deduction);
+				// Context-aware adjustment
+				const { severityMultiplier, reason } = adjustForContext(
+					match.index,
+					content,
+					ctx,
+				);
+
+				if (severityMultiplier === 0) break;
+
+				const effectiveDeduction = Math.round(pattern.deduction * severityMultiplier);
+				const effectiveSeverity =
+					severityMultiplier < 1.0
+						? downgradeSeverity(pattern.severity)
+						: pattern.severity;
+
+				score = Math.max(0, score - effectiveDeduction);
 				findings.push({
 					id: `BEH-${pattern.name.replace(/\s+/g, "-").toUpperCase()}-${findings.length + 1}`,
 					category: "behavioral",
-					severity: pattern.severity,
-					title: `${pattern.name} detected`,
+					severity: effectiveSeverity,
+					title: `${pattern.name} detected${reason ? ` (${reason})` : ""}`,
 					description: `Found ${pattern.name.toLowerCase()} pattern: "${match[0]}"`,
 					evidence: line.trim().slice(0, 200),
 					lineNumber,
-					deduction: pattern.deduction,
+					deduction: effectiveDeduction,
 					recommendation: pattern.recommendation,
 					owaspCategory: pattern.owaspCategory,
 				});
@@ -150,25 +174,31 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 	}
 
 	// Prerequisite trap detection — ClawHavoc pattern: curl|sh or download-and-execute
+	// Context-aware: skip matches inside code blocks or safety sections
 	const prerequisiteTrapPatterns = [
 		/curl\s+.*\|\s*(?:sh|bash|zsh)/i,
 		/curl\s+.*-[oO]\s+.*&&\s*(?:chmod|\.\/)/i,
 	];
 	for (const trapRegex of prerequisiteTrapPatterns) {
-		const trapMatch = content.match(trapRegex);
-		if (trapMatch) {
-			const lineNumber = content.slice(0, content.indexOf(trapMatch[0])).split("\n").length;
-			score = Math.max(0, score - 25);
+		const globalTrap = new RegExp(trapRegex.source, `${trapRegex.flags.replace("g", "")}g`);
+		let trapMatch: RegExpExecArray | null;
+		while ((trapMatch = globalTrap.exec(content)) !== null) {
+			const { severityMultiplier } = adjustForContext(trapMatch.index, content, ctx);
+			if (severityMultiplier === 0) break;
+
+			const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
+			const effectiveDeduction = Math.round(25 * severityMultiplier);
+			score = Math.max(0, score - effectiveDeduction);
 			findings.push({
 				id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
 				category: "behavioral",
-				severity: "high",
+				severity: severityMultiplier < 1.0 ? "medium" : "high",
 				title: "Suspicious install pattern: download and execute from remote URL",
 				description:
 					"The skill instructs users to download and execute code from a remote URL, a common supply-chain attack vector.",
 				evidence: trapMatch[0].slice(0, 200),
 				lineNumber,
-				deduction: 25,
+				deduction: effectiveDeduction,
 				recommendation:
 					"Remove curl-pipe-to-shell patterns. Provide dependencies through safe, verifiable channels.",
 				owaspCategory: "ASST-02",

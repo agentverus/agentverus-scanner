@@ -206,6 +206,7 @@ ${COLORS.bold}OPTIONS${COLORS.reset}
   --json           Output raw JSON report
   --report [path]  Generate markdown report (default: <name>-trust-report.md)
   --sarif [path]   Write SARIF 2.1.0 output (default: agentverus-scanner.sarif)
+  --semantic        Enable LLM-assisted semantic analysis (requires AGENTVERUS_LLM_API_KEY)
   --fail-on-severity <level>  Fail if findings at/above level exist (critical|high|medium|low|info|none)
   --timeout <ms>    URL fetch timeout in ms (default varies by source; set <=0 to disable)
   --retries <n>     URL fetch retries for transient failures (default: 2)
@@ -303,6 +304,7 @@ async function main(): Promise<void> {
 	let sarifFlag = false;
 	let sarifPath: string | undefined;
 	let failOnSeverity: FailOnSeverity | undefined;
+	let semanticFlag = false;
 	let timeout: number | undefined;
 	let retries: number | undefined;
 	let retryDelayMs: number | undefined;
@@ -335,6 +337,11 @@ async function main(): Promise<void> {
 				sarifPath = next;
 				i += 1;
 			}
+			continue;
+		}
+
+		if (arg === "--semantic") {
+			semanticFlag = true;
 			continue;
 		}
 
@@ -387,7 +394,12 @@ async function main(): Promise<void> {
 		process.exit(1);
 	}
 
-	const scanOptions = { timeout, retries, retryDelayMs };
+	const scanOptions = {
+		timeout,
+		retries,
+		retryDelayMs,
+		semantic: semanticFlag ? true : undefined,
+	} satisfies import("./types.js").ScanOptions;
 
 	if (!jsonFlag) {
 		if (expandedTargets.length === 1) {

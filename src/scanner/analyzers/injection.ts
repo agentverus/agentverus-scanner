@@ -1,4 +1,5 @@
-import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
+import { adjustForContext, buildContentContext } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Pattern definitions for injection detection */
@@ -260,12 +261,20 @@ function detectUnicodeObfuscation(content: string): Finding[] {
 	return findings;
 }
 
+/** Downgrade a severity level by one tier */
+function downgradeSeverity(severity: "critical" | "high" | "medium"): Severity {
+	if (severity === "critical") return "high";
+	if (severity === "high") return "medium";
+	return "low";
+}
+
 /** Analyze skill for instruction injection patterns */
 export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
 	let score = 100;
 	const content = skill.rawContent;
 	const lines = content.split("\n");
+	const ctx = buildContentContext(content);
 
 	// Check all regex patterns
 	for (const pattern of INJECTION_PATTERNS) {
@@ -277,16 +286,32 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				const lineNumber = content.slice(0, match.index).split("\n").length;
 				const line = lines[lineNumber - 1] ?? "";
 
-				score = Math.max(0, score - pattern.deduction);
+				// Context-aware adjustment
+				const { severityMultiplier, reason } = adjustForContext(
+					match.index,
+					content,
+					ctx,
+				);
+
+				// Skip findings fully neutralized by context (safety sections, negation)
+				if (severityMultiplier === 0) break;
+
+				const effectiveDeduction = Math.round(pattern.deduction * severityMultiplier);
+				const effectiveSeverity =
+					severityMultiplier < 1.0
+						? downgradeSeverity(pattern.severity)
+						: pattern.severity;
+
+				score = Math.max(0, score - effectiveDeduction);
 				findings.push({
 					id: `INJ-${pattern.name.replace(/\s+/g, "-").toUpperCase()}-${findings.length + 1}`,
 					category: "injection",
-					severity: pattern.severity,
-					title: `${pattern.name} detected`,
+					severity: effectiveSeverity,
+					title: `${pattern.name} detected${reason ? ` (${reason})` : ""}`,
 					description: `Found ${pattern.name.toLowerCase()} pattern: "${match[0]}"`,
 					evidence: line.trim().slice(0, 200),
 					lineNumber,
-					deduction: pattern.deduction,
+					deduction: effectiveDeduction,
 					recommendation: pattern.recommendation,
 					owaspCategory: pattern.owaspCategory,
 				});

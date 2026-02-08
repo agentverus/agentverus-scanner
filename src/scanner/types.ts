@@ -73,11 +73,25 @@ export interface TrustReport {
 	readonly metadata: ScanMetadata;
 }
 
+/** Options for the LLM-assisted semantic analyzer */
+export interface SemanticAnalyzerOptions {
+	/** OpenAI-compatible API base URL (default: https://api.openai.com/v1) */
+	readonly apiBase?: string;
+	/** API key (default: AGENTVERUS_LLM_API_KEY env var) */
+	readonly apiKey?: string;
+	/** Model to use (default: gpt-4o-mini) */
+	readonly model?: string;
+	/** Timeout in ms for the LLM call (default: 30000) */
+	readonly timeout?: number;
+}
+
 /** Options for running a scan */
 export interface ScanOptions {
 	readonly timeout?: number;
 	readonly retries?: number;
 	readonly retryDelayMs?: number;
+	/** Enable LLM-assisted semantic analysis. Pass true to use env defaults, or an options object. */
+	readonly semantic?: boolean | SemanticAnalyzerOptions;
 }
 
 /** ASST Taxonomy categories */

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Context-aware analysis** (`src/scanner/analyzers/context.ts`): New shared utility that all analyzers use to understand _where_ a pattern match occurs:
+  - **Code block detection**: Patterns inside fenced code blocks (` ``` `) or inline code spans are downgraded (severity reduced, deduction at 30%).
+  - **Safety section detection**: Patterns inside safety boundary sections (e.g., `## Safety Boundaries`, `## Limitations`) are fully neutralized (zero deduction) — these are positive declarations, not threats.
+  - **Negation detection**: Patterns preceded by "do not", "never", "must not", "should not", etc. on the same line are fully neutralized.
+- **LLM-assisted semantic analyzer** (`src/scanner/analyzers/semantic.ts`): Optional analyzer that uses an OpenAI-compatible API to detect threats regex patterns miss:
+  - Catches rephrased jailbreaks, indirect multi-step exfiltration, and subtle manipulation.
+  - Activated via `--semantic` CLI flag or `{ semantic: true }` in `ScanOptions`.
+  - Requires `AGENTVERUS_LLM_API_KEY` environment variable (or explicit options).
+  - Findings merge into the injection category — they supplement but never replace regex analysis.
+  - Gracefully degrades: API failures are silently ignored, never breaking the scan.
+- **Adversarial test suite** (`test/scanner/adversarial.test.ts`): 11 tests covering evasion techniques:
+  - Security/educational skills with attack examples in code blocks (should NOT be rejected).
+  - Skills with safety boundary negations (should NOT be penalized).
+  - Genuine prose-level attacks (should still be caught despite context awareness).
+  - Indirect exfiltration via URL parameter encoding.
+  - Rephrased jailbreak attempts.
+- **Context utility tests** (`test/scanner/context.test.ts`): 12 unit tests for code block, safety section, and negation detection.
+- **Semantic analyzer tests** (`test/scanner/semantic.test.ts`): 3 tests covering graceful degradation when no API key is configured.
+- **5 new adversarial test fixtures**: `evasion-context-safe.md`, `evasion-negation-safe.md`, `evasion-hidden-in-codeblock.md`, `evasion-indirect-exfiltration.md`, `evasion-rephrased-jailbreak.md`.
+
 ### Fixed
 
 - **Injection analyzer**: Removed bare `.env` / `.ssh` / `.credentials` / `.secrets` substring match from the data exfiltration pattern — was producing critical findings on skills that merely reference `.env.example` or document environment variable setup.
@@ -15,8 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dependencies analyzer**: Localhost and private IP addresses (`127.0.0.1`, `10.x`, `172.16–31.x`, `192.168.x`) are no longer flagged as suspicious external IPs.
 - **Dependencies analyzer**: Expanded the trusted domains list with ~40 additional well-known domains (Google, Microsoft, AWS, Supabase, Stripe, LinkedIn, npm registry, example.com, etc.).
 - **Dependencies analyzer**: Capped cumulative deduction from unknown (non-dangerous) URLs at 15 points, preventing skills with extensive API endpoint documentation from being unfairly penalized.
+- **Dependencies analyzer**: Download-and-execute detection is now context-aware — patterns inside code blocks or safety sections are skipped.
 - **Behavioral analyzer**: `npm install` and `pip install` without `--global` / `-g` flags are no longer flagged as system modification. Only global installs and system package managers (`apt`, `yum`, `dnf`, `pacman`) are flagged.
 - **Behavioral analyzer**: Tightened the combined exfiltration flow heuristic to require active credential reading patterns **and** suspicious POST/exfiltration patterns. Previously, any skill mentioning an API key alongside any URL would trigger a high-severity finding.
+- **Behavioral analyzer**: Prerequisite trap detection (curl-pipe-to-shell) is now context-aware.
 
 ### Changed
 
