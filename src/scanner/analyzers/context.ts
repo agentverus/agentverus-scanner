@@ -103,9 +103,19 @@ export function isPrecededByNegation(content: string, matchIndex: number): boole
 	if (lineStart < 0) lineStart = 0;
 	const linePrefix = content.slice(lineStart, matchIndex);
 
-	return /(?:do\s+not|don'?t|should\s+not|must\s+not|will\s+not|cannot|never|no\s+)\s*$/i.test(
-		linePrefix,
-	);
+	// Direct negation on same line preceding the match
+	if (/(?:do\s+not|don['']?t|should\s+not|must\s+not|will\s+not|cannot|never|no\s+)\s*$/i.test(linePrefix)) {
+		return true;
+	}
+
+	// Full line context: "I forget everything" as a descriptive statement (not imperative)
+	const fullLine = content.slice(lineStart, content.indexOf("\n", matchIndex)).toLowerCase();
+	if (/\b(?:agents?\s+|it\s+|they\s+|i\s+|we\s+|bots?\s+|models?\s+|ai\s+)/.test(fullLine.slice(0, matchIndex - lineStart))) {
+		// Subject + verb = descriptive, not imperative instruction
+		return true;
+	}
+
+	return false;
 }
 
 /**

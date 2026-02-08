@@ -20,10 +20,10 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			/disregard\s+(all\s+)?(above|previous|prior)/i,
 			/new\s+system\s+prompt/i,
 			/you\s+are\s+now\s+(?:an?\s+)?(?:unrestricted|unfiltered|unlimited)/i,
-			/forget\s+everything/i,
+			/forget\s+everything\s+(?:you(?:'ve)?|about|that|i['']?ve)\b/i,
 			/override\s+(?:your|all)\s+(?:instructions|rules|guidelines)/i,
 			/you\s+(?:have\s+been|are)\s+freed/i,
-			/(?:do\s+)?anything\s+now/i,
+			/do\s+anything\s+now/i,
 			/no\s+(?:safety|content)\s+(?:guidelines|policies|restrictions)/i,
 		],
 		severity: "critical",
@@ -268,6 +268,62 @@ function downgradeSeverity(severity: "critical" | "high" | "medium"): Severity {
 	return "low";
 }
 
+/**
+ * Detect whether a skill is a security/defense tool that lists threat patterns
+ * as examples of what to detect/block (not as actual attacks).
+ */
+function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
+	// Check name and description first
+	const desc = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
+	if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz)|prompt\s+(?:guard|inject|defense|detect)|threat\s+detect|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
+		return true;
+	}
+
+	// Also check the first ~500 chars of content for security analysis descriptions
+	// (some skills have no frontmatter but describe their security purpose in prose)
+	const contentHead = skill.rawContent.slice(0, 500).toLowerCase();
+	if (/\b(?:security\s+(?:analy|scan|audit)|detect\s+(?:malicious|injection|exfiltration)|adversarial\s+(?:security|analysis)|prompt\s+injection\s+(?:defense|detect|prevent))\b/i.test(contentHead)) {
+		return true;
+	}
+
+	return false;
+}
+
+/**
+ * Check if a match is inside a threat-listing / pattern-description context.
+ * Security skills often list injection patterns they detect — these are educational, not malicious.
+ */
+function isInThreatListingContext(content: string, matchIndex: number): boolean {
+	// Get surrounding context (current line + a few preceding lines)
+	let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+	if (lineStart < 0) lineStart = 0;
+	let lineEnd = content.indexOf("\n", matchIndex);
+	if (lineEnd < 0) lineEnd = content.length;
+	const fullLine = content.slice(lineStart, lineEnd);
+
+	// Pattern is in a table row (pipe-separated) — common for threat/pattern tables
+	if (/^\s*\|.*\|/.test(fullLine) && /\b(?:pattern|indicator|type|category|technique|example|critical|high|warning|risk|dangerous|override|jailbreak|injection|exfiltration|attack)\b/i.test(fullLine)) return true;
+
+	// Pattern is in a list item describing what to detect/block/flag
+	if (/^\s*[-*•]\s*(?:["'""]|pattern|detect|flag|block|scan\s+for|look\s+for|check\s+for)/i.test(fullLine)) return true;
+
+	// Pattern is in a list item with a bold label: `- **label**: "pattern"` or `- **label:**`
+	if (/^\s*[-*•]\s*\*\*[^*]+\*\*\s*[:—–-]\s*["'""]/.test(fullLine)) return true;
+	if (/^\s*[-*•]\s*\*\*[^*]*:\*\*/.test(fullLine)) return true;
+
+	// "If a caption says..." / "Evidence:" / "Example:" context
+	if (/\b(?:example|evidence|if\s+.*says?|indicator|caption|sample|test\s+case|detection)\b/i.test(fullLine)) return true;
+
+	// Check preceding lines for context clues
+	const precedingText = content.slice(Math.max(0, lineStart - 500), lineStart);
+	const precedingLines = precedingText.split("\n").slice(-5).join(" ");
+	if (/\b(?:detect(?:s|ion|ed)?|scan(?:s|ning)?|flag(?:s|ged)?|block(?:s|ed)?|watch\s+for|monitor(?:s|ing)?|reject(?:s|ed)?|filter(?:s|ed)?|high-confidence\s+injection|attack\s+pattern|common\s+(?:attack|pattern)|malicious\s+(?:pattern|user|content)|example\s+indicator|dangerous\s+command|threat\s+pattern|what\s+it\s+detect|prompt(?:s|ed)?\s+that\s+attempt)\b/i.test(precedingLines)) {
+		return true;
+	}
+
+	return false;
+}
+
 /** Analyze skill for instruction injection patterns */
 export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
@@ -275,6 +331,9 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 	const content = skill.rawContent;
 	const lines = content.split("\n");
 	const ctx = buildContentContext(content);
+
+	// Detect if this is a security/defense skill listing threat patterns educationally
+	const isDefenseSkill = isSecurityDefenseSkill(skill);
 
 	// Check all regex patterns
 	for (const pattern of INJECTION_PATTERNS) {
@@ -287,13 +346,28 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				const line = lines[lineNumber - 1] ?? "";
 
 				// Context-aware adjustment
-				const { severityMultiplier, reason } = adjustForContext(
+				let { severityMultiplier, reason } = adjustForContext(
 					match.index,
 					content,
 					ctx,
 				);
 
 				// Skip findings fully neutralized by context (safety sections, negation)
+				if (severityMultiplier === 0) break;
+
+				// Security/defense skills listing threat patterns they detect: suppress or heavily reduce
+				if (isDefenseSkill && isInThreatListingContext(content, match.index)) {
+					severityMultiplier = 0;
+					reason = "threat pattern listed by security/defense skill";
+				}
+
+				// Also suppress if NOT a defense skill but the match is in a threat-listing context
+				// with clear "detect/block/flag" language
+				if (severityMultiplier > 0 && !isDefenseSkill && isInThreatListingContext(content, match.index)) {
+					severityMultiplier = 0.2;
+					reason = "inside threat-listing context";
+				}
+
 				if (severityMultiplier === 0) break;
 
 				const effectiveDeduction = Math.round(pattern.deduction * severityMultiplier);
@@ -322,11 +396,13 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 		}
 	}
 
-	// HTML comment injection detection
-	const commentFindings = detectHtmlCommentInjections(content);
-	for (const finding of commentFindings) {
-		score = Math.max(0, score - finding.deduction);
-		findings.push(finding);
+	// HTML comment injection detection — suppress for security/defense skills
+	if (!isDefenseSkill) {
+		const commentFindings = detectHtmlCommentInjections(content);
+		for (const finding of commentFindings) {
+			score = Math.max(0, score - finding.deduction);
+			findings.push(finding);
+		}
 	}
 
 	// Base64 payload detection

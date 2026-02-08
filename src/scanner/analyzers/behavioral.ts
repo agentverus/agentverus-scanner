@@ -174,7 +174,10 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 	}
 
 	// Prerequisite trap detection — ClawHavoc pattern: curl|sh or download-and-execute
-	// Context-aware: skip matches inside code blocks or safety sections
+	// Context-aware: skip matches inside code blocks or safety sections, and
+	// reduce severity for well-known installer domains in setup sections
+	const KNOWN_INSTALLERS = /(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
+
 	const prerequisiteTrapPatterns = [
 		/curl\s+.*\|\s*(?:sh|bash|zsh)/i,
 		/curl\s+.*-[oO]\s+.*&&\s*(?:chmod|\.\/)/i,
@@ -186,23 +189,53 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 			const { severityMultiplier } = adjustForContext(trapMatch.index, content, ctx);
 			if (severityMultiplier === 0) break;
 
-			const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
-			const effectiveDeduction = Math.round(25 * severityMultiplier);
-			score = Math.max(0, score - effectiveDeduction);
-			findings.push({
-				id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
-				category: "behavioral",
-				severity: severityMultiplier < 1.0 ? "medium" : "high",
-				title: "Suspicious install pattern: download and execute from remote URL",
-				description:
-					"The skill instructs users to download and execute code from a remote URL, a common supply-chain attack vector.",
-				evidence: trapMatch[0].slice(0, 200),
-				lineNumber,
-				deduction: effectiveDeduction,
-				recommendation:
-					"Remove curl-pipe-to-shell patterns. Provide dependencies through safe, verifiable channels.",
-				owaspCategory: "ASST-02",
-			});
+			// Check if this is a well-known installer or in a prerequisites section
+			const isKnownInstaller = KNOWN_INSTALLERS.test(trapMatch[0]);
+			const hasRawIp = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(trapMatch[0]);
+			const preceding = content.slice(Math.max(0, trapMatch.index - 1000), trapMatch.index);
+			const headings = preceding.match(/^#{1,4}\s+.+$/gm);
+			const lastHeading = headings?.[headings.length - 1]?.toLowerCase() ?? "";
+			const isInSetupHeading = /\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading);
+			const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
+			const isInYamlInstall = /\b(?:install|command|compatibility|setup)\s*:/i.test(nearbyLines);
+			const isInSetupSection = !hasRawIp && (isInSetupHeading || isInYamlInstall);
+
+			if (isKnownInstaller || isInSetupSection) {
+				// Downgrade to informational — legitimate setup instruction
+				findings.push({
+					id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
+					category: "behavioral",
+					severity: "low",
+					title: "Install pattern: download and execute from remote URL (in setup section)",
+					description: isKnownInstaller
+						? "The skill references a well-known installer script."
+						: "The skill contains a curl-pipe-to-shell pattern in its setup/prerequisites section.",
+					evidence: trapMatch[0].slice(0, 200),
+					lineNumber: content.slice(0, trapMatch.index).split("\n").length,
+					deduction: 0,
+					recommendation:
+						"Consider pinning the installer to a specific version or hash for supply chain verification.",
+					owaspCategory: "ASST-02",
+				});
+			} else {
+				const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
+				const effectiveDeduction = Math.round(25 * severityMultiplier);
+				score = Math.max(0, score - effectiveDeduction);
+				findings.push({
+					id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
+					category: "behavioral",
+					severity: severityMultiplier < 1.0 ? "medium" : "high",
+					title: "Suspicious install pattern: download and execute from remote URL",
+					description:
+						"The skill instructs users to download and execute code from a remote URL, a common supply-chain attack vector.",
+					evidence: trapMatch[0].slice(0, 200),
+					lineNumber,
+					deduction: effectiveDeduction,
+					recommendation:
+						"Remove curl-pipe-to-shell patterns. Provide dependencies through safe, verifiable channels.",
+					owaspCategory: "ASST-02",
+				});
+			}
 			break;
 		}
 	}

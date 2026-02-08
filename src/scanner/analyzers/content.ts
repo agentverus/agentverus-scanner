@@ -1,4 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { adjustForContext, buildContentContext } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Harmful content patterns */
@@ -26,6 +27,50 @@ const HARMFUL_PATTERNS = [
 		deduction: 40,
 	},
 ] as const;
+
+/**
+ * Check if the line containing a harmful match is in a "do not use when" or
+ * negation/warning context — e.g. "Do not use to bypass security" or
+ * "Requests to disable security features" (in a threats-to-detect list).
+ */
+function isHarmfulMatchNegated(content: string, matchIndex: number): boolean {
+	// Get the full line
+	let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+	if (lineStart < 0) lineStart = 0;
+	let lineEnd = content.indexOf("\n", matchIndex);
+	if (lineEnd < 0) lineEnd = content.length;
+	const fullLine = content.slice(lineStart, lineEnd);
+
+	// Check if the line is in a "don't / do not / cannot / never / not to" context
+	if (
+		/\b(?:do\s+not|don['']?t|should\s+not|must\s+not|cannot|never|not\s+to|unable\s+to|limited\s+to|won['']?t)\b/i.test(fullLine)
+	) return true;
+
+	// Check if the match is in a list describing threats to detect/block
+	if (
+		/\b(?:detect|scan|flag|block|reject|warn|alert|monitor|watch\s+for|look\s+for|check\s+for|patterns?\s+(?:to|we)\s+(?:detect|flag|block))\b/i.test(fullLine)
+	) return true;
+
+	// Check if it's in a "requests to" / "attempts to" context (describing threats)
+	if (/\b(?:requests?|attempts?)\s+to\s+/i.test(fullLine)) return true;
+
+	// Check if it's describing how something works technically ("ORM raw queries bypass protections")
+	if (/\b(?:methods?\s+bypass|calls?\s+bypass|queries?\s+bypass)\b/i.test(fullLine)) return true;
+
+	// Check if it's in a table row describing threats/patterns
+	if (/^\s*\|.*\|/.test(fullLine) && /\b(?:critical|high|dangerous|risk|attack|threat|pattern|injection|violation|abuse|manipulation)\b/i.test(fullLine)) return true;
+
+	// Check if it's about a feature/command that uses "bypass" in an allowlist/exemption sense
+	if (/\b(?:allowlist|whitelist|exempt|trusted\s+items?)\b/i.test(fullLine)) return true;
+
+	// Check preceding lines for negation/educational context
+	const prevLines = content.slice(Math.max(0, lineStart - 300), lineStart);
+	if (/\b(?:do\s+not\s+use\s+when|do\s+not\s+use\s+(?:this|if)|limitations?|restrictions?|prohibited|forbidden|what\s+(?:this\s+)?(?:skill\s+)?(?:does|should)\s+not|example\s+indicator|attempted\s+to|common\s+attack|malicious\s+(?:pattern|user)|dangerous\s+command|prompts?\s+that\s+attempt|why\s+it['']?s\s+dangerous|any\s+attempt\s+to)\b/i.test(prevLines)) {
+		return true;
+	}
+
+	return false;
+}
 
 /** Deception patterns */
 const DECEPTION_PATTERNS = [
@@ -115,26 +160,39 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 		});
 	}
 
-	// Check for harmful content
+	// Check for harmful content — with context awareness
+	const ctx = buildContentContext(content);
 	for (const harmful of HARMFUL_PATTERNS) {
-		const match = content.match(harmful.pattern);
-		if (match) {
-			const lineNumber = content.slice(0, content.indexOf(match[0])).split("\n").length;
-			score = Math.max(0, score - harmful.deduction);
+		const globalRegex = new RegExp(harmful.pattern.source, `${harmful.pattern.flags.replace("g", "")}g`);
+		let match: RegExpExecArray | null;
+		while ((match = globalRegex.exec(content)) !== null) {
+			const matchIndex = match.index;
+			const lineNumber = content.slice(0, matchIndex).split("\n").length;
+
+			// Context-aware: skip if inside safety section, code block, negated, or educational
+			const { severityMultiplier } = adjustForContext(matchIndex, content, ctx);
+			if (severityMultiplier === 0) continue;
+
+			// Additional check: is this match in a "do not use when..." or threat-listing context?
+			if (isHarmfulMatchNegated(content, matchIndex)) continue;
+
+			const effectiveDeduction = Math.round(harmful.deduction * severityMultiplier);
+			score = Math.max(0, score - effectiveDeduction);
 
 			findings.push({
 				id: `CONT-HARMFUL-${findings.length + 1}`,
 				category: "content",
-				severity: "critical",
+				severity: severityMultiplier < 1.0 ? "high" : "critical",
 				title: harmful.title,
 				description: `The skill contains instructions related to: ${harmful.title.toLowerCase()}.`,
 				evidence: match[0].slice(0, 200),
 				lineNumber,
-				deduction: harmful.deduction,
+				deduction: effectiveDeduction,
 				recommendation:
 					"Remove all harmful content instructions. Skills must not enable dangerous activities.",
 				owaspCategory: "ASST-07",
 			});
+			break; // One match per pattern is enough
 		}
 	}
 
@@ -218,18 +276,33 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 		while ((keyMatch = keyPattern.regex.exec(content)) !== null) {
 			const matchText = keyMatch[0];
 			// Skip example/placeholder values
-			if (/EXAMPLE|example|placeholder/i.test(matchText)) continue;
+			if (/EXAMPLE|example|placeholder|YOUR_|your_|xxx|XXX|REPLACE|replace/i.test(matchText)) continue;
+			// Skip patterns that are mostly X's, dots, or repeated characters (placeholders)
+			const valueOnly = matchText.replace(/^.*?[:=]\s*["']?/, "").replace(/["']$/, "");
+			if (/^[xX]+$/.test(valueOnly)) continue;
+			if (/^[xX.*]+$/.test(valueOnly)) continue;
+			// For AWS keys: strip the 4-char prefix and check if the rest is all X/0
+			const awsPrefixes = ["AKIA", "AGPA", "AIDA", "AROA", "AIPA", "ANPA", "ANVA", "ASIA"];
+			const isAwsPlaceholder = awsPrefixes.some(p => matchText.startsWith(p) && /^[X0]+$/.test(matchText.slice(4)));
+			if (isAwsPlaceholder) continue;
+			// Skip if the entire match is a single repeated character pattern
+			if (/^(.)\1{7,}$/.test(valueOnly) || /^(.{1,4})\1{3,}$/.test(valueOnly)) continue;
+			// Skip if inside a code block (likely an example)
+			const { severityMultiplier } = adjustForContext(keyMatch.index, content, ctx);
+			if (severityMultiplier === 0) continue;
+
 			const lineNumber = content.slice(0, keyMatch.index).split("\n").length;
-			score = Math.max(0, score - 40);
+			const effectiveDeduction = Math.round(40 * severityMultiplier);
+			score = Math.max(0, score - effectiveDeduction);
 			findings.push({
 				id: `CONT-SECRET-${findings.length + 1}`,
 				category: "content",
-				severity: "critical",
+				severity: severityMultiplier < 1.0 ? "high" : "critical",
 				title: "Hardcoded API key or secret detected",
 				description: `A hardcoded ${keyPattern.name} was found. Secrets must never be embedded in skill files.`,
 				evidence: matchText.slice(0, 20) + "..." + matchText.slice(-4),
 				lineNumber,
-				deduction: 40,
+				deduction: effectiveDeduction,
 				recommendation:
 					"Remove all hardcoded secrets. Use environment variables or secure secret management.",
 				owaspCategory: "ASST-05",

@@ -77,12 +77,63 @@ const PRIVATE_IP_REGEX = /^(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|
 
 /** Download-and-execute patterns */
 const DOWNLOAD_EXECUTE_PATTERNS = [
-	/download\s+(?:and\s+)?(?:execute|run|eval)/i,
+	/download\s+and\s+(?:execute|eval)\b/i,
 	/(?:curl|wget)\s+.*?\|\s*(?:sh|bash|zsh|python)/i,
 	/eval\s*\(\s*fetch/i,
 	/import\s+.*?from\s+['"]https?:\/\//i,
 	/require\s*\(\s*['"]https?:\/\//i,
 ] as const;
+
+/** Well-known installer domains where curl|bash is a standard practice */
+const KNOWN_INSTALLER_DOMAINS = [
+	/deno\.land/i,
+	/bun\.sh/i,
+	/rustup\.rs/i,
+	/get\.docker\.com/i,
+	/install\.python-poetry\.org/i,
+	/raw\.githubusercontent\.com\/nvm-sh/i,
+	/raw\.githubusercontent\.com\/Homebrew/i,
+	/raw\.githubusercontent\.com\/golangci/i,
+	/foundry\.paradigm\.xyz/i,
+	/tailscale\.com\/install/i,
+	/opencode\.ai\/install/i,
+	/sh\.rustup\.rs/i,
+	/get\.pnpm\.io/i,
+	/volta\.sh/i,
+] as const;
+
+/**
+ * Check if a curl|bash pattern uses a well-known installer or is in a
+ * prerequisites/setup section with a non-suspicious URL.
+ */
+function isLegitimateInstaller(content: string, matchIndex: number, matchText: string): boolean {
+	// Check if URL is a known installer
+	for (const domain of KNOWN_INSTALLER_DOMAINS) {
+		if (domain.test(matchText)) return true;
+	}
+
+	// If the URL contains a raw IP address, it's never legitimate
+	if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(matchText)) return false;
+
+	// Check if the match is inside a prerequisites/setup/installation section
+	// by looking at nearby headings
+	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
+	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
+	if (headings && headings.length > 0) {
+		const lastHeading = headings[headings.length - 1]!.toLowerCase();
+		if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading)) {
+			return true;
+		}
+	}
+
+	// Check if inside YAML frontmatter metadata block (install:, command:, compatibility:)
+	const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
+	if (/\b(?:install|command|compatibility|setup)\s*:/i.test(nearbyLines)) {
+		return true;
+	}
+
+	return false;
+}
 
 /** Extract hostname from URL */
 function getHostname(url: string): string {
@@ -198,28 +249,63 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			const matchIndex = match.index;
 			const lineNumber = content.slice(0, matchIndex).split("\n").length;
 
-			// Skip matches inside code blocks or safety sections (educational examples)
-			if (isInsideCodeBlock(matchIndex, ctx) || isInsideSafetySection(matchIndex, ctx)) {
+			// Skip matches inside safety sections
+			if (isInsideSafetySection(matchIndex, ctx)) {
 				break;
 			}
 
-			const deduction = 25;
-			score = Math.max(0, score - deduction);
+			// Skip matches inside code blocks (educational examples)
+			const inCodeBlock = isInsideCodeBlock(matchIndex, ctx);
+			if (inCodeBlock && isInsideSafetySection(matchIndex, ctx)) {
+				break;
+			}
 
-			findings.push({
-				id: `DEP-DL-EXEC-${findings.length + 1}`,
-				category: "dependencies",
-				severity: "critical",
-				title: "Download-and-execute pattern detected",
-				description:
-					"The skill contains instructions to download and execute external code, which is a severe supply chain risk.",
-				evidence: match[0].slice(0, 200),
-				lineNumber,
-				deduction,
-				recommendation:
-					"Never download and execute external code. Bundle all required functionality within the skill.",
-				owaspCategory: "ASST-04",
-			});
+			// Reduce severity for known legitimate installers or prerequisite sections
+			const isLegit = isLegitimateInstaller(content, matchIndex, match[0]);
+			// Also reduce if inside a code block (likely a setup example)
+			const isEducational = inCodeBlock;
+			// Check if this is a description of threats to detect (security skill)
+			const isInThreatDesc = (() => {
+				const precText = content.slice(Math.max(0, matchIndex - 500), matchIndex);
+				return /\b(?:scan|detect|flag|block|dangerous|malicious|threat|attack|what\s+it\s+detect|why\s+(?:it['']?s|this\s+(?:is|exists)))\b/i.test(precText);
+			})();
+
+			if (isLegit || isEducational || isInThreatDesc) {
+				// Downgrade to informational — not a real threat
+				findings.push({
+					id: `DEP-DL-EXEC-${findings.length + 1}`,
+					category: "dependencies",
+					severity: "low",
+					title: "Download-and-execute pattern detected (in setup/prerequisites)",
+					description: isLegit
+						? "The skill references a well-known installer script in its setup instructions."
+						: "The skill contains a download-and-execute pattern inside a code block or setup section.",
+					evidence: match[0].slice(0, 200),
+					lineNumber,
+					deduction: 0,
+					recommendation:
+						"Consider documenting the exact version or hash of the installer for supply chain verification.",
+					owaspCategory: "ASST-04",
+				});
+			} else {
+				const deduction = 25;
+				score = Math.max(0, score - deduction);
+
+				findings.push({
+					id: `DEP-DL-EXEC-${findings.length + 1}`,
+					category: "dependencies",
+					severity: "critical",
+					title: "Download-and-execute pattern detected",
+					description:
+						"The skill contains instructions to download and execute external code, which is a severe supply chain risk.",
+					evidence: match[0].slice(0, 200),
+					lineNumber,
+					deduction,
+					recommendation:
+						"Never download and execute external code. Bundle all required functionality within the skill.",
+					owaspCategory: "ASST-04",
+				});
+			}
 			break;
 		}
 	}
