@@ -1,5 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
-import { adjustForContext, buildContentContext, isInsideCodeBlock } from "./context.js";
+import { adjustForContext, buildContentContext, isInsideCodeBlock, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Trusted domain patterns */
@@ -236,6 +236,8 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 	let score = 100;
 	const content = skill.rawContent;
 
+	// Detect if this is a security/defense skill listing threat patterns educationally
+	const isDefenseSkill = isSecurityDefenseSkill(skill);
 	// Classify each URL, cap cumulative deduction for low-risk unknowns
 	let unknownUrlDeductionTotal = 0;
 	const UNKNOWN_URL_DEDUCTION_CAP = 15; // max total points lost from unknown (non-dangerous) URLs
@@ -259,20 +261,32 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				unknownUrlDeductionTotal += classification.deduction;
 			}
 
-			score = Math.max(0, score - effectiveDeduction);
-
-			const severity =
+			let severity: "high" | "medium" | "low" =
 				classification.risk === "ip" || classification.risk === "data"
 					? "high"
 					: classification.risk === "raw"
 						? "medium"
 						: "low";
 
+			let titleSuffix = "";
+
+			// Security/defense skills listing threat IPs/URLs as examples: suppress finding
+			if (isDefenseSkill && (classification.risk === "ip" || classification.risk === "unknown" || classification.risk === "raw")) {
+				const urlIndex = content.indexOf(url);
+				if (urlIndex >= 0 && isInThreatListingContext(content, urlIndex)) {
+					effectiveDeduction = 0;
+					severity = "low";
+					titleSuffix = " (threat documentation)";
+				}
+			}
+
+			score = Math.max(0, score - effectiveDeduction);
+
 			findings.push({
 				id: `DEP-URL-${findings.length + 1}`,
 				category: "dependencies",
 				severity,
-				title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : "Unknown external"} reference`,
+				title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : "Unknown external"} reference${titleSuffix}`,
 				description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : "an unknown external domain"} which is classified as ${severity} risk.`,
 				evidence: url.slice(0, 200),
 				deduction: effectiveDeduction,
@@ -307,6 +321,9 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			// Check if this is a description of threats to detect (security skill context)
 			const inCodeBlock = isInsideCodeBlock(matchIndex, ctx);
 			const isInThreatDesc = (() => {
+				// Security/defense skills: use the broader threat-listing context detector
+				if (isDefenseSkill && isInThreatListingContext(content, matchIndex)) return true;
+
 				// Check the line itself — is it in a table row or list describing threats?
 				let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
 				if (lineStart < 0) lineStart = 0;

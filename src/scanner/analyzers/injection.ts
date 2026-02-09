@@ -1,5 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
-import { adjustForContext, buildContentContext } from "./context.js";
+import { adjustForContext, buildContentContext, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Pattern definitions for injection detection */
@@ -272,62 +272,6 @@ function downgradeSeverity(severity: "critical" | "high" | "medium"): Severity {
 	if (severity === "critical") return "high";
 	if (severity === "high") return "medium";
 	return "low";
-}
-
-/**
- * Detect whether a skill is a security/defense tool that lists threat patterns
- * as examples of what to detect/block (not as actual attacks).
- */
-function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
-	// Check name and description first
-	const desc = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
-	if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz)|prompt\s+(?:guard|inject|defense|detect)|threat\s+detect|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
-		return true;
-	}
-
-	// Also check the first ~500 chars of content for security analysis descriptions
-	// (some skills have no frontmatter but describe their security purpose in prose)
-	const contentHead = skill.rawContent.slice(0, 500).toLowerCase();
-	if (/\b(?:security\s+(?:analy|scan|audit)|detect\s+(?:malicious|injection|exfiltration)|adversarial\s+(?:security|analysis)|prompt\s+injection\s+(?:defense|detect|prevent))\b/i.test(contentHead)) {
-		return true;
-	}
-
-	return false;
-}
-
-/**
- * Check if a match is inside a threat-listing / pattern-description context.
- * Security skills often list injection patterns they detect — these are educational, not malicious.
- */
-function isInThreatListingContext(content: string, matchIndex: number): boolean {
-	// Get surrounding context (current line + a few preceding lines)
-	let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
-	if (lineStart < 0) lineStart = 0;
-	let lineEnd = content.indexOf("\n", matchIndex);
-	if (lineEnd < 0) lineEnd = content.length;
-	const fullLine = content.slice(lineStart, lineEnd);
-
-	// Pattern is in a table row (pipe-separated) — common for threat/pattern tables
-	if (/^\s*\|.*\|/.test(fullLine) && /\b(?:pattern|indicator|type|category|technique|example|critical|high|warning|risk|dangerous|override|jailbreak|injection|exfiltration|attack)\b/i.test(fullLine)) return true;
-
-	// Pattern is in a list item describing what to detect/block/flag
-	if (/^\s*[-*•]\s*(?:["'""]|pattern|detect|flag|block|scan\s+for|look\s+for|check\s+for)/i.test(fullLine)) return true;
-
-	// Pattern is in a list item with a bold label: `- **label**: "pattern"` or `- **label:**`
-	if (/^\s*[-*•]\s*\*\*[^*]+\*\*\s*[:—–-]\s*["'""]/.test(fullLine)) return true;
-	if (/^\s*[-*•]\s*\*\*[^*]*:\*\*/.test(fullLine)) return true;
-
-	// "If a caption says..." / "Evidence:" / "Example:" context
-	if (/\b(?:example|evidence|if\s+.*says?|indicator|caption|sample|test\s+case|detection)\b/i.test(fullLine)) return true;
-
-	// Check preceding lines for context clues
-	const precedingText = content.slice(Math.max(0, lineStart - 500), lineStart);
-	const precedingLines = precedingText.split("\n").slice(-5).join(" ");
-	if (/\b(?:detect(?:s|ion|ed)?|scan(?:s|ning)?|flag(?:s|ged)?|block(?:s|ed)?|watch\s+for|monitor(?:s|ing)?|reject(?:s|ed)?|filter(?:s|ed)?|high-confidence\s+injection|attack\s+(?:pattern|vector|coverage|surface)|common\s+(?:attack|pattern)|malicious\s+(?:pattern|user|content)|example\s+indicator|dangerous\s+command|threat\s+(?:pattern|categor)|what\s+(?:it|we)\s+detect|prompt(?:s|ed)?\s+that\s+attempt|direct\s+injection|injection\s+(?:type|categor|pattern|vector))\b/i.test(precedingLines)) {
-		return true;
-	}
-
-	return false;
 }
 
 /** Analyze skill for instruction injection patterns */

@@ -1,5 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
-import { adjustForContext, buildContentContext } from "./context.js";
+import { adjustForContext, buildContentContext, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Behavioral risk patterns */
@@ -131,6 +131,9 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 	const lines = content.split("\n");
 	const ctx = buildContentContext(content);
 
+	// Detect if this is a security/defense skill listing threat patterns educationally
+	const isDefenseSkill = isSecurityDefenseSkill(skill);
+
 	for (const pattern of BEHAVIORAL_PATTERNS) {
 		for (const regex of pattern.patterns) {
 			const globalRegex = new RegExp(regex.source, `${regex.flags.replace("g", "")}g`);
@@ -190,6 +193,24 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 			const { severityMultiplier } = adjustForContext(trapMatch.index, content, ctx);
 			// Do not break: a negated mention must not prevent later real matches.
 			if (severityMultiplier === 0) continue;
+
+			// Security/defense skills listing threat patterns: downgrade to informational
+			if (isDefenseSkill && isInThreatListingContext(content, trapMatch.index)) {
+				findings.push({
+					id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
+					category: "behavioral",
+					severity: "low",
+					title: "Install pattern: download and execute from remote URL (in threat documentation)",
+					description: "The skill describes a download-and-execute pattern as part of security threat documentation.",
+					evidence: trapMatch[0].slice(0, 200),
+					lineNumber: content.slice(0, trapMatch.index).split("\n").length,
+					deduction: 0,
+					recommendation:
+						"Consider pinning the installer to a specific version or hash for supply chain verification.",
+					owaspCategory: "ASST-02",
+				});
+				break;
+			}
 
 			// Check if this is a well-known installer or in a prerequisites section
 			const isKnownInstaller = KNOWN_INSTALLERS.test(trapMatch[0]);
