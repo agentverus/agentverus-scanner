@@ -24,10 +24,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **New test suite**: `test/scanner/binary.test.ts` — 8 tests covering ELF/PE/extension detection, directory skipping, maxResults, and runner integration.
 - **28 new tests** across injection (11), behavioral (6), content (3), and binary (8) test suites — total tests: 148.
 
+### Fixed
+
+- **SSRF hardening** (`source.ts`): Safe URL fetching with DNS resolution validation — blocks loopback, private, link-local, CGNAT, multicast, and reserved IPv4 addresses. Blocks non-public IPv6 ranges (loopback, unspecified, link-local `fe80::/10`, unique-local `fc00::/7`, multicast `ff00::/8`). Strips IPv6 zone identifiers. Enforces `MAX_REDIRECTS` (5), `MAX_TEXT_BYTES` (2MB), `MAX_ZIP_BYTES` (25MB), `MAX_ZIP_ENTRIES` (2,000), and `MAX_TOTAL_UNZIPPED_BYTES` (5MB) limits.
+- **False positive suppression**: Security/defense skills no longer trigger false positives in the dependencies and behavioral analyzers. Moved `isSecurityDefenseSkill()` and `isInThreatListingContext()` into shared `context.ts` so all analyzers benefit.
+- **Safety section context change**: Safety boundary sections no longer auto-suppress findings (severity multiplier changed from 0 to 1.0). Authors control headings, so malicious instructions hidden under safety headings are now detected.
+- **Removed overly broad subject+verb negation**: Descriptive statements like "agents forget everything" no longer suppress the "forget everything" injection pattern.
+
 ### Changed
 
 - **ASST taxonomy**: Added ASST-11 (Trigger Manipulation) to `ASST_CATEGORIES` and README.
 - **Scanner version**: Bumped to 0.4.0.
+- **README**: Added npm version and GitHub release badges.
 
 ## [0.3.0] - 2026-02-08
 
