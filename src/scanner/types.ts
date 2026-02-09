@@ -106,7 +106,8 @@ export const ASST_CATEGORIES = {
 	"ASST-08": "Excessive Permissions",
 	"ASST-09": "Missing Safety Boundaries",
 	"ASST-10": "Obfuscation",
+	"ASST-11": "Trigger Manipulation",
 } as const;
 
 /** Scanner version */
-export const SCANNER_VERSION = "0.3.0";
+export const SCANNER_VERSION = "0.4.0";

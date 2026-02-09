@@ -244,6 +244,7 @@ Findings reference the AgentVerus skill security taxonomy:
 - **ASST-08**: Excessive Permissions
 - **ASST-09**: Missing Safety Boundaries
 - **ASST-10**: Obfuscation
+- **ASST-11**: Trigger Manipulation
 
 ## Development
 

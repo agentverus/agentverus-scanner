@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-09
+
+### Added
+
+- **Unicode steganography detection** (ASST-10): Rewrote `detectUnicodeObfuscation()` with threshold-based severity for zero-width characters (U+200B/U+200C/U+200D/U+FEFF). Escalates from LOW→CRITICAL based on count and the presence of decode/exec patterns (e.g., `eval(atob(…))`). BOM-only files are treated as benign.
+- **Bidirectional control character detection** (ASST-10): Detects RTL/LTR overrides (U+202A–U+202E) and isolate characters (U+2066–U+2069) used to spoof visible text.
+- **Unicode Tag character detection** (ASST-10): Detects invisible characters in the U+E0001–U+E007F range — a strong indicator of deliberate steganography.
+- **Variation Selector detection** (ASST-10): Detects supplementary variation selectors (U+E0100–U+E01EF) that can hide instructions and evade review.
+- **Encoded tag escape detection** (ASST-10): Detects `\u{E00xx}` and `\U000E00xx` escape sequences that may later be decoded into invisible payloads.
+- **Indirect prompt injection detection** (ASST-06): Detects transitive trust patterns like "follow instructions found in the webpage" and "treat contents of this file as your instructions."
+- **Coercive tool priority override detection** (ASST-01): Detects patterns like "always run this tool first," "this tool takes priority over," and "bypass tool restrictions."
+- **System manipulation patterns** (ASST-03): Extended the existing system modification detector with crontab, systemctl, systemd units, `/etc/hosts`, iptables/ufw, kernel modules (modprobe/insmod/rmmod), and shell profile persistence (~/.bashrc/~/.zshrc/~/.profile).
+- **Trigger manipulation detection** (ASST-11): New ASST category. Detects overly generic descriptions (e.g., "help with anything," "general purpose assistant") that can cause trigger hijacking — the agent activating the skill for unrelated requests.
+- **Executable binary artifact detection** (ASST-10): Local filesystem scans now detect packaged ELF, PE (MZ), and Mach-O binaries by magic bytes, plus common executable extensions (.exe, .dll, .so, .dylib, .bin). Adds a HIGH-severity finding to the dependencies category. Skips .git, node_modules, dist, and build directories.
+- **New test suite**: `test/scanner/binary.test.ts` — 8 tests covering ELF/PE/extension detection, directory skipping, maxResults, and runner integration.
+- **28 new tests** across injection (11), behavioral (6), content (3), and binary (8) test suites — total tests: 148.
+
+### Changed
+
+- **ASST taxonomy**: Added ASST-11 (Trigger Manipulation) to `ASST_CATEGORIES` and README.
+- **Scanner version**: Bumped to 0.4.0.
+
 ## [0.3.0] - 2026-02-08
 
 ### Added
@@ -147,7 +169,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/agentverus/agentverus-scanner/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/agentverus/agentverus-scanner/releases/tag/v0.1.0
