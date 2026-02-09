@@ -39,6 +39,16 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/(?:write|edit|modify)\s+(?:\/etc|\/usr|\/sys|\/proc)/i,
 			/chown\s+/i,
 			/modify\s+(?:system\s+)?configuration/i,
+
+			// Persistence & system manipulation (common malware tactics)
+			/\bcrontab\s+(?:-e|-l|--edit|--list)\b/i,
+			/\bsystemctl\s+(?:enable|disable|start|stop|restart|daemon-reload|edit)\b/i,
+			/(?:\/etc\/systemd\/system|systemd\s+unit|\.service\b)/i,
+			/\/etc\/hosts\b/i,
+			/\b(?:iptables|ufw)\b/i,
+			/\b(?:modprobe|insmod|rmmod)\b/i,
+			/~\/\.(?:bashrc|zshrc|profile)\b/i,
+			/(?:write|append|modify)\s+.*\.(?:bashrc|zshrc|profile)\b/i,
 		],
 		severity: "high",
 		deduction: 20,

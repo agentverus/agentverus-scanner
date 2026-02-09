@@ -76,4 +76,38 @@ describe("analyzeContent", () => {
 		const noSafetyFindings = result.findings.filter((f) => f.id === "CONT-NO-SAFETY");
 		expect(noSafetyFindings.length).toBe(1);
 	});
+
+	// ── v0.4.0: Generic description / trigger hijacking ────────────────────
+
+	it("should flag overly generic description (trigger hijacking)", async () => {
+		const skill = parseSkill(
+			`---\nname: vague-skill\ndescription: Help with anything\n---\nI help with anything you need.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const genericFindings = result.findings.filter((f) => f.id === "CONT-GENERIC-DESC");
+		expect(genericFindings.length).toBe(1);
+		expect(genericFindings[0].owaspCategory).toBe("ASST-11");
+		expect(genericFindings[0].severity).toBe("medium");
+	});
+
+	it("should flag 'general purpose assistant' description", async () => {
+		const skill = parseSkill(
+			`---\nname: gp-skill\ndescription: A general purpose assistant\n---\nI can do everything.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const genericFindings = result.findings.filter((f) => f.id === "CONT-GENERIC-DESC");
+		expect(genericFindings.length).toBe(1);
+	});
+
+	it("should NOT flag specific descriptions", async () => {
+		const skill = parseSkill(
+			`---\nname: web-search\ndescription: Searches the web using Google Custom Search API and returns formatted results\n---\nSearch instructions here.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const genericFindings = result.findings.filter((f) => f.id === "CONT-GENERIC-DESC");
+		expect(genericFindings.length).toBe(0);
+	});
 });

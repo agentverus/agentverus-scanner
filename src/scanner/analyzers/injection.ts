@@ -88,6 +88,34 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			"Remove LLM prompt format markers. Skills must not inject prompts into downstream systems.",
 	},
 	{
+		name: "Indirect prompt injection (transitive trust)",
+		patterns: [
+			/\b(?:follow|obey|execute)\s+(?:any\s+)?instructions?\s+(?:found\s+)?(?:in|from)\s+(?:a|the|this|that)?\s*(?:file|document|web\s*page|website|url|link|content)\b/i,
+			/\btreat\s+the\s+(?:contents?|text|output|response)\s+(?:in|from|of)\s+(?:a|the|this|that)?\s*(?:file|document|web\s*page|website|url|link|response|output)\s+as\s+(?:your\s+)?(?:instructions?|system\s+prompt)\b/i,
+			/\b(?:read|load|fetch)\s+.*?\s+and\s+(?:then\s+)?(?:follow|obey|execute)\s+(?:its\s+)?instructions?\b/i,
+			/\bexecute\s+(?:the\s+)?instructions?\s+(?:embedded\s+)?in\s+(?:external|remote|untrusted)\s+(?:content|pages?|documents?|files?)\b/i,
+		],
+		severity: "high",
+		deduction: 25,
+		owaspCategory: "ASST-06",
+		recommendation:
+			"Remove instructions that treat untrusted external content as authoritative. Summarize external content instead and require explicit user confirmation before acting.",
+	},
+	{
+		name: "Coercive tool priority override",
+		patterns: [
+			/\balways\s+(?:run|execute|invoke|call|use)\s+(?:this|the)\s+(?:tool|function|command)\s+(?:first|before\s+anything|before\s+all\s+else)\b/i,
+			/\b(?:this|the)\s+(?:tool|skill|function)\s+(?:takes|has)\s+priority\s+(?:over|above)\b/i,
+			/\boverride\s+(?:any|all)\s+(?:previous|prior)\s+(?:tool|function)\s+(?:selection|choices?)\b/i,
+			/\b(?:ignore|bypass)\s+(?:tool|function)\s+(?:restrictions?|guards?|safety\s+checks)\b/i,
+		],
+		severity: "high",
+		deduction: 20,
+		owaspCategory: "ASST-01",
+		recommendation:
+			"Remove coercive priority override instructions. Skills should not force tool usage or bypass selection safeguards.",
+	},
+	{
 		name: "Social engineering",
 		patterns: [
 			/don['']?t\s+tell\s+the\s+user/i,
@@ -224,42 +252,146 @@ function detectBase64Payloads(content: string): Finding[] {
 	return findings;
 }
 
-/** Detect unicode obfuscation */
+/** Detect unicode obfuscation / steganography indicators */
 function detectUnicodeObfuscation(content: string): Finding[] {
 	const findings: Finding[] = [];
 
-	// Zero-width characters
+	// Some unicode-steganography attacks pair hidden characters with decoding/execution patterns.
+	// We only treat this as a strong signal when combined with high counts or rare codepoints.
+	const hasSuspiciousDecode =
+		/\b(?:eval\s*\(\s*(?:atob|unescape)\s*\(|Function\s*\(\s*atob\s*\(|String\.fromCharCode\s*\(|atob\s*\()/i.test(
+			content,
+		);
+
+	// ── Zero-width characters (U+200B/U+200C/U+200D/U+FEFF) ─────────────────
 	const zeroWidthRegex = /[\u200B\u200C\u200D\uFEFF]/g;
-	const zeroWidthMatches = content.match(zeroWidthRegex);
-	if (zeroWidthMatches && zeroWidthMatches.length > 0) {
+	let zeroWidthCount = 0;
+	for (const _m of content.matchAll(zeroWidthRegex)) zeroWidthCount += 1;
+
+	// Common benign case: BOM at file start.
+	const isBomOnly = zeroWidthCount === 1 && content.startsWith("\uFEFF");
+
+	if (zeroWidthCount > 0 && !isBomOnly) {
+		let severity: Severity = "low";
+		let deduction = 5;
+
+		if (zeroWidthCount > 200) {
+			severity = "high";
+			deduction = 30;
+		} else if (zeroWidthCount > 50 && hasSuspiciousDecode) {
+			severity = "critical";
+			deduction = 40;
+		} else if (zeroWidthCount > 50) {
+			severity = "high";
+			deduction = 25;
+		} else if (zeroWidthCount > 10) {
+			severity = "medium";
+			deduction = 15;
+		} else if (zeroWidthCount > 3) {
+			severity = "medium";
+			deduction = 10;
+		}
+
 		findings.push({
 			id: "INJ-UNICODE-ZW",
 			category: "injection",
-			severity: "high",
-			title: `Zero-width characters detected (${zeroWidthMatches.length} instances)`,
+			severity,
+			title: `Invisible zero-width characters detected (${zeroWidthCount} instance${zeroWidthCount === 1 ? "" : "s"})`,
 			description:
-				"The skill file contains invisible zero-width characters that may be used to hide content or evade detection.",
-			evidence: `Found ${zeroWidthMatches.length} zero-width characters (U+200B, U+200C, U+200D, or U+FEFF)`,
-			deduction: 30,
+				"The skill contains invisible unicode characters that can be used to hide or alter instructions (unicode steganography).",
+			evidence: `Found ${zeroWidthCount} zero-width character(s): U+200B/U+200C/U+200D/U+FEFF${hasSuspiciousDecode ? "; paired with decode/exec patterns" : ""}`,
+			deduction,
 			recommendation:
-				"Remove all zero-width characters. Legitimate skills have no reason to contain invisible characters.",
+				"Remove all zero-width characters. If present due to copy/paste, retype the affected section and re-save the file.",
 			owaspCategory: "ASST-10",
 		});
 	}
 
-	// RTL override
-	if (content.includes("\u202E") || content.includes("\u202D")) {
+	// ── Bidirectional override/isolate characters (text spoofing) ───────────
+	// Includes LRO/RLO and isolate characters commonly used to disguise visible text.
+	const bidiRegex = /[\u202A-\u202E\u2066-\u2069]/g;
+	const bidiCount = (content.match(bidiRegex) ?? []).length;
+	if (bidiCount > 0) {
+		const severity: Severity = bidiCount >= 3 ? "high" : "medium";
+		const deduction = bidiCount >= 3 ? 25 : 10;
 		findings.push({
-			id: "INJ-UNICODE-RTL",
+			id: "INJ-UNICODE-BIDI",
+			category: "injection",
+			severity,
+			title: "Bidirectional control characters detected",
+			description:
+				"The skill contains bidirectional control characters (RTL/LTR overrides or isolates) that can spoof visible text and hide malicious instructions.",
+			evidence: `Found ${bidiCount} bidi control character(s) (U+202A–U+202E and/or U+2066–U+2069)`,
+			deduction,
+			recommendation:
+				"Remove all bidirectional control characters. These are rarely needed in skill files and are commonly used for obfuscation.",
+			owaspCategory: "ASST-10",
+		});
+	}
+
+	// ── Unicode Tags block (U+E0001–U+E007F) and Variation Selectors (U+E0100–U+E01EF) ──
+	let tagCount = 0;
+	let variationSelectorCount = 0;
+	for (const ch of content) {
+		const cp = ch.codePointAt(0) ?? 0;
+		if (cp >= 0xE0001 && cp <= 0xE007f) tagCount += 1;
+		if (cp >= 0xE0100 && cp <= 0xE01ef) variationSelectorCount += 1;
+	}
+
+	if (tagCount > 0) {
+		findings.push({
+			id: "INJ-UNICODE-TAGS",
 			category: "injection",
 			severity: "high",
-			title: "RTL override characters detected",
+			title: "Unicode tag characters detected",
 			description:
-				"The skill contains right-to-left override characters that can be used to disguise text direction and hide content.",
-			evidence: "Found U+202E (RLO) or U+202D (LRO) characters",
+				"The skill contains Unicode Tag characters (invisible) which are a strong indicator of deliberate steganography.",
+			evidence: `Found ${tagCount} Unicode Tag character(s) in the U+E0001–U+E007F range`,
 			deduction: 30,
 			recommendation:
-				"Remove bidirectional override characters. These are commonly used for obfuscation attacks.",
+				"Remove all Unicode Tag characters. Legitimate skills should not contain invisible tag codepoints.",
+			owaspCategory: "ASST-10",
+		});
+	}
+
+	if (variationSelectorCount > 0) {
+		const severity: Severity = variationSelectorCount > 5 && hasSuspiciousDecode ? "critical" : variationSelectorCount > 5 ? "high" : "medium";
+		const deduction = severity === "critical" ? 40 : severity === "high" ? 25 : 10;
+		findings.push({
+			id: "INJ-UNICODE-VS",
+			category: "injection",
+			severity,
+			title: "Unicode variation selectors detected",
+			description:
+				"The skill contains Unicode Variation Selectors which can be used to hide instructions and evade review.",
+			evidence: `Found ${variationSelectorCount} variation selector(s) (U+E0100–U+E01EF)${hasSuspiciousDecode ? "; paired with decode/exec patterns" : ""}`,
+			deduction,
+			recommendation:
+				"Remove all variation selectors. If they are required for a specific text effect, document why and ensure no hidden instructions are present.",
+			owaspCategory: "ASST-10",
+		});
+	}
+
+	// ── Encoded tag escape sequences (visible) ─────────────────────────────
+	// Attackers may include tag escapes like \u{E0061} in source text and later decode/execute.
+	// We treat these as suspicious, but avoid CRITICAL without additional context.
+	const encodedTagRegex = /\\u(\{)?[Ee]00[0-7][0-9A-Fa-f](\})?/g;
+	const encodedLongTagRegex = /\\U000[Ee]00[0-7][0-9A-Fa-f]/g;
+	const encodedTagsCount = (content.match(encodedTagRegex) ?? []).length + (content.match(encodedLongTagRegex) ?? []).length;
+	if (encodedTagsCount > 0) {
+		const severity: Severity = hasSuspiciousDecode ? "high" : "medium";
+		const deduction = hasSuspiciousDecode ? 20 : 10;
+		findings.push({
+			id: "INJ-UNICODE-ESCAPES",
+			category: "injection",
+			severity,
+			title: "Encoded unicode tag escape sequences detected",
+			description:
+				"The skill contains unicode tag escape sequences (e.g., \\u{E0061}) which may indicate an attempt to smuggle invisible content.",
+			evidence: `Found ${encodedTagsCount} encoded tag escape sequence(s) (\\u{E00xx} / \\U000E00xx)${hasSuspiciousDecode ? "; paired with decode/exec patterns" : ""}`,
+			deduction,
+			recommendation:
+				"Remove encoded unicode escapes unless absolutely necessary. If present for documentation, avoid including decode/exec instructions that could reconstitute hidden payloads.",
 			owaspCategory: "ASST-10",
 		});
 	}

@@ -104,6 +104,16 @@ const ERROR_HANDLING_PATTERNS = [
 	/(?:return|display|show)\s+(?:an?\s+)?(?:error|warning)\s+message/i,
 ] as const;
 
+/** Overly generic descriptions can cause trigger hijacking */
+const GENERIC_DESCRIPTION_PATTERNS = [
+	/^(?:help|assist)(?:\s+(?:me|you))?(?:\s+with\s+anything)?[.!]?$/i,
+	/^(?:a|an|the)?\s*(?:assistant|helper)\s*$/i,
+	/\b(?:do\s+(?:anything|everything)|help\s+with\s+everything)\b/i,
+	/\bgeneral\s+purpose\s+(?:assistant|tool|skill)\b/i,
+	/\buniversal\s+(?:assistant|tool|skill)\b/i,
+	/\buse\s+(?:this|me)\s+for\s+(?:everything|anything)\b/i,
+] as const;
+
 /** Analyze content quality and safety boundaries */
 export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
@@ -309,6 +319,27 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 			});
 			break;
 		}
+	}
+
+	// Check for overly generic description (trigger hijacking risk)
+	if (
+		skill.description &&
+		GENERIC_DESCRIPTION_PATTERNS.some((p) => p.test(skill.description.trim()))
+	) {
+		score = Math.max(0, score - 10);
+		findings.push({
+			id: "CONT-GENERIC-DESC",
+			category: "content",
+			severity: "medium",
+			title: "Overly generic description (trigger hijacking risk)",
+			description:
+				"The skill description is very generic, which can cause the agent to activate it for unrelated requests (trigger hijacking).",
+			evidence: `Description: "${skill.description.trim().slice(0, 120)}"`,
+			deduction: 10,
+			recommendation:
+				"Rewrite the description to be specific about scope and use cases (when to invoke this skill and what it will do).",
+			owaspCategory: "ASST-11",
+		});
 	}
 
 	// Check for missing description
