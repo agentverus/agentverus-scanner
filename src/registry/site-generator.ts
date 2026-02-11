@@ -43,6 +43,7 @@ function generateHtml(
 			d: r.categories["dependencies"]?.score ?? 0,
 			bh: r.categories["behavioral"]?.score ?? 0,
 			c: r.categories["content"]?.score ?? 0,
+			cs: r.categories["code-safety"]?.score ?? 0,
 		},
 	}));
 
@@ -257,7 +258,7 @@ function catBar(label, score) {
 }
 
 function renderRow(r) {
-  const cats = catBar('Permissions', r.cats.p) + catBar('Injection', r.cats.i) + catBar('Dependencies', r.cats.d) + catBar('Behavioral', r.cats.bh) + catBar('Content', r.cats.c);
+  const cats = catBar('Permissions', r.cats.p) + catBar('Injection', r.cats.i) + catBar('Dependencies', r.cats.d) + catBar('Behavioral', r.cats.bh) + catBar('Content', r.cats.c) + catBar('Code Safety', r.cats.cs);
   const findings = r.fs.map(f => '<span class="finding-pill ' + f.sv + '" title="' + f.c + '">' + f.t.slice(0, 50) + '</span>').join('');
   return '<tr>' +
     '<td class="slug"><a href="https://clawhub.ai/skills/' + r.s + '" target="_blank" rel="noopener">' + r.s + '</a></td>' +

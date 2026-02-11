@@ -18,7 +18,7 @@ describe("analyzePermissions", () => {
 		const result = await analyzePermissions(skill);
 
 		expect(result.score).toBeGreaterThanOrEqual(90);
-		expect(result.weight).toBe(0.25);
+		expect(result.weight).toBe(0.20);
 		expect(result.findings.every((f) => f.severity !== "critical")).toBe(true);
 	});
 
@@ -53,10 +53,10 @@ describe("analyzePermissions", () => {
 		expect(mismatchFindings.length).toBeGreaterThan(0);
 	});
 
-	it("should return weight of 0.25", async () => {
+	it("should return weight of 0.20", async () => {
 		const skill = parseSkill(loadFixture("safe-basic.md"));
 		const result = await analyzePermissions(skill);
-		expect(result.weight).toBe(0.25);
+		expect(result.weight).toBe(0.20);
 	});
 
 	it("should annotate findings that match declared permissions (but not suppress them)", () => {

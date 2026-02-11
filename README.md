@@ -18,6 +18,7 @@ Scans agent skill files and produces structured trust reports covering:
 - Injection detection (prompt injection, instruction override, relay)
 - Dependency analysis (external URLs, suspicious downloads)
 - Behavioral risk scoring (exfiltration, escalation, stealth patterns)
+- Code safety analysis (dangerous code blocks, eval/exec, exfil patterns)
 - Content analysis (obfuscation, concealment, social engineering)
 
 ## Install
@@ -214,11 +215,12 @@ Overall score is a weighted average of category scores:
 
 | Category | Weight |
 |----------|--------|
-| Permissions | 25% |
-| Injection | 30% |
-| Dependencies | 20% |
+| Permissions | 20% |
+| Injection | 25% |
+| Dependencies | 15% |
 | Behavioral | 15% |
 | Content | 10% |
+| Code Safety | 15% |
 
 ## Badge Tiers
 

@@ -523,7 +523,7 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 
 	return {
 		score: Math.max(0, Math.min(100, adjustedScore)),
-		weight: 0.3,
+		weight: 0.25,
 		findings: adjustedFindings,
 		summary,
 	};

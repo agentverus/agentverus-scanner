@@ -437,7 +437,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 
 	return {
 		score: Math.max(0, Math.min(100, adjustedScore)),
-		weight: 0.2,
+		weight: 0.15,
 		findings: adjustedFindings,
 		summary,
 	};

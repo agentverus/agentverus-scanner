@@ -16,7 +16,7 @@ describe("analyzeDependencies", () => {
 		const result = await analyzeDependencies(skill);
 
 		expect(result.score).toBe(100);
-		expect(result.weight).toBe(0.2);
+		expect(result.weight).toBe(0.15);
 	});
 
 	it("should score suspicious-urls between 50 and 70", async () => {

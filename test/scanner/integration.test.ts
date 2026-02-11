@@ -17,8 +17,8 @@ describe("scanSkill (integration)", () => {
 		expect(report.badge).toBe("certified");
 		expect(report.metadata.skillFormat).toBe("openclaw");
 		expect(report.metadata.durationMs).toBeGreaterThan(0);
-		expect(report.categories.permissions.weight).toBe(0.25);
-		expect(report.categories.injection.weight).toBe(0.3);
+		expect(report.categories.permissions.weight).toBe(0.20);
+		expect(report.categories.injection.weight).toBe(0.25);
 	});
 
 	it("should score safe-complex above 85", async () => {
@@ -79,7 +79,7 @@ describe("scanSkill (integration)", () => {
 		expect(report.metadata.skillFormat).toBe("openclaw");
 	});
 
-	it("should include all 5 categories in report", async () => {
+	it("should include all 6 categories in report", async () => {
 		const report = await scanSkill(loadFixture("safe-basic.md"));
 
 		expect(report.categories).toHaveProperty("permissions");
@@ -87,6 +87,7 @@ describe("scanSkill (integration)", () => {
 		expect(report.categories).toHaveProperty("dependencies");
 		expect(report.categories).toHaveProperty("behavioral");
 		expect(report.categories).toHaveProperty("content");
+		expect(report.categories).toHaveProperty("code-safety");
 	});
 
 	it("obfuscated skill should score below 80", async () => {

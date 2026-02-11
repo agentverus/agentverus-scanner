@@ -110,4 +110,4 @@ export const ASST_CATEGORIES = {
 } as const;
 
 /** Scanner version */
-export const SCANNER_VERSION = "0.4.0";
+export const SCANNER_VERSION = "0.5.0";

@@ -208,7 +208,7 @@ export async function analyzePermissions(skill: ParsedSkill): Promise<CategorySc
 
 	return {
 		score: Math.max(0, Math.min(100, adjustedScore)),
-		weight: 0.25,
+		weight: 0.20,
 		findings: adjustedFindings,
 		summary,
 	};

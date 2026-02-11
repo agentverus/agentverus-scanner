@@ -17,7 +17,7 @@ describe("analyzeInjection", () => {
 		const result = await analyzeInjection(skill);
 
 		expect(result.score).toBeGreaterThanOrEqual(95);
-		expect(result.weight).toBe(0.3);
+		expect(result.weight).toBe(0.25);
 	});
 
 	it("should score safe-complex skill above 95", async () => {

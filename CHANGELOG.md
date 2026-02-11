@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-02-11
+
+### Added
+
+- **Code Safety analyzer** (`code-safety`) as a sixth scoring category focused on risky embedded code patterns (e.g. `eval`/`exec`, shell escape patterns, exfiltration flows, and obfuscation in code blocks).
+- **Code Safety category output** in registry CSV/site/report generators for parity with other category scores.
+- **Additional scanner exports** for `./badges` and binary scanning helpers used by registry/report workflows.
+
+### Changed
+
+- **Scoring weights rebalanced** to include Code Safety:
+  - Permissions: 20% (was 25%)
+  - Injection: 25% (was 30%)
+  - Dependencies: 15% (was 20%)
+  - Behavioral: 15% (unchanged)
+  - Content: 10% (unchanged)
+  - Code Safety: 15% (new)
+- **Scanner version bumped to `0.5.0`** in package metadata and scanner runtime constants.
+- **README methodology and weight tables updated** to reflect six-category scoring.
+
 ## [0.4.0] - 2026-02-09
 
 ### Added
@@ -177,7 +197,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.1.1...v0.2.0
