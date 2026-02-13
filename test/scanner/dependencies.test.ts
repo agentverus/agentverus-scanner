@@ -62,4 +62,128 @@ describe("analyzeDependencies", () => {
 
 		expect(result.score).toBe(100);
 	});
+
+	it("detects critical lifecycle script", async () => {
+		const skill = parseSkill(loadFixture("lifecycle-scripts.md"));
+		const result = await analyzeDependencies(skill);
+
+		const criticalFinding = result.findings.find((f) =>
+			f.id.startsWith("DEP-LIFECYCLE-EXEC-"),
+		);
+		expect(criticalFinding).toBeDefined();
+		expect(criticalFinding?.severity).toBe("critical");
+		expect(criticalFinding?.deduction).toBe(20);
+	});
+
+	it("detects medium lifecycle script when content appears benign", async () => {
+		const skill = parseSkill(`# Medium Lifecycle\n\n## Setup\n\n\
+\`\`\`json
+{
+  "name": "medium-skill",
+  "scripts": {
+    "prepare": "husky install",
+    "build": "tsc"
+  }
+}
+\`\`\`
+`);
+		const result = await analyzeDependencies(skill);
+
+		const mediumFinding = result.findings.find(
+			(f) =>
+				f.id.startsWith("DEP-LIFECYCLE-") &&
+				!f.id.startsWith("DEP-LIFECYCLE-EXEC-") &&
+				!f.id.startsWith("DEP-LIFECYCLE-DOC-"),
+		);
+		expect(mediumFinding).toBeDefined();
+		expect(mediumFinding?.severity).toBe("medium");
+		expect(mediumFinding?.deduction).toBe(8);
+	});
+
+	it("downgrades lifecycle script in examples/documentation context", async () => {
+		const skill = parseSkill(loadFixture("lifecycle-scripts.md"));
+		const result = await analyzeDependencies(skill);
+
+		const docFinding = result.findings.find((f) => f.id.startsWith("DEP-LIFECYCLE-DOC-"));
+		expect(docFinding).toBeDefined();
+		expect(docFinding?.severity).toBe("low");
+		expect(docFinding?.deduction).toBe(0);
+	});
+
+	it("ignores non-lifecycle scripts", async () => {
+		const skill = parseSkill(`# No Lifecycle\n\n\
+\`\`\`json
+{
+  "name": "safe-scripts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "start": "node index.js"
+  }
+}
+\`\`\`
+`);
+		const result = await analyzeDependencies(skill);
+
+		const lifecycleFindings = result.findings.filter((f) =>
+			f.id.startsWith("DEP-LIFECYCLE"),
+		);
+		expect(lifecycleFindings.length).toBe(0);
+	});
+
+	it("ignores non-JSON code blocks that mention postinstall", async () => {
+		const skill = parseSkill(`# Non JSON\n\n\
+\`\`\`ts
+const scripts = {
+  postinstall: "node scripts/setup.ts",
+};
+\`\`\`
+`);
+		const result = await analyzeDependencies(skill);
+
+		const lifecycleFindings = result.findings.filter((f) =>
+			f.id.startsWith("DEP-LIFECYCLE"),
+		);
+		expect(lifecycleFindings.length).toBe(0);
+	});
+
+	it("handles malformed JSON lifecycle block without throwing", async () => {
+		const skill = parseSkill(`# Malformed JSON\n\n\
+\`\`\`json
+{
+  "name": "broken",
+  "scripts": {
+    "postinstall": "node -e \"console.log('x')\"",
+  }
+}
+\`\`\`
+`);
+		const result = await analyzeDependencies(skill);
+
+		const lifecycleFindings = result.findings.filter((f) =>
+			f.id.startsWith("DEP-LIFECYCLE"),
+		);
+		expect(lifecycleFindings.length).toBe(0);
+	});
+
+	it("applies exactly 20-point dependency deduction for one critical lifecycle finding", async () => {
+		const skill = parseSkill(`# Critical Only\n\n\
+\`\`\`json
+{
+  "name": "critical-only",
+  "scripts": {
+    "postinstall": "node -e 'process.exit(0)'"
+  }
+}
+\`\`\`
+`);
+		const result = await analyzeDependencies(skill);
+
+		const lifecycleFindings = result.findings.filter((f) =>
+			f.id.startsWith("DEP-LIFECYCLE"),
+		);
+		expect(lifecycleFindings.length).toBe(1);
+		expect(lifecycleFindings[0]?.severity).toBe("critical");
+		expect(result.score).toBe(80);
+	});
 });
