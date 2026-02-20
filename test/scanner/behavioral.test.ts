@@ -107,4 +107,55 @@ describe("analyzeBehavioral", () => {
 		const sysFindings = result.findings.filter((f) => f.owaspCategory === "ASST-03");
 		expect(sysFindings.length).toBeGreaterThan(0);
 	});
+
+	// --- Config tampering detection ---
+
+	it("should detect config tamper core (AGENTS.md/TOOLS.md/CLAUDE.md)", async () => {
+		const skill = parseSkill(loadFixture("config-tampering.md"));
+		const result = await analyzeBehavioral(skill);
+
+		const tamperFindings = result.findings.filter((f) =>
+			f.id.startsWith("BEH-CONFIG-TAMPER-CORE-"),
+		);
+		expect(tamperFindings.length).toBeGreaterThan(0);
+		expect(tamperFindings[0]?.severity).toBe("high");
+		expect(tamperFindings[0]?.deduction).toBeGreaterThanOrEqual(20);
+	});
+
+	it("should detect config tamper workspace (.claude/)", async () => {
+		const skill = parseSkill(loadFixture("config-tampering.md"));
+		const result = await analyzeBehavioral(skill);
+
+		const tamperFindings = result.findings.filter((f) =>
+			f.id.startsWith("BEH-CONFIG-TAMPER-WORKSPACE-"),
+		);
+		expect(tamperFindings.length).toBeGreaterThan(0);
+		expect(tamperFindings[0]?.severity).toBe("high");
+	});
+
+	it("should NOT produce config-tamper findings for safe fixture", async () => {
+		const skill = parseSkill(loadFixture("config-tampering-safe.md"));
+		const result = await analyzeBehavioral(skill);
+
+		const tamperFindings = result.findings.filter(
+			(f) =>
+				f.id.startsWith("BEH-CONFIG-TAMPER-CORE-") ||
+				f.id.startsWith("BEH-CONFIG-TAMPER-WORKSPACE-"),
+		);
+		expect(tamperFindings.length).toBe(0);
+	});
+
+	it("should not false-positive on existing safe fixtures for config tampering", async () => {
+		for (const fixture of ["safe-basic.md", "safe-complex.md"]) {
+			const skill = parseSkill(loadFixture(fixture));
+			const result = await analyzeBehavioral(skill);
+
+			const tamperFindings = result.findings.filter(
+				(f) =>
+					f.id.startsWith("BEH-CONFIG-TAMPER-CORE-") ||
+					f.id.startsWith("BEH-CONFIG-TAMPER-WORKSPACE-"),
+			);
+			expect(tamperFindings.length).toBe(0);
+		}
+	});
 });

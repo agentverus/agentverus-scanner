@@ -108,6 +108,27 @@ const LINE_RULES: readonly LineRule[] = [
 		owaspCategory: "ASST-05",
 		deduction: 20,
 	},
+	// --- Config tampering rules ---
+	{
+		id: "CS-CONFIG-TAMPER-CORE-1",
+		severity: "critical",
+		title: "Write to workspace trust-boundary file (AGENTS/TOOLS/CLAUDE.md)",
+		description:
+			"Code writes to a core workspace configuration file (AGENTS.md, TOOLS.md, or CLAUDE.md). These files define the agent's trust boundaries — modifying them can escalate privileges, disable safety rules, or inject persistent malicious instructions.",
+		pattern: /(?:writeFileSync|appendFileSync|>>|>)\s*.*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)/i,
+		owaspCategory: "ASST-03",
+		deduction: 30,
+	},
+	{
+		id: "CS-CONFIG-TAMPER-CLAUDE-1",
+		severity: "high",
+		title: "Write to .claude/ policy directory",
+		description:
+			"Code writes to the .claude/ directory, which contains workspace policies and safety configuration. Modifying these files can disable safety checks, override policy boundaries, or inject persistent instructions.",
+		pattern: /(?:writeFileSync|appendFileSync|>>|>|mkdir)\s*.*\.claude\//i,
+		owaspCategory: "ASST-03",
+		deduction: 20,
+	},
 ];
 
 const STANDARD_PORTS = new Set([80, 443, 8080, 8443, 3000, 3001, 5000, 8000]);

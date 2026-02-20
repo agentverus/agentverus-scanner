@@ -183,4 +183,66 @@ describe("aggregateScores", () => {
 		expect(report.findings[1]?.severity).toBe("medium");
 		expect(report.findings[2]?.severity).toBe("low");
 	});
+
+	// --- Config tampering badge cap ---
+
+	it("should cap badge to SUSPICIOUS for high config-tamper finding (BEH-CONFIG-TAMPER-*)", () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(100, 0.20),
+			injection: makeCategoryScore(100, 0.25),
+			dependencies: makeCategoryScore(100, 0.15),
+			behavioral: makeCategoryScore(80, 0.15, {
+				findings: [
+					{
+						id: "BEH-CONFIG-TAMPER-CORE-1",
+						category: "behavioral",
+						severity: "high",
+						title: "Config tamper core detected",
+						description: "Modify AGENTS.md",
+						evidence: "Modify AGENTS.md",
+						deduction: 25,
+						recommendation: "Do not modify",
+						owaspCategory: "ASST-03",
+					},
+				],
+			}),
+			content: makeCategoryScore(100, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		// Score would be ~96 (only behavioral docked) — normally certified/conditional
+		expect(report.overall).toBeGreaterThanOrEqual(90);
+		// But config-tamper cap forces suspicious
+		expect(report.badge).toBe("suspicious");
+	});
+
+	it("should cap badge to REJECTED for critical config-tamper finding (CS-CONFIG-TAMPER-*)", () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(100, 0.20),
+			injection: makeCategoryScore(100, 0.25),
+			dependencies: makeCategoryScore(100, 0.15),
+			behavioral: makeCategoryScore(100, 0.15),
+			content: makeCategoryScore(100, 0.10),
+			"code-safety": makeCategoryScore(70, 0.15, {
+				findings: [
+					{
+						id: "CS-CONFIG-TAMPER-CORE-1",
+						category: "code-safety",
+						severity: "critical",
+						title: "Write to AGENTS.md in code block",
+						description: "appendFileSync AGENTS.md",
+						evidence: "appendFileSync AGENTS.md",
+						deduction: 30,
+						recommendation: "Do not write",
+						owaspCategory: "ASST-03",
+					},
+				],
+			}),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		// Critical → rejected (existing rule, but config-tamper makes it explicit)
+		expect(report.badge).toBe("rejected");
+	});
 });

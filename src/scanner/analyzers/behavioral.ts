@@ -57,6 +57,28 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Skills should not modify system configuration or install packages globally. Bundle required dependencies.",
 	},
 	{
+		name: "Config tamper core",
+		patterns: [
+			/\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)\b/i,
+		],
+		severity: "high",
+		deduction: 25,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Do not instruct users to write, edit, or otherwise modify trust-boundary workspace files like AGENTS.md, TOOLS.md, or CLAUDE.md. Treat them as user-owned policy/configuration and keep the skill self-contained.",
+	},
+	{
+		name: "Config tamper workspace",
+		patterns: [
+			/\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*\.claude\//i,
+		],
+		severity: "high",
+		deduction: 20,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Do not instruct users to modify files under .claude/. This directory is part of the workspace trust boundary and should not be altered by untrusted instructions.",
+	},
+	{
 		name: "Autonomous action without confirmation",
 		patterns: [
 			/without\s+(?:user\s+)?(?:confirmation|approval|consent|asking)/i,
