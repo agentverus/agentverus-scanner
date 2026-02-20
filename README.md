@@ -19,7 +19,22 @@ Scans agent skill files and produces structured trust reports covering:
 - Dependency analysis (external URLs, suspicious downloads)
 - Behavioral risk scoring (exfiltration, escalation, stealth patterns)
 - Code safety analysis (dangerous code blocks, eval/exec, exfil patterns)
+- **Workspace config tampering detection** (attempts to modify `AGENTS.md`, `TOOLS.md`, `CLAUDE.md`, or `.claude/**`)
 - Content analysis (obfuscation, concealment, social engineering)
+
+## Workspace Config Tampering (Trust-Boundary Escalation)
+
+Agent skills can try to **persistently change your agent’s behavior** by instructing you (or embedding code) to modify workspace trust-boundary files such as:
+
+- `AGENTS.md`, `TOOLS.md`, `CLAUDE.md`
+- `.claude/**`
+
+These are treated as high-risk because they can silently disable safety rules, broaden tool access, or inject long-lived malicious instructions.
+
+**Scanner behavior:**
+- Prose instructions to *write/edit* these files are flagged in the **behavioral** category.
+- Embedded code blocks that write these files are flagged in the **code-safety** category.
+- Any config-tampering finding **caps the badge tier to at most `suspicious`** (critical findings still result in `rejected`).
 
 ## Install
 

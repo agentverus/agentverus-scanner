@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Workspace config tampering detection** (ASST-03): flags skills that attempt to modify workspace trust-boundary files (`AGENTS.md`, `TOOLS.md`, `CLAUDE.md`, or `.claude/**`) via prose instructions or embedded code blocks.
+
+### Changed
+
+- **Badge tier cap for config tampering**: any config-tampering finding caps the badge to at most `suspicious` (critical findings still result in `rejected`).
+
 ## [0.5.0] - 2026-02-11
 
 ### Added
