@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-03-01
+
+### Fixed
+
+- **Lifecycle docs-context hardening**: lifecycle scripts under `Usage` headings are no longer auto-downgraded as documentation examples; real install hooks in usage instructions now retain normal lifecycle risk scoring.
+- **JSONC lifecycle parsing support**: `jsonc` fenced `package.json` snippets (including comments/trailing commas) are now parsed for lifecycle scripts instead of being skipped, closing an easy false-negative path.
+- **Demo/output docs-context restore**: headings such as `Demo` and `Output` remain treated as documentation example context, avoiding unnecessary lifecycle penalties for benign examples.
+
+### Tests
+
+- Expanded `test/scanner/dependencies.test.ts` with coverage for usage-heading lifecycle scoring, JSONC lifecycle extraction, and demo/output documentation context behavior.
+
 ## [0.6.0] - 2026-03-01
 
 ### Added
@@ -221,7 +233,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.3.0...v0.4.0

@@ -1,6 +1,6 @@
 {
 	"name": "agentverus-scanner",
-	"version": "0.6.0",
+	"version": "0.6.1",
 	"description": "AgentVerus skill trust scanner — security and behavioral analysis for AI agent skills",
 	"type": "module",
 	"license": "MIT",
