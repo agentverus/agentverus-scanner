@@ -36,6 +36,15 @@ const CATEGORY_WEIGHTS: Record<Category, number> = {
  * - Score 75-89, zero Critical, ≤2 High → CONDITIONAL
  * - Score 90-100, zero Critical, zero High → CERTIFIED
  */
+/** Config-tampering finding ID prefixes that trigger a badge cap */
+const CONFIG_TAMPER_PREFIXES = ["BEH-CONFIG-TAMPER-", "CS-CONFIG-TAMPER-"];
+
+function hasConfigTamperFindings(findings: readonly Finding[]): boolean {
+	return findings.some((f) =>
+		CONFIG_TAMPER_PREFIXES.some((prefix) => f.id.startsWith(prefix)),
+	);
+}
+
 function determineBadge(score: number, findings: readonly Finding[]): BadgeTier {
 	const hasCritical = findings.some((f) => f.severity === "critical");
 	const highCount = findings.filter((f) => f.severity === "high").length;
@@ -46,6 +55,11 @@ function determineBadge(score: number, findings: readonly Finding[]): BadgeTier 
 	// Score-based tiers
 	if (score < 50) return "rejected";
 	if (score < 75) return "suspicious";
+
+	// Config-tampering cap: even high-scoring skills with config-tamper findings
+	// cannot achieve better than "suspicious"
+	if (hasConfigTamperFindings(findings)) return "suspicious";
+
 	if (score < 90 && highCount <= 2) return "conditional";
 	if (score >= 90 && highCount === 0) return "certified";
 
