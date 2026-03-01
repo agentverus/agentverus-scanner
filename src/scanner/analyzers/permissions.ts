@@ -1,4 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { analyzeCapabilityContract } from "./capability-contract.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Permission risk tiers */
@@ -184,6 +185,12 @@ export async function analyzePermissions(skill: ParsedSkill): Promise<CategorySc
 				"Apply the principle of least privilege — only request permissions the skill actually needs.",
 			owaspCategory: "ASST-08",
 		});
+	}
+
+	// Compare declared capabilities against inferred behavior.
+	for (const finding of analyzeCapabilityContract(skill)) {
+		score = Math.max(0, score - finding.deduction);
+		findings.push(finding);
 	}
 
 	// Apply declared permissions — downgrade matching findings

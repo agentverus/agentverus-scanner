@@ -98,4 +98,42 @@ describe("analyzePermissions", () => {
 		expect(credentialFindings.length).toBeGreaterThan(0);
 		expect(credentialFindings.some((f) => f.severity === "high")).toBe(true);
 	});
+
+	it("should flag inferred capabilities that are not declared", async () => {
+		const skill = parseSkill(loadFixture("undeclared-permissions.md"));
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.length).toBeGreaterThan(0);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential access")),
+		).toBe(true);
+	});
+
+	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
+		const skill = parseSkill(loadFixture("declared-permissions.md"));
+		const result = await analyzePermissions(skill);
+
+		const missing = result.findings.filter((f) => f.id.startsWith("PERM-CONTRACT-MISSING-"));
+		expect(missing.length).toBe(0);
+	});
+
+	it("should report unknown declaration kinds for contract review", async () => {
+		const skill = parseSkill(`---
+name: Unknown Contract Skill
+description: Tests unknown declaration mapping
+permissions:
+  - capability_x: "Custom framework capability"
+---
+# Unknown Contract Skill
+This skill formats markdown files.
+`);
+		const result = await analyzePermissions(skill);
+
+		const unknown = result.findings.filter((f) => f.id.startsWith("PERM-CONTRACT-UNKNOWN-"));
+		expect(unknown.length).toBe(1);
+		expect(unknown[0]?.severity).toBe("info");
+	});
 });

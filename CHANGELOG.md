@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-03-01
+
+### Added
+
+- **Lifecycle script detection in dependencies analyzer**: Scanner now inspects embedded `package.json` code blocks in skill markdown and flags npm lifecycle hooks (`preinstall`, `install`, `postinstall`, `preuninstall`, `uninstall`, `postuninstall`, `prepublish`, `prepublishOnly`, `prepack`, `postpack`, `prepare`) under ASST-04.
+- **Critical lifecycle-script execution findings**: Lifecycle scripts containing high-risk execution/network patterns (for example `curl|bash`, `wget`, `eval`, `exec`, `node -e`, `python -c`, command substitution, direct IP/network access) are now reported as `critical` with a 20-point dependencies deduction.
+- **Documentation-context downgrade for lifecycle examples**: Lifecycle hooks found in example/tutorial/documentation sections are downgraded to `low` informational findings (0-point deduction) to reduce false positives.
+- **Workspace config tampering detection** (ASST-03): flags skills that attempt to modify workspace trust-boundary files (`AGENTS.md`, `TOOLS.md`, `CLAUDE.md`, or `.claude/**`) via prose instructions or embedded code blocks.
+- **Capability contract checks**: permissions analysis now compares declared capabilities against inferred behavior and emits `PERM-CONTRACT-MISSING-*` findings for undeclared inferred risk (credential access, exec, system modification, file write, network).
+- **CycloneDX SBOM output**: new `--sbom [path]` scan option writes `agentverus-scanner.sbom.json` by default, including per-target components and dependency indicator relationships.
+- **SBOM module export**: package now exports `agentverus-scanner/sbom` for programmatic artifact generation.
+
+### Changed
+
+- **Badge tier cap for config tampering**: any config-tampering finding caps the badge to at most `suspicious` (critical findings still result in `rejected`).
+- **README/docs updates**: added capability-contract documentation, SBOM usage examples, and release prep notes for vNEXT.
+
+### Tests
+
+- Added `test/fixtures/skills/lifecycle-scripts.md` fixture for lifecycle-script coverage.
+- Expanded `test/scanner/dependencies.test.ts` with lifecycle detection tests covering critical/medium/low paths, malformed JSON handling, non-JSON/non-lifecycle exclusions, and score deduction validation.
+- Added `test/scanner/sbom.test.ts` for SBOM document generation and dependency-ref reuse assertions.
+- Expanded `test/scanner/permissions.test.ts` with capability-contract mismatch, aligned declaration, and unknown declaration coverage.
+
 ## [0.5.0] - 2026-02-11
 
 ### Added
@@ -197,7 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.2.0...v0.3.0

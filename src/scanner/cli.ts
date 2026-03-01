@@ -12,6 +12,7 @@ import {
 import { writeBadgeBundle } from "./badges.js";
 import { scanTargetsBatch } from "./runner.js";
 import { buildSarifLog } from "./sarif.js";
+import { buildSbomDocument } from "./sbom.js";
 import { expandScanTargets } from "./targets.js";
 import type { Finding, Severity, TrustReport } from "./types.js";
 import { SCANNER_VERSION } from "./types.js";
@@ -222,6 +223,7 @@ ${COLORS.bold}SCAN OPTIONS${COLORS.reset}
   --json           Output raw JSON report
   --report [path]  Generate markdown report (default: <name>-trust-report.md)
   --sarif [path]   Write SARIF 2.1.0 output (default: agentverus-scanner.sarif)
+  --sbom [path]   Write CycloneDX 1.5 SBOM JSON (default: agentverus-scanner.sbom.json)
   --badges [dir]  Write Shields.io endpoint badge JSON for repo + each skill (default: badges)
   --badge-cache-seconds <n>  Shields.io cacheSeconds value for badge JSON (default: 3600)
   --semantic        Enable LLM-assisted semantic analysis (requires AGENTVERUS_LLM_API_KEY)
@@ -367,6 +369,8 @@ async function main(): Promise<void> {
 	let reportPath: string | undefined;
 	let sarifFlag = false;
 	let sarifPath: string | undefined;
+	let sbomFlag = false;
+	let sbomPath: string | undefined;
 	let badgesFlag = false;
 	let badgesDir: string | undefined;
 	let badgeCacheSeconds: number | undefined;
@@ -402,6 +406,16 @@ async function main(): Promise<void> {
 			const next = scanArgs[i + 1];
 			if (next && !next.startsWith("-")) {
 				sarifPath = next;
+				i += 1;
+			}
+			continue;
+		}
+
+		if (arg === "--sbom") {
+			sbomFlag = true;
+			const next = scanArgs[i + 1];
+			if (next && !next.startsWith("-")) {
+				sbomPath = next;
 				i += 1;
 			}
 			continue;
@@ -549,6 +563,13 @@ async function main(): Promise<void> {
 		const sarif = buildSarifLog(scanned, failures);
 		await writeFile(outPath, JSON.stringify(sarif, null, 2), "utf-8");
 		if (!jsonFlag) console.log(`\n${COLORS.green}SARIF saved to: ${outPath}${COLORS.reset}`);
+	}
+
+	if (sbomFlag) {
+		const outPath = sbomPath || "agentverus-scanner.sbom.json";
+		const sbom = buildSbomDocument(scanned, failures);
+		await writeFile(outPath, JSON.stringify(sbom, null, 2), "utf-8");
+		if (!jsonFlag) console.log(`\n${COLORS.green}SBOM saved to: ${outPath}${COLORS.reset}`);
 	}
 
 	if (badgesFlag) {
