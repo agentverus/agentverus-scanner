@@ -1,6 +1,6 @@
 {
 	"name": "agentverus-scanner",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "AgentVerus skill trust scanner — security and behavioral analysis for AI agent skills",
 	"type": "module",
 	"license": "MIT",
@@ -16,6 +16,7 @@
 		"./types": "./dist/scanner/types.js",
 		"./parser": "./dist/scanner/parser.js",
 		"./source": "./dist/scanner/source.js",
+		"./sbom": "./dist/scanner/sbom.js",
 		"./badges": "./dist/scanner/badges.js",
 		"./registry": "./dist/registry/index.js"
 	},

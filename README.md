@@ -15,6 +15,7 @@ Open-source security and behavioral trust scanner for AI agent skills (`SKILL.md
 Scans agent skill files and produces structured trust reports covering:
 
 - Permission analysis (filesystem/network/exec access)
+- Capability contract checks (declared permissions vs inferred behavior)
 - Injection detection (prompt injection, instruction override, relay)
 - Dependency analysis (external URLs, suspicious downloads)
 - Behavioral risk scoring (exfiltration, escalation, stealth patterns)
@@ -64,6 +65,9 @@ npx agentverus scan ./SKILL.md --json
 
 # SARIF output for GitHub Code Scanning
 npx agentverus scan . --sarif agentverus-scanner.sarif --fail-on-severity high
+
+# CycloneDX SBOM output for supply-chain review
+npx agentverus scan ./SKILL.md --sbom agentverus-scanner.sbom.json
 ```
 
 ### Check a ClawHub Skill
@@ -200,6 +204,32 @@ jobs:
       - uses: actions/deploy-pages@v4
 ```
 
+## Capability Contracts
+
+AgentVerus compares **declared capability intent** to **inferred runtime behavior**.
+
+- Declaration sources:
+  - Permission declarations in frontmatter (e.g. `permissions: - network: "..."`)
+  - Framework permission lists (`permissions: [network_restricted, read]`)
+- Inference sources:
+  - Declared tools/permissions
+  - Behavior patterns in instructions/content
+  - Dependency indicators surfaced during scan
+
+If high-risk behavior is inferred but undeclared, the scanner adds explicit `PERM-CONTRACT-MISSING-*`
+findings. This makes declaration drift visible during review and CI.
+
+## SBOM Output
+
+`--sbom` writes a CycloneDX 1.5 JSON document with:
+
+- Scanner metadata and version
+- Per-target skill components
+- Dependency indicator components extracted from scan evidence
+- Skill → dependency relationships
+
+This is intended as supply-chain **groundwork** for governance and release checks.
+
 ## MCP Server (Agent Integration)
 
 For agent/framework integration via MCP, use the companion package:
@@ -211,7 +241,7 @@ npx -y agentverus-scanner-mcp
 ## Programmatic Usage
 
 ```ts
-import { scanSkill, scanSkillFromUrl } from "agentverus-scanner";
+import { buildSbomDocument, scanSkill, scanSkillFromUrl } from "agentverus-scanner";
 
 const report1 = await scanSkill("# My Skill\\n...");
 console.log(report1.overall, report1.badge);
@@ -222,6 +252,9 @@ const report2 = await scanSkillFromUrl("https://raw.githubusercontent.com/user/r
   retryDelayMs: 750
 });
 console.log(report2.metadata.skillFormat, report2.findings.length);
+
+const sbom = buildSbomDocument([{ target: "./SKILL.md", report: report1 }]);
+console.log(sbom.bomFormat, sbom.components.length);
 ```
 
 ## Trust Score

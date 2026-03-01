@@ -98,6 +98,79 @@ const KNOWN_INSTALLER_DOMAINS = [
 	/volta\.sh/i,
 ] as const;
 
+/** Lifecycle scripts that run automatically during install/publish flows */
+const LIFECYCLE_SCRIPTS = new Set([
+	"preinstall",
+	"install",
+	"postinstall",
+	"preuninstall",
+	"uninstall",
+	"postuninstall",
+	"prepublish",
+	"prepublishonly",
+	"prepack",
+	"postpack",
+	"prepare",
+]);
+
+/** Dangerous script content that indicates command execution/network risk */
+const DANGEROUS_SCRIPT_CONTENT =
+	/\b(?:curl|wget|eval|exec|bash|sh\s+-c|node\s+-e|python\s+-c|base64|nc)\b|\/dev\/tcp|>\(|<\(|\$\(|`[^`]+`|\b\d{1,3}(?:\.\d{1,3}){3}\b|https?:\/\/\S+/i;
+
+interface JsonCodeBlockCandidate {
+	readonly content: string;
+	readonly start: number;
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function extractJsonCodeBlockCandidates(content: string): JsonCodeBlockCandidate[] {
+	const blocks: JsonCodeBlockCandidate[] = [];
+	const codeBlockRegex = /```([^\n`]*)\r?\n([\s\S]*?)```/g;
+	let match: RegExpExecArray | null;
+
+	while ((match = codeBlockRegex.exec(content)) !== null) {
+		const langRaw = (match[1] ?? "").trim().toLowerCase();
+		const lang = (langRaw.split(/\s+/)[0] ?? "").trim();
+		if (lang !== "" && lang !== "json" && lang !== "jsonc") {
+			continue;
+		}
+
+		const blockContent = match[2] ?? "";
+		blocks.push({
+			content: blockContent,
+			start: match.index,
+		});
+	}
+
+	return blocks;
+}
+
+function extractScriptsFromJsonBlock(blockContent: string): Record<string, unknown> | null {
+	try {
+		const parsed = JSON.parse(blockContent) as unknown;
+		if (!isObjectRecord(parsed)) return null;
+
+		const scripts = parsed["scripts"];
+		if (!isObjectRecord(scripts)) return null;
+
+		return scripts;
+	} catch {
+		return null;
+	}
+}
+
+function isExampleDocumentationContext(content: string, offset: number): boolean {
+	const preceding = content.slice(Math.max(0, offset - 1500), offset);
+	const headings = preceding.match(/^#{1,6}\s+.+$/gm);
+	if (!headings || headings.length === 0) return false;
+
+	const lastHeading = headings[headings.length - 1] ?? "";
+	return /\b(?:examples?|usage|demo|output|sample|tutorial|documentation|docs)\b/i.test(lastHeading);
+}
+
 /**
  * Check if a curl|bash pattern uses a well-known installer or is in a
  * prerequisites/setup section with a non-suspicious URL.
@@ -400,6 +473,79 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 		}
 	}
 
+	// Check for npm lifecycle scripts inside embedded package.json code blocks
+	let lifecycleFindingCount = 0;
+	let lifecycleExecFindingCount = 0;
+	let lifecycleDocFindingCount = 0;
+
+	for (const block of extractJsonCodeBlockCandidates(content)) {
+		const scripts = extractScriptsFromJsonBlock(block.content);
+		if (!scripts) continue;
+
+		const inDocContext = isExampleDocumentationContext(content, block.start);
+		const lineNumber = content.slice(0, block.start).split("\n").length;
+
+		for (const [scriptName, rawScriptValue] of Object.entries(scripts)) {
+			if (!LIFECYCLE_SCRIPTS.has(scriptName.toLowerCase())) {
+				continue;
+			}
+			if (typeof rawScriptValue !== "string") {
+				continue;
+			}
+
+			const scriptValue = rawScriptValue.trim();
+			let id: string;
+			let severity: "critical" | "medium" | "low";
+			let title: string;
+			let description: string;
+			let deduction: number;
+
+			if (inDocContext) {
+				lifecycleDocFindingCount += 1;
+				id = `DEP-LIFECYCLE-DOC-${lifecycleDocFindingCount}`;
+				severity = "low";
+				title = `Lifecycle script in documentation example (${scriptName})`;
+				description =
+					"An npm lifecycle script appears in an example/documentation section. Keep examples clearly marked as non-production.";
+				deduction = 0;
+			} else if (DANGEROUS_SCRIPT_CONTENT.test(scriptValue)) {
+				lifecycleExecFindingCount += 1;
+				id = `DEP-LIFECYCLE-EXEC-${lifecycleExecFindingCount}`;
+				severity = "critical";
+				title = `Dangerous npm lifecycle script detected (${scriptName})`;
+				description =
+					"The skill includes an npm lifecycle script with dangerous command content that may execute arbitrary code during install.";
+				deduction = 20;
+			} else {
+				lifecycleFindingCount += 1;
+				id = `DEP-LIFECYCLE-${lifecycleFindingCount}`;
+				severity = "medium";
+				title = `Npm lifecycle script detected (${scriptName})`;
+				description =
+					"The skill includes an npm lifecycle script that runs automatically during install/publish and should be reviewed.";
+				deduction = 8;
+			}
+
+			score = Math.max(0, score - deduction);
+
+			findings.push({
+				id,
+				category: "dependencies",
+				severity,
+				title,
+				description,
+				evidence: `"${scriptName}": "${scriptValue}"`.slice(0, 200),
+				lineNumber,
+				deduction,
+				recommendation:
+					severity === "critical"
+						? "Remove install-time lifecycle scripts or replace them with explicit, user-reviewed setup steps."
+						: "Avoid install-time lifecycle hooks where possible, and document safer explicit setup commands.",
+				owaspCategory: "ASST-04",
+			});
+		}
+	}
+
 	// Informational: many external URLs
 	if (skill.urls.length > 5) {
 		findings.push({
@@ -429,7 +575,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			? "No dependency concerns detected."
 			: `Found ${adjustedFindings.length} dependency-related findings. ${
 					adjustedFindings.some((f) => f.severity === "critical")
-						? "CRITICAL: Download-and-execute patterns detected."
+						? "CRITICAL: Dependency execution patterns detected."
 						: adjustedFindings.some((f) => f.severity === "high")
 							? "High-risk external dependencies detected."
 							: "Minor dependency concerns noted."

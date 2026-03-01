@@ -223,6 +223,7 @@ export async function scanSkillFromUrl(url: string, options?: ScanOptions): Prom
 
 export { parseSkill } from "./parser.js";
 export { aggregateScores } from "./scoring.js";
+export { buildSbomDocument } from "./sbom.js";
 export { analyzeSemantic, isSemanticAvailable } from "./analyzers/semantic.js";
 export type {
 	BadgeTier,
