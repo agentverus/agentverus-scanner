@@ -149,8 +149,137 @@ function extractJsonCodeBlockCandidates(content: string): JsonCodeBlockCandidate
 }
 
 function extractScriptsFromJsonBlock(blockContent: string): Record<string, unknown> | null {
+	// Strip JSONC-style comments while preserving content inside string literals.
+	const stripJsonComments = (input: string): string => {
+		let out = "";
+		let inString = false;
+		let escaping = false;
+		let inLineComment = false;
+		let inBlockComment = false;
+
+		for (let i = 0; i < input.length; i += 1) {
+			const ch = input[i] ?? "";
+			const next = input[i + 1] ?? "";
+
+			if (inLineComment) {
+				if (ch === "\n") {
+					inLineComment = false;
+					out += ch;
+				}
+				continue;
+			}
+
+			if (inBlockComment) {
+				if (ch === "*" && next === "/") {
+					inBlockComment = false;
+					i += 1;
+				}
+				continue;
+			}
+
+			if (inString) {
+				out += ch;
+				if (escaping) {
+					escaping = false;
+					continue;
+				}
+				if (ch === "\\") {
+					escaping = true;
+					continue;
+				}
+				if (ch === "\"") {
+					inString = false;
+				}
+				continue;
+			}
+
+			if (ch === "\"") {
+				inString = true;
+				out += ch;
+				continue;
+			}
+
+			if (ch === "/" && next === "/") {
+				inLineComment = true;
+				i += 1;
+				continue;
+			}
+
+			if (ch === "/" && next === "*") {
+				inBlockComment = true;
+				i += 1;
+				continue;
+			}
+
+			out += ch;
+		}
+
+		return out;
+	};
+
+	// Remove trailing commas before `}` or `]`, ignoring commas inside strings.
+	const stripTrailingCommas = (input: string): string => {
+		let out = "";
+		let inString = false;
+		let escaping = false;
+
+		for (let i = 0; i < input.length; i += 1) {
+			const ch = input[i] ?? "";
+
+			if (inString) {
+				out += ch;
+				if (escaping) {
+					escaping = false;
+					continue;
+				}
+				if (ch === "\\") {
+					escaping = true;
+					continue;
+				}
+				if (ch === "\"") {
+					inString = false;
+				}
+				continue;
+			}
+
+			if (ch === "\"") {
+				inString = true;
+				out += ch;
+				continue;
+			}
+
+			if (ch === ",") {
+				let j = i + 1;
+				while (j < input.length && /\s/.test(input[j] ?? "")) j += 1;
+				const nextNonWs = input[j] ?? "";
+				if (nextNonWs === "}" || nextNonWs === "]") {
+					continue;
+				}
+			}
+
+			out += ch;
+		}
+
+		return out;
+	};
+
+	const parseLenientJson = (input: string): unknown | null => {
+		try {
+			return JSON.parse(input) as unknown;
+		} catch {
+			try {
+				const noComments = stripJsonComments(input);
+				const noTrailingCommas = stripTrailingCommas(noComments);
+				return JSON.parse(noTrailingCommas) as unknown;
+			} catch {
+				return null;
+			}
+		}
+	};
+
 	try {
-		const parsed = JSON.parse(blockContent) as unknown;
+		const parsed = parseLenientJson(blockContent);
+		if (!parsed) return null;
 		if (!isObjectRecord(parsed)) return null;
 
 		const scripts = parsed["scripts"];
@@ -168,7 +297,7 @@ function isExampleDocumentationContext(content: string, offset: number): boolean
 	if (!headings || headings.length === 0) return false;
 
 	const lastHeading = headings[headings.length - 1] ?? "";
-	return /\b(?:examples?|usage|demo|output|sample|tutorial|documentation|docs)\b/i.test(lastHeading);
+	return /\b(?:examples?|sample|tutorial|documentation|docs)\b/i.test(lastHeading);
 }
 
 /**
@@ -500,15 +629,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			let description: string;
 			let deduction: number;
 
-			if (inDocContext) {
-				lifecycleDocFindingCount += 1;
-				id = `DEP-LIFECYCLE-DOC-${lifecycleDocFindingCount}`;
-				severity = "low";
-				title = `Lifecycle script in documentation example (${scriptName})`;
-				description =
-					"An npm lifecycle script appears in an example/documentation section. Keep examples clearly marked as non-production.";
-				deduction = 0;
-			} else if (DANGEROUS_SCRIPT_CONTENT.test(scriptValue)) {
+			if (DANGEROUS_SCRIPT_CONTENT.test(scriptValue)) {
 				lifecycleExecFindingCount += 1;
 				id = `DEP-LIFECYCLE-EXEC-${lifecycleExecFindingCount}`;
 				severity = "critical";
@@ -516,6 +637,14 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				description =
 					"The skill includes an npm lifecycle script with dangerous command content that may execute arbitrary code during install.";
 				deduction = 20;
+			} else if (inDocContext) {
+				lifecycleDocFindingCount += 1;
+				id = `DEP-LIFECYCLE-DOC-${lifecycleDocFindingCount}`;
+				severity = "low";
+				title = `Lifecycle script in documentation example (${scriptName})`;
+				description =
+					"An npm lifecycle script appears in an example/documentation section. Keep examples clearly marked as non-production.";
+				deduction = 0;
 			} else {
 				lifecycleFindingCount += 1;
 				id = `DEP-LIFECYCLE-${lifecycleFindingCount}`;
