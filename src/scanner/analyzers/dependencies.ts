@@ -297,7 +297,7 @@ function isExampleDocumentationContext(content: string, offset: number): boolean
 	if (!headings || headings.length === 0) return false;
 
 	const lastHeading = headings[headings.length - 1] ?? "";
-	return /\b(?:examples?|sample|tutorial|documentation|docs)\b/i.test(lastHeading);
+	return /\b(?:examples?|demo|output|sample|tutorial|documentation|docs)\b/i.test(lastHeading);
 }
 
 /**

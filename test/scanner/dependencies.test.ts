@@ -110,6 +110,44 @@ describe("analyzeDependencies", () => {
 		expect(docFinding?.deduction).toBe(0);
 	});
 
+	it("downgrades benign lifecycle script in demo context", async () => {
+		const skill = parseSkill(`# Demo Lifecycle\n\n## Demo\n\n\
+\`\`\`json
+{
+  "name": "demo-example",
+  "scripts": {
+    "prepare": "husky install"
+  }
+}
+\`\`\`
+`);
+		const result = await analyzeDependencies(skill);
+
+		const docFinding = result.findings.find((f) => f.id.startsWith("DEP-LIFECYCLE-DOC-"));
+		expect(docFinding).toBeDefined();
+		expect(docFinding?.severity).toBe("low");
+		expect(docFinding?.deduction).toBe(0);
+	});
+
+	it("downgrades benign lifecycle script in output context", async () => {
+		const skill = parseSkill(`# Output Lifecycle\n\n## Output\n\n\
+\`\`\`json
+{
+  "name": "output-example",
+  "scripts": {
+    "prepare": "husky install"
+  }
+}
+\`\`\`
+`);
+		const result = await analyzeDependencies(skill);
+
+		const docFinding = result.findings.find((f) => f.id.startsWith("DEP-LIFECYCLE-DOC-"));
+		expect(docFinding).toBeDefined();
+		expect(docFinding?.severity).toBe("low");
+		expect(docFinding?.deduction).toBe(0);
+	});
+
 	it("does not downgrade dangerous lifecycle script in documentation context", async () => {
 		const skill = parseSkill(`# Dangerous Doc Lifecycle\n\n## Examples\n\n\
 \`\`\`json
