@@ -103,6 +103,12 @@ const REMOTE_SERVICE_HINT_PATTERNS = [
 		description:
 			"The skill describes moving cookies, auth state, or token material through URL query parameters, which turns bearer material into a dependency on URL handling, logging, and redirect hygiene.",
 	},
+	{
+		regex: /\bAuth\s+Vault\b|\bauth_cookies\b|\bstate\s+save\s+\.\/auth\.json\b|\bpersistent\s+but\s+empty\s+CLI\s+profile\b|\b--session-name\b|\bsession\s+saved\b|\bstate\s+auto-saved\b/i,
+		title: "Persistent credential-state store dependency",
+		description:
+			"The skill depends on persistent local credential or session state stores such as auth vaults, reusable browser profiles, saved auth-state files, or session databases.",
+	},
 ] as const;
 
 /** Download-and-execute patterns */

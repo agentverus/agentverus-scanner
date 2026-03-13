@@ -86,3 +86,4 @@
 {"run":84,"commit":"9ea030d","metric":337,"metrics":{},"status":"keep","description":"feat: surface healthcheck and direct endpoint local-service hints earlier","timestamp":1773432235164,"segment":1}
 {"run":85,"commit":"7113955","metric":340,"metrics":{},"status":"keep","description":"feat: surface hosted browser and provider dependency hints earlier","timestamp":1773432470589,"segment":1}
 {"run":86,"commit":"d2beb64","metric":342,"metrics":{},"status":"keep","description":"feat: surface prose-level query-string credential transport earlier","timestamp":1773444623435,"segment":1}
+{"run":87,"commit":"4976167","metric":344,"metrics":{},"status":"keep","description":"feat: escalate early endpoint sprawl when auth and api context is present","timestamp":1773444742940,"segment":1}
