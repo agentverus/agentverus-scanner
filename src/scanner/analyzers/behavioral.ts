@@ -397,9 +397,10 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Browser content extraction",
 		patterns: [
 			/extract\s+information\s+from\s+web\s+pages/i,
+			/extract(?:ing)?\s+data/i,
 			/data\s+extraction/i,
 			/scrape\s+data\s+from\s+a\s+page/i,
-			/take\s+screenshots?/i,
+			/tak(?:e|ing)\s+screenshots?/i,
 			/captur(?:e|ing)\s+browser\s+screenshots/i,
 			/view(?:ing)?\s+browser\s+logs/i,
 			/inspect\s+rendered\s+DOM/i,
