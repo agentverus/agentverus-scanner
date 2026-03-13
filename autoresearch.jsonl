@@ -22,3 +22,4 @@
 {"run":15,"commit":"59f04ce","metric":134,"metrics":{},"status":"keep","description":"feat: escalate missing safety boundaries on high-risk skill workflows","timestamp":1773380338821,"segment":0}
 {"run":16,"commit":"42e91db","metric":147,"metrics":{},"status":"keep","description":"feat: escalate unknown external urls in auth and api contexts","timestamp":1773380525651,"segment":0}
 {"run":17,"commit":"c048edb","metric":149,"metrics":{},"status":"keep","description":"feat: classify localhost urls as medium-risk local service dependencies","timestamp":1773380781218,"segment":0}
+{"run":18,"commit":"cbe1eab","metric":156,"metrics":{},"status":"keep","description":"feat: broaden screenshot scraping and dom inspection detections in prefix scans","timestamp":1773381099442,"segment":0}

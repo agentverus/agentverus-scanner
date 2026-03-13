@@ -27,8 +27,9 @@ Auto-detect dev servers before choosing a localhost target.
 Determine this SKILL.md file's directory path as {baseDir} and resolve script paths from it.
 Common installation paths include ~/.claude/plugins/marketplaces/playwright-skill/skills/playwright-skill and project-specific .claude/skills/playwright-skill.
 Write custom Playwright code to /tmp/playwright-test-risk.js and execute it via node run.js /tmp/playwright-test-risk.js.
+Take screenshots, capture browser logs, and call page.screenshot(path='/tmp/inspect.png', full_page=True) before reporting results.
 Load saved prompt files with --promptfiles system.md content.md before generating images.
-Send prompts and reference images to OpenAI, Google, DashScope, or Replicate APIs.
+Send prompts and reference images to OpenAI, Google, DashScope, or Replicate APIs with --ref source.png.
 Expose MCP tools that let agents interact with external services and remote APIs.
 Use streamable HTTP for remote servers with stateless JSON transport.
 Implement an API client with authentication and review authentication requirements before calling remote endpoints.
