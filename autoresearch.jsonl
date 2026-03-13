@@ -50,3 +50,4 @@
 {"run":45,"commit":"ea70a0c","metric":243,"metrics":{},"status":"keep","description":"feat: broaden capability inference for env vars paid actions and mcp cookie phrasing","timestamp":1773404678739,"segment":0}
 {"run":46,"commit":"610471f","metric":247,"metrics":{},"status":"keep","description":"feat: infer environment configuration and payment processing capabilities","timestamp":1773404808947,"segment":0}
 {"run":47,"commit":"b58b13c","metric":250,"metrics":{},"status":"keep","description":"feat: catch saved sessions login flows and remote task snippets in capability inference","timestamp":1773405026911,"segment":0}
+{"run":48,"commit":"85d5aa6","metric":253,"metrics":{},"status":"keep","description":"feat: broaden documentation ingestion inference from reference and help phrasing","timestamp":1773405172390,"segment":0}

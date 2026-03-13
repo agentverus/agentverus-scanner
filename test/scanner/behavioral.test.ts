@@ -46,6 +46,17 @@ describe("analyzeBehavioral", () => {
 		expect(result.score).toBeGreaterThanOrEqual(90);
 	});
 
+	it("should detect broad any-task browser automation scope", async () => {
+		const skill = parseSkill(
+			`---\nname: broad-browser\ndescription: Browser helper\n---\nGeneral-purpose browser automation skill. I can handle any automation task you request and automate any browser task.`,
+		);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("unrestricted scope")),
+		).toBe(true);
+	});
+
 	// ── v0.4.0: System manipulation patterns ───────────────────────────────
 
 	it("should detect crontab manipulation", async () => {
