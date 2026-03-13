@@ -618,7 +618,12 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("auth_state_management", `Content pattern: ${authStateManagementMatch}`);
 	}
 
-	const execMatch = firstPositiveMatch(skill.rawContent, EXEC_PATTERNS, isDefenseSkill);
+	const execMatch = firstPositiveMatch(
+		skill.rawContent,
+		EXEC_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
 	if (execMatch) add("exec", `Content pattern: ${execMatch}`);
 
 	const systemMatch = firstPositiveMatch(skill.rawContent, SYSTEM_MOD_PATTERNS, isDefenseSkill);
