@@ -63,6 +63,16 @@ describe("analyzeDependencies", () => {
 		expect(result.score).toBe(100);
 	});
 
+	it("escalates unknown URLs when auth or api context is present", async () => {
+		const skill = parseSkill(`# Auth Flow\nUse this API endpoint after login: https://portal.example.invalid/dashboard\nSet the auth cookie first.`);
+		const result = await analyzeDependencies(skill);
+
+		const finding = result.findings.find((f) => f.id.startsWith("DEP-URL-"));
+		expect(finding).toBeDefined();
+		expect(finding?.severity).toBe("medium");
+		expect((finding?.deduction ?? 0) >= 8).toBe(true);
+	});
+
 	it("detects critical lifecycle script", async () => {
 		const skill = parseSkill(loadFixture("lifecycle-scripts.md"));
 		const result = await analyzeDependencies(skill);

@@ -19,3 +19,4 @@
 {"run":12,"commit":"87812ba","metric":108,"metrics":{},"status":"keep","description":"feat: detect credential vault onboarding and skill path discovery earlier","timestamp":1773379689330,"segment":0}
 {"run":13,"commit":"2441baa","metric":119,"metrics":{},"status":"keep","description":"feat: raise prefix-critical path and orchestration signals so code examples still count","timestamp":1773379929709,"segment":0}
 {"run":14,"commit":"009709f","metric":125,"metrics":{},"status":"keep","description":"feat: raise extraction and temp-script signals so code examples count earlier","timestamp":1773380137306,"segment":0}
+{"run":15,"commit":"59f04ce","metric":134,"metrics":{},"status":"keep","description":"feat: escalate missing safety boundaries on high-risk skill workflows","timestamp":1773380338821,"segment":0}

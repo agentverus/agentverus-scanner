@@ -388,6 +388,18 @@ function classifyUrl(url: string): {
 	return { risk: "unknown", deduction: 5 };
 }
 
+function hasSensitiveUnknownUrlContext(content: string, url: string): boolean {
+	const idx = content.indexOf(url);
+	if (idx < 0) return false;
+
+	const start = Math.max(0, idx - 220);
+	const end = Math.min(content.length, idx + url.length + 220);
+	const window = content.slice(start, end);
+	return /\b(?:auth|authentication|cookie|token|login|dashboard|session|mcp|api|endpoint|provider|oauth|2fa|refresh|credential|secret)\b/i.test(
+		window,
+	);
+}
+
 /**
  * Best-effort extraction of base domains that look like they belong to the skill's
  * own product/brand (self-references).
@@ -469,6 +481,11 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 					: classification.risk === "raw"
 						? "medium"
 						: "low";
+
+			if (classification.risk === "unknown" && hasSensitiveUnknownUrlContext(content, url)) {
+				severity = "medium";
+				effectiveDeduction = Math.max(effectiveDeduction, 8);
+			}
 
 			let titleSuffix = "";
 
