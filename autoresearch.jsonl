@@ -56,3 +56,4 @@
 {"run":51,"commit":"64a6843","metric":261,"metrics":{},"status":"keep","description":"feat: infer docker project discovery and real chrome browser automation phrasing","timestamp":1773406906834,"segment":0}
 {"run":52,"commit":"8643c81","metric":263,"metrics":{},"status":"keep","description":"feat: infer form-filling and selector inspection from browser workflow phrasing","timestamp":1773407155713,"segment":0}
 {"run":53,"commit":"d91f17d","metric":265,"metrics":{},"status":"keep","description":"feat: broaden auth cookie storage and ai provider delegation inference","timestamp":1773407510449,"segment":0}
+{"run":54,"commit":"4e396a3","metric":266,"metrics":{},"status":"keep","description":"feat: broaden auth-state handoff and persistent cli profile inference","timestamp":1773407785131,"segment":0}
