@@ -212,8 +212,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/\bopen\s+https?:\/\/\S+\s+&&\s+[^\n]+/i,
 			/\bfill\s+@e\d+\s+"[^"]+"\s+&&\s+fill\s+@e\d+\s+"[^"]+"\s+&&/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat chained browser commands as compound automation that can hide risky multi-step actions. Prefer explicit step-by-step review for authenticated or destructive workflows.",
@@ -326,8 +326,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/fill\s+@e\d+\s+"password123"/i,
 			/fill\s+out\s+a\s+form/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Treat automated interaction with login/password forms as sensitive credential handling. Require user approval before filling credentials or automating authenticated sign-in flows.",
