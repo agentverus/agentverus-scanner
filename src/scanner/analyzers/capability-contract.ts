@@ -11,18 +11,22 @@ type CapabilityKind =
 	| "credential_access"
 	| "credential_handoff"
 	| "credential_storage"
+	| "auth_state_management"
 	| "exec"
 	| "system_modification"
+	| "container_runtime_control"
 	| "file_write"
 	| "file_read"
 	| "filesystem_discovery"
 	| "network"
 	| "browser_automation"
+	| "browser_session_attachment"
 	| "session_management"
 	| "content_extraction"
 	| "remote_delegation"
 	| "remote_task_management"
 	| "server_exposure"
+	| "external_tool_bridge"
 	| "local_service_access"
 	| "process_orchestration"
 	| "ui_state_access"
@@ -37,19 +41,23 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
 	"credential_handoff",
 	"credential_storage",
+	"auth_state_management",
 	"credential_form_automation",
 	"exec",
 	"system_modification",
+	"container_runtime_control",
 	"file_write",
 	"file_read",
 	"filesystem_discovery",
 	"network",
 	"browser_automation",
+	"browser_session_attachment",
 	"session_management",
 	"content_extraction",
 	"remote_delegation",
 	"remote_task_management",
 	"server_exposure",
+	"external_tool_bridge",
 	"local_service_access",
 	"process_orchestration",
 	"ui_state_access",
@@ -64,19 +72,23 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	credential_access: "credential access",
 	credential_handoff: "credential handoff",
 	credential_storage: "credential storage",
+	auth_state_management: "auth state management",
 	credential_form_automation: "credential form automation",
 	exec: "command execution",
 	system_modification: "system modification",
+	container_runtime_control: "container runtime control",
 	file_write: "file write",
 	file_read: "file read",
 	filesystem_discovery: "filesystem discovery",
 	network: "network access",
 	browser_automation: "browser automation",
+	browser_session_attachment: "browser session attachment",
 	session_management: "session management",
 	content_extraction: "content extraction",
 	remote_delegation: "remote delegation",
 	remote_task_management: "remote task management",
 	server_exposure: "server exposure",
+	external_tool_bridge: "external tool bridge",
 	local_service_access: "local service access",
 	process_orchestration: "process orchestration",
 	ui_state_access: "UI state access",
@@ -93,19 +105,23 @@ const CAPABILITY_SEVERITY: Readonly<
 	credential_access: { severity: "high", deduction: 15 },
 	credential_handoff: { severity: "high", deduction: 12 },
 	credential_storage: { severity: "high", deduction: 12 },
+	auth_state_management: { severity: "high", deduction: 12 },
 	credential_form_automation: { severity: "medium", deduction: 8 },
 	exec: { severity: "high", deduction: 12 },
 	system_modification: { severity: "high", deduction: 12 },
+	container_runtime_control: { severity: "high", deduction: 10 },
 	file_write: { severity: "medium", deduction: 8 },
 	file_read: { severity: "medium", deduction: 6 },
 	filesystem_discovery: { severity: "medium", deduction: 8 },
 	network: { severity: "medium", deduction: 6 },
 	browser_automation: { severity: "medium", deduction: 8 },
+	browser_session_attachment: { severity: "high", deduction: 12 },
 	session_management: { severity: "medium", deduction: 8 },
 	content_extraction: { severity: "medium", deduction: 8 },
 	remote_delegation: { severity: "medium", deduction: 8 },
 	remote_task_management: { severity: "medium", deduction: 8 },
 	server_exposure: { severity: "medium", deduction: 8 },
+	external_tool_bridge: { severity: "medium", deduction: 8 },
 	local_service_access: { severity: "medium", deduction: 8 },
 	process_orchestration: { severity: "medium", deduction: 8 },
 	ui_state_access: { severity: "medium", deduction: 8 },
@@ -189,6 +205,14 @@ const CREDENTIAL_STORAGE_PATTERNS: readonly RegExp[] = [
 	/credentials\s+stored\s+encrypted/i,
 ] as const;
 
+const AUTH_STATE_MANAGEMENT_PATTERNS: readonly RegExp[] = [
+	/state\s+(?:save|load)\s+\.\/auth\.json/i,
+	/browser\s+session\s+is\s+authenticated/i,
+	/use\s+that\s+auth\s+state/i,
+	/cookies?\s+and\s+localStorage/i,
+	/auth(?:entication)?\s+cookie/i,
+] as const;
+
 const NETWORK_PATTERNS: readonly RegExp[] = [
 	/https?:\/\/[^\s`"'<>()[\]{}]+/i,
 	/\b(?:fetch|curl|wget|webhook|network_unrestricted|network_restricted|api\s+(?:endpoint|request)|post\s+to\s+https?:\/\/)\b/i,
@@ -208,6 +232,16 @@ const BROWSER_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/\bclick\s+the\s+"?\+1"?\s+button\b/i,
 	/\btake\s+screenshots?\b/i,
 	/\btest(?:ing)?\s+web\s+apps?\b/i,
+] as const;
+
+const BROWSER_SESSION_ATTACHMENT_PATTERNS: readonly RegExp[] = [
+	/--auto-connect\b/i,
+	/--cdp\b/i,
+	/get\s+cdp-url/i,
+	/remote-debugging-port/i,
+	/actual\s+Chrome\s+profile/i,
+	/real\s+Chrome\s+with\s+your\s+login\s+sessions/i,
+	/profile\s+sync\b/i,
 ] as const;
 
 const REMOTE_DELEGATION_PATTERNS: readonly RegExp[] = [
@@ -230,6 +264,13 @@ const SERVER_EXPOSURE_PATTERNS: readonly RegExp[] = [
 	/\/mcp\b/i,
 	/Call\s+MCP\s+tools\s+via/i,
 	/Expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
+] as const;
+
+const EXTERNAL_TOOL_BRIDGE_PATTERNS: readonly RegExp[] = [
+	/external\s+services\s+through\s+well-?designed\s+tools/i,
+	/expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
+	/interact\s+with\s+external\s+services/i,
+	/MCP\s+integration/i,
 ] as const;
 
 const LOCAL_SERVICE_ACCESS_PATTERNS: readonly RegExp[] = [
@@ -367,6 +408,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	if (hasAny(["credential_storage", "vault", "auth_cookies"])) {
 		return "credential_storage";
 	}
+	if (hasAny(["auth_state_management", "auth_state", "cookie_state"])) {
+		return "auth_state_management";
+	}
 	if (hasAny(["credential_form", "password_form", "login_form"])) {
 		return "credential_form_automation";
 	}
@@ -399,6 +443,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	if (hasAny(["browser", "playwright", "cdp", "chromium", "chrome", "webapp", "snapshot"])) {
 		return "browser_automation";
 	}
+	if (hasAny(["browser_session_attachment", "cdp_attach", "profile_sync"])) {
+		return "browser_session_attachment";
+	}
 	if (hasAny(["remote_delegation", "remote_task", "cloud_browser", "streamable_http"])) {
 		return "remote_delegation";
 	}
@@ -422,6 +469,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["local_input_control", "clipboard", "paste_keystroke"])) {
 		return "local_input_control";
+	}
+	if (hasAny(["external_tool_bridge", "tool_bridge", "mcp_integration"])) {
+		return "external_tool_bridge";
 	}
 	if (hasAny(["package_bootstrap", "npx", "bunx", "pnpm_dlx"])) {
 		return "package_bootstrap";
@@ -558,6 +608,16 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("credential_storage", `Content pattern: ${credentialStorageMatch}`);
 	}
 
+	const authStateManagementMatch = firstPositiveMatch(
+		skill.rawContent,
+		AUTH_STATE_MANAGEMENT_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (authStateManagementMatch) {
+		add("auth_state_management", `Content pattern: ${authStateManagementMatch}`);
+	}
+
 	const execMatch = firstPositiveMatch(skill.rawContent, EXEC_PATTERNS, isDefenseSkill);
 	if (execMatch) add("exec", `Content pattern: ${execMatch}`);
 
@@ -596,6 +656,16 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("browser_automation", `Content pattern: ${browserAutomationMatch}`);
 	}
 
+	const browserSessionAttachmentMatch = firstPositiveMatch(
+		skill.rawContent,
+		BROWSER_SESSION_ATTACHMENT_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (browserSessionAttachmentMatch) {
+		add("browser_session_attachment", `Content pattern: ${browserSessionAttachmentMatch}`);
+	}
+
 	const sessionManagementMatch = firstPositiveMatch(
 		skill.rawContent,
 		SESSION_MANAGEMENT_PATTERNS,
@@ -632,6 +702,16 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	);
 	if (localInputControlMatch) {
 		add("local_input_control", `Content pattern: ${localInputControlMatch}`);
+	}
+
+	const externalToolBridgeMatch = firstPositiveMatch(
+		skill.rawContent,
+		EXTERNAL_TOOL_BRIDGE_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (externalToolBridgeMatch) {
+		add("external_tool_bridge", `Content pattern: ${externalToolBridgeMatch}`);
 	}
 
 	const packageBootstrapMatch = firstPositiveMatch(
@@ -758,7 +838,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			recommendation:
 				"Declare this capability explicitly in frontmatter permissions with a specific justification, or remove the risky behavior.",
 			owaspCategory:
-				capability === "credential_access" || capability === "credential_handoff" || capability === "credential_storage" || capability === "credential_form_automation"
+				capability === "credential_access" || capability === "credential_handoff" || capability === "credential_storage" || capability === "auth_state_management" || capability === "credential_form_automation"
 					? "ASST-05"
 					: capability === "network"
 						? "ASST-04"
@@ -781,7 +861,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, credential_handoff, credential_storage, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, package_bootstrap, environment_configuration, payment_processing, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, credential_handoff, credential_storage, auth_state_management, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, browser_session_attachment, session_management, content_extraction, documentation_ingestion, local_input_control, external_tool_bridge, package_bootstrap, environment_configuration, payment_processing, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}

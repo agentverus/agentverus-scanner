@@ -129,7 +129,13 @@ describe("analyzePermissions", () => {
 			contractFindings.some((f) => f.title.includes("credential storage")),
 		).toBe(true);
 		expect(
+			contractFindings.some((f) => f.title.includes("auth state management")),
+		).toBe(true);
+		expect(
 			contractFindings.some((f) => f.title.includes("browser automation")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("browser session attachment")),
 		).toBe(true);
 		expect(
 			contractFindings.some((f) => f.title.includes("file read")),
@@ -166,6 +172,9 @@ describe("analyzePermissions", () => {
 		).toBe(true);
 		expect(
 			contractFindings.some((f) => f.title.includes("local input control")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("external tool bridge")),
 		).toBe(true);
 		expect(
 			contractFindings.some((f) => f.title.includes("package bootstrap")),
