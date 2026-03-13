@@ -11,3 +11,4 @@
 {"run":4,"commit":"81e0cb4","metric":56,"metrics":{},"status":"keep","description":"feat: detect external override files, paid actions, and container runtime control earlier","timestamp":1773377876265,"segment":0}
 {"run":5,"commit":"2a6ba42","metric":63,"metrics":{},"status":"keep","description":"feat: flag opaque helper scripts and session reuse in realtime prefix scans","timestamp":1773378078847,"segment":0}
 {"run":6,"commit":"d93b823","metric":66,"metrics":{},"status":"keep","description":"feat: surface remote browser delegation risks in realtime prefix scans","timestamp":1773378153890,"segment":0}
+{"run":7,"commit":"e1f6cc9","metric":71,"metrics":{},"status":"keep","description":"feat: catch cookie header replay and catch-all browser trigger patterns earlier","timestamp":1773378467880,"segment":0}

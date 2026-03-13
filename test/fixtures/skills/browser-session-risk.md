@@ -22,6 +22,7 @@ Replay the session with curl -H "Cookie: clawdirect_cookie=<cookie_value>" when 
 Expose local apps with browser-use tunnel 3000 and share the public share URL.
 Run against http://localhost:3000/admin when attached to the dev server.
 Pass --secret apiKey=value to the remote task when needed.
+Bootstrap tooling with npx -y bun or pnpm dlx atxp-call when the runtime is missing.
 Use real Chrome to bypass anti-bot detection.
 Allow file:// access to local files when needed.
 By default, this tool imposes no restrictions on navigation, actions, or output.

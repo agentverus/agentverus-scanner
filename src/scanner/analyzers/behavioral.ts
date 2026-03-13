@@ -301,6 +301,18 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat localhost and loopback services as privileged local attack surfaces. Require explicit approval, constrain reachable ports, and avoid combining local access with session reuse or tunneling.",
 	},
 	{
+		name: "Package bootstrap execution",
+		patterns: [
+			/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+			/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-04",
+		recommendation:
+			"Surface package bootstrap commands for review. Ephemeral package execution and install-time dependency pulls increase supply-chain risk, especially when versions are not pinned or provenance is unclear.",
+	},
+	{
 		name: "Container runtime control",
 		patterns: [
 			/\bdocker\s+(?:info|context|ps|images|build(?:x)?|run|exec|stop|compose)\b/i,
