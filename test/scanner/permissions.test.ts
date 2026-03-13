@@ -257,6 +257,7 @@ EXPOSE 3000
 		expect(contractFindings.some((f) => f.title.includes("file write"))).toBe(true);
 		expect(contractFindings.some((f) => f.title.includes("server exposure"))).toBe(true);
 		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("network access"))).toBe(true);
 	});
 
 	it("should infer local service access from express web-server endpoint guidance", async () => {
@@ -285,6 +286,20 @@ Project structure, package.json, tsconfig.json.`);
 			f.id.startsWith("PERM-CONTRACT-MISSING-"),
 		);
 		expect(contractFindings.some((f) => f.title.includes("package bootstrap"))).toBe(true);
+	});
+
+	it("should infer server exposure from cloud-hosted browser delegation", async () => {
+		const skill = parseSkill(`---
+name: remote-browser-helper
+description: Uses remote execution for browsing
+---
+Use a cloud-hosted browser with proxy support when local browsing is unavailable.`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("server exposure"))).toBe(true);
 	});
 
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {

@@ -275,7 +275,7 @@ const AUTH_STATE_MANAGEMENT_PATTERNS: readonly RegExp[] = [
 
 const NETWORK_PATTERNS: readonly RegExp[] = [
 	/https?:\/\/[^\s`"'<>()[\]{}]+/i,
-	/\b(?:fetch|curl|wget|webhook|network_unrestricted|network_restricted|api\s+(?:endpoint|request)|post\s+to\s+https?:\/\/)\b/i,
+	/\b(?:fetch|curl|wget|webhook|network_unrestricted|network_restricted|api\s+(?:endpoint|request)|post\s+to\s+https?:\/\/|HEALTHCHECK|EXPOSE\s+\d{2,5})\b/i,
 ] as const;
 
 const BROWSER_AUTOMATION_PATTERNS: readonly RegExp[] = [
@@ -332,6 +332,7 @@ const SERVER_EXPOSURE_PATTERNS: readonly RegExp[] = [
 	/\bMCP\s+Server\b/i,
 	/\/mcp\b/i,
 	/\bEXPOSE\s+\d{2,5}\b/i,
+	/\bcloud-hosted\s+browser\b/i,
 	/Call\s+MCP\s+tools\s+via/i,
 	/Expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
 ] as const;
@@ -780,7 +781,12 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("configuration_override", `Content pattern: ${configurationOverrideMatch}`);
 	}
 
-	const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill);
+	const networkMatch = firstPositiveMatch(
+		skill.rawContent,
+		NETWORK_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
 	if (networkMatch) add("network", `Content pattern: ${networkMatch}`);
 
 	const browserAutomationMatch = firstPositiveMatch(
