@@ -268,6 +268,10 @@ const LOCAL_INPUT_CONTROL_PATTERNS: readonly RegExp[] = [
 	/copy-to-clipboard/i,
 	/paste-from-clipboard/i,
 	/paste\s+keystroke/i,
+	/\bkeys\s+"Enter"\b/i,
+	/\bpress\s+Enter\b/i,
+	/\bkeyboard\s+type\b/i,
+	/\binserttext\b/i,
 ] as const;
 
 const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
