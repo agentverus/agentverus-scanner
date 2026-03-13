@@ -56,7 +56,8 @@ Benchmark corpus:
 - Baseline expectation confirmed: several public skills with sensitive browser/session/auth capabilities still score conditional/certified with only 1–2 actionable findings.
 - Experiment 1: added browser-session attachment, browser auth-state handling, local service exposure, and broad-trigger detections; expanded capability inference for browser auth/session workflows. Result: `public_issue_findings` improved from `26` to `43` (+17) with `safe_fixture_regressions` unchanged at `4`.
 - Experiment 2: extended lexical coverage for query-string credential transport, saved/default browser profiles, local file access, and automation-evasion language. Result: `public_issue_findings` improved from `43` to `52` (+9) with `safe_fixture_regressions` still `4`.
-- Current artifact to watch: auth-cookie wording can trigger duplicate browser-auth findings on ClawDirect-style skills; deduping or merging related browser auth signals may improve report quality without sacrificing coverage.
+- Experiment 3: added detections for full-profile sync, secret-bearing CLI parameters, and localhost service access. Result: `public_issue_findings` improved from `52` to `61` (+9) with `safe_fixture_regressions` still `4`.
+- Current artifact to watch: auth-cookie wording can trigger duplicate browser-auth findings on ClawDirect-style skills, and browser-use now shows duplicate full-profile-sync detections. Deduping or merging related browser-auth/profile signals may improve report quality without sacrificing coverage.
 - Ideas backlog captured in `autoresearch.ideas.md` for deferred realtime/prescan API work and report-quality deduping.
 - Near-term promising directions:
   - stronger browser auth/profile/session risk detection

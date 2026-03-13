@@ -120,6 +120,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat browser profile reuse, remote-debugging attachment, and live-session access as sensitive credential access. Require explicit user consent, minimize scope, and clean up persisted state.",
 	},
 	{
+		name: "Full browser profile sync",
+		patterns: [
+			/full\s+profile\s+sync/i,
+			/sync\s+ALL\s+cookies/i,
+			/entire\s+browser\s+state/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Avoid syncing an entire browser profile or all cookies into agent-controlled workflows. Prefer the smallest domain-scoped auth state possible and require explicit user consent.",
+	},
+	{
 		name: "Browser auth state handling",
 		patterns: [
 			/(?:state\s+(?:save|load)\s+\S*auth\.json|state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext|auth(?:entication)?\s+cookie|http-?only\s+cookie|cookies?\s+(?:export|import|get|set|clear)\b|cookies?\s+and\s+localStorage)/i,
@@ -130,6 +143,18 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Avoid storing, exporting, or passing browser auth state unless the workflow clearly requires it. Prefer encrypted storage, short-lived state, and explicit user confirmation before reusing credentials.",
+	},
+	{
+		name: "Secret parameter handling",
+		patterns: [
+			/--secret\s+[^\s=]+=[^\s]+/i,
+			/secret\s+metadata/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat secret-bearing CLI parameters as credential handling. Avoid exposing secrets in command lines, logs, or reusable skill snippets; prefer secure secret stores or interactive injection.",
 	},
 	{
 		name: "Credential in query string",
@@ -156,6 +181,17 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Do not expose local services, browser sessions, or internal tools publicly by default. Require explicit approval, constrain the shared surface, and shut down tunnels after use.",
+	},
+	{
+		name: "Local service access",
+		patterns: [
+			/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat localhost and loopback services as privileged local attack surfaces. Require explicit approval, constrain reachable ports, and avoid combining local access with session reuse or tunneling.",
 	},
 	{
 		name: "Local file access",

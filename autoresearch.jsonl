@@ -2,3 +2,4 @@
 {"run":1,"commit":"29f9db8","metric":26,"metrics":{},"status":"keep","description":"chore: add autoresearch harness and baseline public skill coverage benchmark","timestamp":1773376302896,"segment":0}
 {"run":2,"commit":"f18927f","metric":26,"metrics":{},"status":"keep","description":"chore: persist baseline harness after disabling gpg signing","timestamp":1773376350878,"segment":0}
 {"run":3,"commit":"9ff0cc2","metric":43,"metrics":{},"status":"keep","description":"feat: detect browser auth state, session attachment, and broad activation triggers","timestamp":1773376743136,"segment":0}
+{"run":4,"commit":"ee2bd3b","metric":52,"metrics":{},"status":"keep","description":"feat: catch query-string credentials, saved browser profiles, and local file exposure","timestamp":1773377012124,"segment":0}

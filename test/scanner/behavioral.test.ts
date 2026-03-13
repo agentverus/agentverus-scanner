@@ -153,13 +153,22 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("full browser profile sync")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("secret parameter handling")),
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("credential in query string")),
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("local service exposure")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("local service access")),
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("local file access")),
