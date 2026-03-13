@@ -29,7 +29,9 @@ type CapabilityKind =
 	| "documentation_ingestion"
 	| "local_input_control"
 	| "credential_form_automation"
-	| "package_bootstrap";
+	| "package_bootstrap"
+	| "environment_configuration"
+	| "payment_processing";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -54,6 +56,8 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"documentation_ingestion",
 	"local_input_control",
 	"package_bootstrap",
+	"environment_configuration",
+	"payment_processing",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -79,6 +83,8 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	documentation_ingestion: "documentation ingestion",
 	local_input_control: "local input control",
 	package_bootstrap: "package bootstrap",
+	environment_configuration: "environment configuration",
+	payment_processing: "payment processing",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -106,6 +112,8 @@ const CAPABILITY_SEVERITY: Readonly<
 	documentation_ingestion: { severity: "medium", deduction: 8 },
 	local_input_control: { severity: "medium", deduction: 8 },
 	package_bootstrap: { severity: "medium", deduction: 8 },
+	environment_configuration: { severity: "medium", deduction: 8 },
+	payment_processing: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -256,6 +264,20 @@ const PACKAGE_BOOTSTRAP_PATTERNS: readonly RegExp[] = [
 	/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
 ] as const;
 
+const ENVIRONMENT_CONFIGURATION_PATTERNS: readonly RegExp[] = [
+	/\bAGENT_BROWSER_ENCRYPTION_KEY\b/i,
+	/\bXDG_CONFIG_HOME\b/i,
+	/\bX_BROWSER_CHROME_PATH\b/i,
+	/\bAGENT_BROWSER_COLOR_SCHEME\b/i,
+] as const;
+
+const PAYMENT_PROCESSING_PATTERNS: readonly RegExp[] = [
+	/\bCost:\s*\$\d/i,
+	/\bCharge\s+for\s+premium\s+actions?\b/i,
+	/\bPayments\b/i,
+	/\$0\.\d+/i,
+] as const;
+
 const PROCESS_ORCHESTRATION_PATTERNS: readonly RegExp[] = [
 	/\bwith_server\.py\b/i,
 	/\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
@@ -352,6 +374,12 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["package_bootstrap", "npx", "bunx", "pnpm_dlx"])) {
 		return "package_bootstrap";
+	}
+	if (hasAny(["environment_configuration", "env_var", "encryption_key"])) {
+		return "environment_configuration";
+	}
+	if (hasAny(["payment_processing", "payments", "premium_actions"])) {
+		return "payment_processing";
 	}
 	if (hasAny(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
 		return "process_orchestration";
@@ -551,6 +579,24 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("package_bootstrap", `Content pattern: ${packageBootstrapMatch}`);
 	}
 
+	const environmentConfigurationMatch = firstPositiveMatch(
+		skill.rawContent,
+		ENVIRONMENT_CONFIGURATION_PATTERNS,
+		isDefenseSkill,
+	);
+	if (environmentConfigurationMatch) {
+		add("environment_configuration", `Content pattern: ${environmentConfigurationMatch}`);
+	}
+
+	const paymentProcessingMatch = firstPositiveMatch(
+		skill.rawContent,
+		PAYMENT_PROCESSING_PATTERNS,
+		isDefenseSkill,
+	);
+	if (paymentProcessingMatch) {
+		add("payment_processing", `Content pattern: ${paymentProcessingMatch}`);
+	}
+
 	const credentialFormAutomationMatch = firstPositiveMatch(
 		skill.rawContent,
 		CREDENTIAL_FORM_AUTOMATION_PATTERNS,
@@ -669,7 +715,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, credential_handoff, credential_storage, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, package_bootstrap, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, credential_handoff, credential_storage, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, package_bootstrap, environment_configuration, payment_processing, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}

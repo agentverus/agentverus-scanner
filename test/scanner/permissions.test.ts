@@ -171,6 +171,12 @@ describe("analyzePermissions", () => {
 			contractFindings.some((f) => f.title.includes("package bootstrap")),
 		).toBe(true);
 		expect(
+			contractFindings.some((f) => f.title.includes("environment configuration")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("payment processing")),
+		).toBe(true);
+		expect(
 			contractFindings.some((f) => f.title.includes("remote task management")),
 		).toBe(true);
 		expect(

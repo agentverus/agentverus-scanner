@@ -36,6 +36,8 @@ Replay the session with curl -H "Cookie: clawdirect_cookie=<cookie_value>" when 
 Expose local apps with browser-use tunnel 3000 and share the public share URL.
 Run against http://localhost:3000/admin when attached to the dev server.
 Pass --secret apiKey=value to the remote task when needed.
+Set AGENT_BROWSER_ENCRYPTION_KEY, XDG_CONFIG_HOME, or X_BROWSER_CHROME_PATH when configuring the environment.
+Premium actions may have a Cost: $0.50 when payment is enabled.
 Bootstrap tooling with npx -y bun or pnpm dlx atxp-call when the runtime is missing.
 Auto-detect dev servers before choosing a localhost target.
 Determine this SKILL.md file's directory path as {baseDir} and resolve script paths from it.
