@@ -324,6 +324,9 @@ const PROCESS_ORCHESTRATION_PATTERNS: readonly RegExp[] = [
 	/\bwith_server\.py\b/i,
 	/\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
 	/\bnode\s+run\.js\s+\/tmp\//i,
+	/script\s+path\s*=\s*`?\{baseDir\}\/scripts\//i,
+	/\$\{BUN_X\}\s+\{baseDir\}\/scripts\//i,
+	/check-paste-permissions\.ts/i,
 	/\bnpm\s+run\s+dev\b/i,
 	/\bpython\s+your_automation\.py\b/i,
 ] as const;
