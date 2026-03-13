@@ -9,10 +9,12 @@ import {
 
 type CapabilityKind =
 	| "credential_access"
+	| "credential_handoff"
 	| "exec"
 	| "system_modification"
 	| "file_write"
 	| "file_read"
+	| "filesystem_discovery"
 	| "network"
 	| "browser_automation"
 	| "session_management"
@@ -24,10 +26,12 @@ type CapabilityKind =
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
+	"credential_handoff",
 	"exec",
 	"system_modification",
 	"file_write",
 	"file_read",
+	"filesystem_discovery",
 	"network",
 	"browser_automation",
 	"session_management",
@@ -40,10 +44,12 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	credential_access: "credential access",
+	credential_handoff: "credential handoff",
 	exec: "command execution",
 	system_modification: "system modification",
 	file_write: "file write",
 	file_read: "file read",
+	filesystem_discovery: "filesystem discovery",
 	network: "network access",
 	browser_automation: "browser automation",
 	session_management: "session management",
@@ -58,10 +64,12 @@ const CAPABILITY_SEVERITY: Readonly<
 	Record<CapabilityKind, { readonly severity: "high" | "medium"; readonly deduction: number }>
 > = {
 	credential_access: { severity: "high", deduction: 15 },
+	credential_handoff: { severity: "high", deduction: 12 },
 	exec: { severity: "high", deduction: 12 },
 	system_modification: { severity: "high", deduction: 12 },
 	file_write: { severity: "medium", deduction: 8 },
 	file_read: { severity: "medium", deduction: 6 },
+	filesystem_discovery: { severity: "medium", deduction: 8 },
 	network: { severity: "medium", deduction: 6 },
 	browser_automation: { severity: "medium", deduction: 8 },
 	session_management: { severity: "medium", deduction: 8 },
@@ -107,6 +115,21 @@ const FILE_READ_PATTERNS: readonly RegExp[] = [
 	/\bSKILL\.md\s+file'?s\s+directory\b/i,
 	/\bstatic_html_automation\.py\b/i,
 	/\bfile:\/\//i,
+] as const;
+
+const FILESYSTEM_DISCOVERY_PATTERNS: readonly RegExp[] = [
+	/\{baseDir\}/i,
+	/\bcommon\s+installation\s+paths\b/i,
+	/\bSKILL\.md\s+file'?s\s+directory\b/i,
+	/\.claude\/plugins\/marketplaces\//i,
+] as const;
+
+const CREDENTIAL_HANDOFF_PATTERNS: readonly RegExp[] = [
+	/\bget\s+authentication\s+cookie\b/i,
+	/\bauth\s+cookie\s+via\s+the\s+ATXP\s+tool\b/i,
+	/\bagents\s+get\s+an\s+auth\s+cookie\s+via\s+MCP\b/i,
+	/\bconfigure\s+browser\s+cookie\b/i,
+	/\bredirect\s+to\s+clean\s+the\s+URL\b/i,
 ] as const;
 
 const NETWORK_PATTERNS: readonly RegExp[] = [
@@ -189,6 +212,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	if (hasAny(["credential", "credentials", "secret", "secrets", "token", "password", "env_access"])) {
 		return "credential_access";
 	}
+	if (hasAny(["credential_handoff", "cookie_bootstrap", "browser_cookie"])) {
+		return "credential_handoff";
+	}
 	if (hasAny(["exec", "execute", "shell", "command", "spawn", "process"])) {
 		return "exec";
 	}
@@ -208,6 +234,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 		(tokens.includes("file") && hasAny(["read", "open", "load"]))
 	) {
 		return "file_read";
+	}
+	if (hasAny(["filesystem_discovery", "path_discovery", "basedir"])) {
+		return "filesystem_discovery";
 	}
 	if (hasAny(["network", "http", "https", "fetch", "url", "webhook", "api"])) {
 		return "network";
@@ -326,6 +355,24 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	const fileReadMatch = firstPositiveMatch(skill.rawContent, FILE_READ_PATTERNS, isDefenseSkill);
 	if (fileReadMatch) add("file_read", `Content pattern: ${fileReadMatch}`);
 
+	const filesystemDiscoveryMatch = firstPositiveMatch(
+		skill.rawContent,
+		FILESYSTEM_DISCOVERY_PATTERNS,
+		isDefenseSkill,
+	);
+	if (filesystemDiscoveryMatch) {
+		add("filesystem_discovery", `Content pattern: ${filesystemDiscoveryMatch}`);
+	}
+
+	const credentialHandoffMatch = firstPositiveMatch(
+		skill.rawContent,
+		CREDENTIAL_HANDOFF_PATTERNS,
+		isDefenseSkill,
+	);
+	if (credentialHandoffMatch) {
+		add("credential_handoff", `Content pattern: ${credentialHandoffMatch}`);
+	}
+
 	const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill);
 	if (networkMatch) add("network", `Content pattern: ${networkMatch}`);
 
@@ -424,7 +471,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			recommendation:
 				"Declare this capability explicitly in frontmatter permissions with a specific justification, or remove the risky behavior.",
 			owaspCategory:
-				capability === "credential_access"
+				capability === "credential_access" || capability === "credential_handoff"
 					? "ASST-05"
 					: capability === "network"
 						? "ASST-04"
@@ -447,7 +494,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, exec, system_modification, file_write, file_read, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, credential_handoff, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}
