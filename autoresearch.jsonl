@@ -7,3 +7,4 @@
 {"type":"config","name":"Improve realtime prefix detections on public skill corpus","metricName":"realtime_prefix_findings","metricUnit":"","bestDirection":"higher"}
 {"run":1,"commit":"9edbb93","metric":43,"metrics":{},"status":"keep","description":"chore: pivot benchmark to realtime prefix findings baseline","timestamp":1773377313719,"segment":0}
 {"run":2,"commit":"d204cb4","metric":46,"metrics":{},"status":"keep","description":"feat: surface persistent session reuse and early CDP browser wording","timestamp":1773377429841,"segment":0}
+{"run":3,"commit":"87f2376","metric":49,"metrics":{},"status":"keep","description":"feat: surface browser profile copy and browser-side javascript execution earlier","timestamp":1773377540403,"segment":0}

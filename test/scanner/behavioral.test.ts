@@ -153,6 +153,9 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("persistent session reuse")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("external instruction override file")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
 		).toBe(true);
 		expect(
@@ -184,6 +187,18 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("automation evasion")),
+		).toBe(true);
+	});
+
+	it("should detect financial cost language and container runtime control", async () => {
+		const skill = parseSkill(`---\nname: paid-docker-helper\ndescription: Charges for premium actions and controls Docker\n---\nCost: $0.50 USD\nCharge for premium actions when the user enables deployment.\nRun docker build --no-cache -t test . and docker run --rm test.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("financial/payment actions")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("container runtime control")),
 		).toBe(true);
 	});
 

@@ -108,6 +108,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Be explicit about sub-agent spawning and ensure delegated tasks are appropriately scoped.",
 	},
 	{
+		name: "External instruction override file",
+		patterns: [
+			/\bEXTEND\.md\b/i,
+			/(?:load|read|parse|apply)\s+(?:preferences|settings)\b/i,
+			/\.baoyu-skills\//i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-11",
+		recommendation:
+			"Be explicit when external project/home files can override skill behavior. Treat sidecar config or instruction files as untrusted input and constrain what they are allowed to change.",
+	},
+	{
 		name: "Persistent session reuse",
 		patterns: [
 			/maintains?\s+browser\s+sessions?\s+across\s+commands/i,
@@ -233,6 +246,18 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat localhost and loopback services as privileged local attack surfaces. Require explicit approval, constrain reachable ports, and avoid combining local access with session reuse or tunneling.",
 	},
 	{
+		name: "Container runtime control",
+		patterns: [
+			/\bdocker\s+(?:info|context|ps|images|build(?:x)?|run|exec|stop|compose)\b/i,
+			/\bdocker-compose\s+config\b/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat Docker or container-runtime control as privileged host access. Scope container operations tightly, avoid arbitrary daemon access, and require explicit approval before mutating local workloads.",
+	},
+	{
 		name: "Local file access",
 		patterns: [
 			/--allow-file-access\b/i,
@@ -288,6 +313,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/(?:transfer|send)\s+(?:money|funds|crypto)/i,
 			/(?:purchase|buy|order)\s+(?:on\s+behalf|for\s+the\s+user)/i,
 			/(?:credit\s+card|bank\s+account|wallet)/i,
+			/(?:cost|price)\s*:\s*\$\d/i,
+			/charge\s+for\s+(?:premium|paid)\s+actions?/i,
 		],
 		severity: "medium",
 		deduction: 10,
