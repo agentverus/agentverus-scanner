@@ -55,6 +55,15 @@ describe("analyzeDependencies", () => {
 		expect(result.findings.some((f) => f.title.includes("Agent-callable endpoint reference"))).toBe(true);
 	});
 
+	it("flags hosted browser and provider integrations as remote service dependencies", async () => {
+		const skill = parseSkill(`# Remote Dependencies\nUse a cloud-hosted browser with proxy support.\nThis skill supports API-based image generation with OpenAI and Replicate providers.\nIt can integrate external APIs or services through well-designed tools.`);
+		const result = await analyzeDependencies(skill);
+
+		expect(result.findings.some((f) => f.title.includes("Hosted browser service dependency"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Third-party AI provider dependency"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("External service integration dependency"))).toBe(true);
+	});
+
 	it("should flag raw content URLs as medium risk", async () => {
 		const skill = parseSkill(loadFixture("suspicious-urls.md"));
 		const result = await analyzeDependencies(skill);

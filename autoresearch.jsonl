@@ -83,3 +83,4 @@
 {"run":81,"commit":"c94eb9e","metric":331,"metrics":{},"status":"keep","description":"feat: infer setup-structure writes and express web-server local access earlier","timestamp":1773431906104,"segment":1}
 {"run":82,"commit":"390df0b","metric":333,"metrics":{},"status":"keep","description":"feat: infer package-bootstrap risk from package.json workflow setup","timestamp":1773432038608,"segment":1}
 {"run":83,"commit":"13e1c7c","metric":335,"metrics":{},"status":"keep","description":"feat: infer network and server exposure from exposed ports and remote browser services","timestamp":1773432159514,"segment":1}
+{"run":84,"commit":"9ea030d","metric":337,"metrics":{},"status":"keep","description":"feat: surface healthcheck and direct endpoint local-service hints earlier","timestamp":1773432235164,"segment":1}

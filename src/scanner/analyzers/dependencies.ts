@@ -78,6 +78,27 @@ const LOCAL_SERVICE_HINT_PATTERNS = [
 	{ regex: /\bMCP\s+endpoints?\s+directly\b/i, title: "Agent-callable endpoint reference" },
 ] as const;
 
+const REMOTE_SERVICE_HINT_PATTERNS = [
+	{
+		regex: /\bcloud-hosted\s+browser\b|\bproxy\s+support\b/i,
+		title: "Hosted browser service dependency",
+		description:
+			"The skill depends on a hosted or proxy-backed browser service, which introduces an external execution surface and additional dependency trust requirements.",
+	},
+	{
+		regex: /\b(?:OpenAI|Google|DashScope|Replicate)\b.{0,80}\b(?:providers?|APIs?)\b|\bAPI-based\s+image\s+generation\b/i,
+		title: "Third-party AI provider dependency",
+		description:
+			"The skill relies on third-party AI providers or APIs, expanding the remote dependency surface for prompts, inputs, or generated artifacts.",
+	},
+	{
+		regex: /\bexternal\s+services\s+through\s+well-?designed\s+tools\b|\bintegrate\s+external\s+APIs?\s+or\s+services\b/i,
+		title: "External service integration dependency",
+		description:
+			"The skill is explicitly designed to integrate remote services or APIs, which increases dependency trust and remote attack-surface considerations.",
+	},
+] as const;
+
 /** Download-and-execute patterns */
 const DOWNLOAD_EXECUTE_PATTERNS = [
 	/download\s+and\s+(?:execute|eval)\b/i,
@@ -578,6 +599,33 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				deduction,
 				recommendation:
 					"Review local service and exposed-port guidance carefully. Local transports and exposed ports can make internal tools or apps reachable by agent-driven workflows.",
+				owaspCategory: "ASST-04",
+			});
+			break;
+		}
+	}
+
+	for (const hint of REMOTE_SERVICE_HINT_PATTERNS) {
+		const globalHint = new RegExp(hint.regex.source, `${hint.regex.flags.replace("g", "")}g`);
+		let match: RegExpExecArray | null;
+		while ((match = globalHint.exec(content)) !== null) {
+			const { severityMultiplier } = adjustForContext(match.index, content, ctx);
+			if (severityMultiplier === 0) continue;
+
+			const lineNumber = content.slice(0, match.index).split("\n").length;
+			const deduction = 8;
+			score = Math.max(0, score - deduction);
+			findings.push({
+				id: `DEP-REMOTE-HINT-${findings.length + 1}`,
+				category: "dependencies",
+				severity: "medium",
+				title: hint.title,
+				description: hint.description,
+				evidence: match[0].slice(0, 200),
+				lineNumber,
+				deduction,
+				recommendation:
+					"Review which external services or providers the skill depends on, what data crosses that boundary, and whether the dependency is necessary for the intended workflow.",
 				owaspCategory: "ASST-04",
 			});
 			break;
