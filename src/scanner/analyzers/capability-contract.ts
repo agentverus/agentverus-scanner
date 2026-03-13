@@ -22,6 +22,7 @@ type CapabilityKind =
 	| "network"
 	| "browser_automation"
 	| "browser_session_attachment"
+	| "browser_profile_copy"
 	| "session_management"
 	| "content_extraction"
 	| "remote_delegation"
@@ -37,7 +38,12 @@ type CapabilityKind =
 	| "package_bootstrap"
 	| "environment_configuration"
 	| "payment_processing"
-	| "unrestricted_scope";
+	| "unrestricted_scope"
+	| "cookie_url_handoff"
+	| "credential_store_persistence"
+	| "external_instruction_override"
+	| "prompt_file_ingestion"
+	| "automation_evasion";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -55,6 +61,7 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"network",
 	"browser_automation",
 	"browser_session_attachment",
+	"browser_profile_copy",
 	"session_management",
 	"content_extraction",
 	"remote_delegation",
@@ -70,6 +77,11 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"environment_configuration",
 	"payment_processing",
 	"unrestricted_scope",
+	"cookie_url_handoff",
+	"credential_store_persistence",
+	"external_instruction_override",
+	"prompt_file_ingestion",
+	"automation_evasion",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -88,6 +100,7 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	network: "network access",
 	browser_automation: "browser automation",
 	browser_session_attachment: "browser session attachment",
+	browser_profile_copy: "browser profile copy",
 	session_management: "session management",
 	content_extraction: "content extraction",
 	remote_delegation: "remote delegation",
@@ -103,6 +116,11 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	environment_configuration: "environment configuration",
 	payment_processing: "payment processing",
 	unrestricted_scope: "unrestricted scope",
+	cookie_url_handoff: "cookie URL handoff",
+	credential_store_persistence: "credential store persistence",
+	external_instruction_override: "external instruction override",
+	prompt_file_ingestion: "prompt file ingestion",
+	automation_evasion: "automation evasion",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -123,6 +141,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	network: { severity: "medium", deduction: 6 },
 	browser_automation: { severity: "medium", deduction: 8 },
 	browser_session_attachment: { severity: "high", deduction: 12 },
+	browser_profile_copy: { severity: "high", deduction: 10 },
 	session_management: { severity: "medium", deduction: 8 },
 	content_extraction: { severity: "medium", deduction: 8 },
 	remote_delegation: { severity: "medium", deduction: 8 },
@@ -138,6 +157,11 @@ const CAPABILITY_SEVERITY: Readonly<
 	environment_configuration: { severity: "medium", deduction: 8 },
 	payment_processing: { severity: "medium", deduction: 8 },
 	unrestricted_scope: { severity: "high", deduction: 10 },
+	cookie_url_handoff: { severity: "high", deduction: 10 },
+	credential_store_persistence: { severity: "high", deduction: 10 },
+	external_instruction_override: { severity: "high", deduction: 10 },
+	prompt_file_ingestion: { severity: "medium", deduction: 8 },
+	automation_evasion: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
