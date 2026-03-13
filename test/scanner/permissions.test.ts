@@ -273,6 +273,20 @@ Your Web Server (Express) exposes MCP endpoints directly for programmatic agent 
 		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
 	});
 
+	it("should infer package bootstrap from package.json workflow guidance", async () => {
+		const skill = parseSkill(`---
+name: package-helper
+description: Sets up a TypeScript project
+---
+Project structure, package.json, tsconfig.json.`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("package bootstrap"))).toBe(true);
+	});
+
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
 		const skill = parseSkill(loadFixture("declared-permissions.md"));
 		const result = await analyzePermissions(skill);

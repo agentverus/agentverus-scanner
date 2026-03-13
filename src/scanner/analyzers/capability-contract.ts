@@ -458,6 +458,7 @@ const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
 const PACKAGE_BOOTSTRAP_PATTERNS: readonly RegExp[] = [
 	/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
 	/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
+	/\bpackage(?:\*|)\.json\b/i,
 ] as const;
 
 const CONTAINER_RUNTIME_CONTROL_PATTERNS: readonly RegExp[] = [

@@ -80,3 +80,4 @@
 {"run":78,"commit":"1ca40f7","metric":326,"metrics":{},"status":"keep","description":"feat: treat exposed container ports as earlier local service risk","timestamp":1773431029534,"segment":1}
 {"run":79,"commit":"4b2d7d0","metric":328,"metrics":{},"status":"keep","description":"feat: surface local service port and transport hints in dependency scans","timestamp":1773431157777,"segment":1}
 {"run":80,"commit":"5f566f8","metric":329,"metrics":{},"status":"keep","description":"feat: flag credential-bearing query parameters in dependency references","timestamp":1773431269386,"segment":1}
+{"run":81,"commit":"c94eb9e","metric":331,"metrics":{},"status":"keep","description":"feat: infer setup-structure writes and express web-server local access earlier","timestamp":1773431906104,"segment":1}
