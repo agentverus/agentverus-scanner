@@ -88,3 +88,4 @@
 {"run":86,"commit":"d2beb64","metric":342,"metrics":{},"status":"keep","description":"feat: surface prose-level query-string credential transport earlier","timestamp":1773444623435,"segment":1}
 {"run":87,"commit":"4976167","metric":344,"metrics":{},"status":"keep","description":"feat: escalate early endpoint sprawl when auth and api context is present","timestamp":1773444742940,"segment":1}
 {"run":88,"commit":"406704b","metric":348,"metrics":{},"status":"keep","description":"feat: surface persistent credential-store dependencies earlier","timestamp":1773444866861,"segment":1}
+{"run":89,"commit":"5dd0c39","metric":351,"metrics":{},"status":"keep","description":"feat: surface external documentation dependencies earlier","timestamp":1773444961740,"segment":1}
