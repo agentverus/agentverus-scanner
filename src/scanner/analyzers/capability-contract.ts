@@ -175,6 +175,7 @@ const CREDENTIAL_STORAGE_PATTERNS: readonly RegExp[] = [
 	/\bauth_cookies\b/i,
 	/\bAuth\s+Vault\b/i,
 	/cookie-based\s+auth\s+pattern/i,
+	/auth(?:entication)?\s+cookie/i,
 	/session\s+tokens?\s+in\s+plaintext/i,
 	/default\s+Chrome\s+profile/i,
 	/persistent\s+profile/i,
@@ -202,6 +203,7 @@ const REMOTE_DELEGATION_PATTERNS: readonly RegExp[] = [
 	/\bremote\s+task\b/i,
 	/\bstreamable\s+HTTP\b/i,
 	/\bexternal\s+services\s+through\s+well-?designed\s+tools\b/i,
+	/\b(?:OpenAI|Replicate|DashScope|Gemini|Google)\b.{0,80}\b(?:providers?|API-based\s+image\s+generation)\b/i,
 ] as const;
 
 const REMOTE_TASK_MANAGEMENT_PATTERNS: readonly RegExp[] = [
