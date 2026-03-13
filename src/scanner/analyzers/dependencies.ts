@@ -354,7 +354,7 @@ function getHostname(url: string): string {
 
 /** Classify a URL by risk level */
 function classifyUrl(url: string): {
-	risk: "trusted" | "raw" | "ip" | "data" | "unknown";
+	risk: "trusted" | "raw" | "ip" | "local" | "data" | "unknown";
 	deduction: number;
 } {
 	if (url.startsWith("data:")) {
@@ -364,11 +364,13 @@ function classifyUrl(url: string): {
 	const hostname = getHostname(url);
 
 	if (IP_ADDRESS_REGEX.test(hostname)) {
-		// Localhost and private IPs are not suspicious — they're local services
 		if (PRIVATE_IP_REGEX.test(hostname)) {
-			return { risk: "trusted", deduction: 0 };
+			return { risk: "local", deduction: 8 };
 		}
 		return { risk: "ip", deduction: 20 };
+	}
+	if (PRIVATE_IP_REGEX.test(hostname)) {
+		return { risk: "local", deduction: 8 };
 	}
 
 	const urlPath = url.replace(/^https?:\/\//, "");
@@ -478,7 +480,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			let severity: "high" | "medium" | "low" =
 				classification.risk === "ip" || classification.risk === "data"
 					? "high"
-					: classification.risk === "raw"
+					: classification.risk === "raw" || classification.risk === "local"
 						? "medium"
 						: "low";
 
@@ -505,8 +507,8 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				id: `DEP-URL-${findings.length + 1}`,
 				category: "dependencies",
 				severity,
-				title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : "Unknown external"} reference${titleSuffix}`,
-				description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : "an unknown external domain"} which is classified as ${severity} risk.`,
+				title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : classification.risk === "local" ? "Local service URL" : "Unknown external"} reference${titleSuffix}`,
+				description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : classification.risk === "local" ? "a localhost or private-network service URL" : "an unknown external domain"} which is classified as ${severity} risk.`,
 				evidence: url.slice(0, 200),
 				deduction: effectiveDeduction,
 				recommendation:
@@ -514,7 +516,9 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 						? "Replace direct IP addresses with proper domain names. IP-based URLs bypass DNS-based security controls."
 						: classification.risk === "raw"
 							? "Use official package registries instead of raw content URLs. Raw URLs can be changed without notice."
-							: "Verify that this external dependency is trustworthy and necessary.",
+							: classification.risk === "local"
+								? "Review localhost/private-network service references carefully. Local service URLs can expose internal apps, admin panels, or developer tooling to agent-driven workflows."
+								: "Verify that this external dependency is trustworthy and necessary.",
 				owaspCategory: "ASST-04",
 			});
 		}

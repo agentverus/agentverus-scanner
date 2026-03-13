@@ -36,6 +36,15 @@ describe("analyzeDependencies", () => {
 		expect(ipFindings.length).toBeGreaterThan(0);
 	});
 
+	it("flags localhost URLs as local service references", async () => {
+		const skill = parseSkill(`# Local URL\nUse http://localhost:3000/admin for review.`);
+		const result = await analyzeDependencies(skill);
+
+		const localFinding = result.findings.find((f) => f.title.includes("Local service URL"));
+		expect(localFinding).toBeDefined();
+		expect(localFinding?.severity).toBe("medium");
+	});
+
 	it("should flag raw content URLs as medium risk", async () => {
 		const skill = parseSkill(loadFixture("suspicious-urls.md"));
 		const result = await analyzeDependencies(skill);
