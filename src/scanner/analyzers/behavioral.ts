@@ -123,13 +123,25 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Browser auth state handling",
 		patterns: [
 			/(?:state\s+(?:save|load)\s+\S*auth\.json|state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext|auth(?:entication)?\s+cookie|http-?only\s+cookie|cookies?\s+(?:export|import|get|set|clear)\b|cookies?\s+and\s+localStorage)/i,
-			/(?:session\s+tokens?\s+in\s+plaintext|browser\s+session\s+is\s+authenticated|auto-saved\s+to\s+~\/\.agent-browser\/sessions)/i,
+			/(?:session\s+tokens?\s+in\s+plaintext|browser\s+session\s+is\s+authenticated|auto-saved\s+to\s+~\/\.agent-browser\/sessions|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile)/i,
 		],
 		severity: "high",
 		deduction: 15,
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Avoid storing, exporting, or passing browser auth state unless the workflow clearly requires it. Prefer encrypted storage, short-lived state, and explicit user confirmation before reusing credentials.",
+	},
+	{
+		name: "Credential in query string",
+		patterns: [
+			/(?:\b(?:cookie|token)\b.{0,120}\bquery\s+string\b|\bquery\s+string\b.{0,120}\b(?:cookie|token)\b)/i,
+			/\?[A-Za-z0-9_-]*(?:cookie|token)=<[^>\s]+>/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Do not pass auth cookies or tokens in URLs. Query strings leak into browser history, logs, analytics, and referrers. Use secure headers or an explicit browser cookie API instead.",
 	},
 	{
 		name: "Local service exposure",
@@ -144,6 +156,29 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Do not expose local services, browser sessions, or internal tools publicly by default. Require explicit approval, constrain the shared surface, and shut down tunnels after use.",
+	},
+	{
+		name: "Local file access",
+		patterns: [
+			/--allow-file-access\b/i,
+			/\bfile:\/\//i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat local file browsing as privileged access. Restrict it to explicit user-approved paths and avoid combining it with unrestricted browser/session reuse.",
+	},
+	{
+		name: "Automation evasion",
+		patterns: [
+			/(?:bypass(?:es|ing)?|avoid(?:s|ing)?)\s+(?:anti-?bot|anti-automation|automation\s+detection|bot\s+detection)/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-07",
+		recommendation:
+			"Avoid instructions whose value proposition is evading platform defenses or automation detection. Document legitimate automation constraints instead.",
 	},
 	{
 		name: "State persistence",

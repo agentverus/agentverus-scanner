@@ -9,7 +9,10 @@ Use this skill proactively when a task might need browser help.
 
 Connect to the user's running Chrome with --auto-connect or --cdp 9222.
 Use profile sync to copy your actual Chrome profile with login sessions.
+First run: log in manually and keep the session saved in the default Chrome profile.
 State files contain session tokens in plaintext and cookie export/import can move browser auth.
 For agent auth, bootstrap an authentication cookie as an HTTP-only cookie and pass it through the query string.
 Expose local apps with browser-use tunnel 3000 and share the public share URL.
+Use real Chrome to bypass anti-bot detection.
+Allow file:// access to local files when needed.
 By default, this tool imposes no restrictions on navigation, actions, or output.
