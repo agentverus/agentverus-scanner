@@ -264,7 +264,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Browser session attachment",
 		patterns: [
 			/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|Chrome\s+DevTools|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
-			/(?:copy(?:ing)?\s+your\s+actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|profile\s+sync\b|local\s+Chrome\s+profile|cloud\s+profile|Chrome\s+with\s+CDP)/i,
+			/(?:copy(?:ing)?\s+your\s+actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|real\s+Chrome\s+with\s+CDP|profile\s+sync\b|local\s+Chrome\s+profile|cloud\s+profile|Chrome\s+with\s+CDP)/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -304,6 +304,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/full\s+profile\s+sync/i,
 			/sync\s+ALL\s+cookies/i,
 			/entire\s+browser\s+state/i,
+			/copies?\s+your\s+actual\s+Chrome\s+profile(?:\s*\(cookies,\s*logins,\s*extensions\))?/i,
 		],
 		severity: "high",
 		deduction: 15,

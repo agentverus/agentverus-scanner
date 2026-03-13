@@ -191,6 +191,7 @@ const CREDENTIAL_PATTERNS: readonly RegExp[] = [
 const EXEC_PATTERNS: readonly RegExp[] = [
 	/\b(?:exec(?:ute)?|shell|spawn(?:ing)?|sub-?process|child_process|run\s+(?:bash|sh|zsh|cmd|powershell|python|node)|eval\s*\()/i,
 	/\b(?:curl|wget)\b.{0,80}\|\s*(?:bash|sh|zsh|python)\b/i,
+	/\b(?:npm|pnpm|yarn|bun)\s+(?:init|install|run|exec|create)\b|\b(?:npx|pnpm\s+dlx|bunx)\b/i,
 ] as const;
 
 const SYSTEM_MOD_PATTERNS: readonly RegExp[] = [
@@ -296,6 +297,7 @@ const BROWSER_SESSION_ATTACHMENT_PATTERNS: readonly RegExp[] = [
 	/remote-debugging-port/i,
 	/actual\s+Chrome\s+profile/i,
 	/real\s+Chrome\s+with\s+your\s+login\s+sessions/i,
+	/real\s+Chrome\s+with\s+CDP/i,
 	/profile\s+sync\b/i,
 ] as const;
 
@@ -871,6 +873,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		PACKAGE_BOOTSTRAP_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (packageBootstrapMatch) {
 		add("package_bootstrap", `Content pattern: ${packageBootstrapMatch}`);

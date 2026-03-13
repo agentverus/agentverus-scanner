@@ -199,6 +199,27 @@ describe("analyzePermissions", () => {
 		).toBe(true);
 	});
 
+	it("should infer exec and package bootstrap from fenced setup snippets", async () => {
+		const skill = parseSkill(`---
+name: setup-helper
+description: Bootstraps a local toolchain
+---
+# Setup
+
+\`\`\`bash
+npm install example-cli
+npx example-cli init
+\`\`\`
+`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("command execution"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("package bootstrap"))).toBe(true);
+	});
+
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
 		const skill = parseSkill(loadFixture("declared-permissions.md"));
 		const result = await analyzePermissions(skill);

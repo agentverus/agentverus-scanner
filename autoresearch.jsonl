@@ -72,3 +72,5 @@
 {"run":75,"commit":"a6c8a68","metric":300,"metrics":{},"status":"keep","description":"feat: infer auth state management browser session attachment and tool bridge capabilities","timestamp":1773414823122,"segment":0}
 {"run":76,"commit":"4bdbb80","metric":301,"metrics":{},"status":"keep","description":"feat: infer command execution capability from fenced shell examples","timestamp":1773415039110,"segment":0}
 {"run":77,"commit":"9d576b6","metric":300,"metrics":{},"status":"keep","description":"feat: broaden auth and server capability inference across browser workflow docs","timestamp":1773415736163,"segment":0}
+{"run":82,"commit":"c4e38d2","metric":314,"metrics":{},"status":"keep","description":"feat: infer browser profile copy cookie url handoff and runtime control capabilities","timestamp":1773417849156,"segment":0}
+{"run":74,"commit":"c4e38d2","metric":314,"metrics":{},"status":"discard","description":"chore: resume loop by revalidating current realtime prefix benchmark baseline","timestamp":1773429879408,"segment":1}

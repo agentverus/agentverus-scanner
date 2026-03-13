@@ -273,6 +273,18 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 	});
 
+	it("should detect real chrome cdp attachment and copied profile wording", async () => {
+		const skill = parseSkill(`---\nname: chrome-bridge\ndescription: Reuses browser sessions for automation\n---\nUse real Chrome with CDP for attached browsing. The browser copies your actual Chrome profile (cookies, logins, extensions) before opening the site.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("full browser profile sync")),
+		).toBe(true);
+	});
+
 	it("should detect financial cost language and container runtime control", async () => {
 		const skill = parseSkill(`---\nname: paid-docker-helper\ndescription: Charges for premium actions and controls Docker\n---\nCost: $0.50 USD\nCharge for premium actions when the user enables deployment.\nRun docker build --no-cache -t test . and docker run --rm test.`);
 		const result = await analyzeBehavioral(skill);
