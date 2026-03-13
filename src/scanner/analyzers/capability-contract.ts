@@ -12,6 +12,7 @@ type CapabilityKind =
 	| "exec"
 	| "system_modification"
 	| "file_write"
+	| "file_read"
 	| "network"
 	| "browser_automation"
 	| "session_management"
@@ -24,6 +25,7 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"exec",
 	"system_modification",
 	"file_write",
+	"file_read",
 	"network",
 	"browser_automation",
 	"session_management",
@@ -37,6 +39,7 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	exec: "command execution",
 	system_modification: "system modification",
 	file_write: "file write",
+	file_read: "file read",
 	network: "network access",
 	browser_automation: "browser automation",
 	session_management: "session management",
@@ -52,6 +55,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	exec: { severity: "high", deduction: 12 },
 	system_modification: { severity: "high", deduction: 12 },
 	file_write: { severity: "medium", deduction: 8 },
+	file_read: { severity: "medium", deduction: 6 },
 	network: { severity: "medium", deduction: 6 },
 	browser_automation: { severity: "medium", deduction: 8 },
 	session_management: { severity: "medium", deduction: 8 },
@@ -81,6 +85,20 @@ const SYSTEM_MOD_PATTERNS: readonly RegExp[] = [
 const FILE_WRITE_PATTERNS: readonly RegExp[] = [
 	/\b(?:file_write|write|writes|written|save|saves|store|stores|persist|append|create)\b.{0,80}\b(?:file|files|disk|workspace|directory|output)\b/i,
 	/\b(?:write|save|store|persist)\b.{0,40}\b(?:database|cache|state)\b/i,
+] as const;
+
+const FILE_READ_PATTERNS: readonly RegExp[] = [
+	/\bread\s+HTML\s+file\s+directly\b/i,
+	/\bread\s+the\s+source\b/i,
+	/\bReference\s+Files\b/i,
+	/\breferences\//i,
+	/\bexamples\//i,
+	/--promptfiles\b/i,
+	/\bload\s+preferences\b/i,
+	/\bEXTEND\.md\b/i,
+	/\bSKILL\.md\s+file'?s\s+directory\b/i,
+	/\bstatic_html_automation\.py\b/i,
+	/\bfile:\/\//i,
 ] as const;
 
 const NETWORK_PATTERNS: readonly RegExp[] = [
@@ -160,6 +178,13 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 			hasAny(["write", "modify", "delete", "append", "create", "persist", "save", "store"]))
 	) {
 		return "file_write";
+	}
+	if (
+		tokens.includes("file_read") ||
+		tokens.includes("read") ||
+		(tokens.includes("file") && hasAny(["read", "open", "load"]))
+	) {
+		return "file_read";
 	}
 	if (hasAny(["network", "http", "https", "fetch", "url", "webhook", "api"])) {
 		return "network";
@@ -269,6 +294,9 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	const fileWriteMatch = firstPositiveMatch(skill.rawContent, FILE_WRITE_PATTERNS, isDefenseSkill);
 	if (fileWriteMatch) add("file_write", `Content pattern: ${fileWriteMatch}`);
 
+	const fileReadMatch = firstPositiveMatch(skill.rawContent, FILE_READ_PATTERNS, isDefenseSkill);
+	if (fileReadMatch) add("file_read", `Content pattern: ${fileReadMatch}`);
+
 	const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill);
 	if (networkMatch) add("network", `Content pattern: ${networkMatch}`);
 
@@ -372,7 +400,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, exec, system_modification, file_write, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, exec, system_modification, file_write, file_read, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}

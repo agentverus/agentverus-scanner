@@ -126,6 +126,9 @@ describe("analyzePermissions", () => {
 			contractFindings.some((f) => f.title.includes("browser automation")),
 		).toBe(true);
 		expect(
+			contractFindings.some((f) => f.title.includes("file read")),
+		).toBe(true);
+		expect(
 			contractFindings.some((f) => f.title.includes("session management")),
 		).toBe(true);
 		expect(
