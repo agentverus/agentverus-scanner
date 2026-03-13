@@ -224,6 +224,8 @@ const SESSION_MANAGEMENT_PATTERNS: readonly RegExp[] = [
 	/\bbrowser\s+sessions?\s+across\s+commands/i,
 	/\bstate\s+(?:save|load)\s+\.\/auth\.json/i,
 	/\b--session-name\b/i,
+	/\bsession\s+saved\b/i,
+	/\balready\s+authenticated\b/i,
 	/\bsession\s+list\b/i,
 	/\bclose\s+--all\b/i,
 	/\bbackground\s+daemon\b/i,
@@ -257,6 +259,8 @@ const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/fill\s+@e\d+\s+"password123"/i,
 	/fill\s+out\s+a\s+form/i,
 	/login\s+to\s+a\s+site/i,
+	/test\s+login/i,
+	/login\s+flow/i,
 ] as const;
 
 const PACKAGE_BOOTSTRAP_PATTERNS: readonly RegExp[] = [
@@ -408,6 +412,7 @@ function firstPositiveMatch(
 	content: string,
 	patterns: readonly RegExp[],
 	isDefenseSkill: boolean,
+	allowCodeBlocks = false,
 ): string | null {
 	const ctx = buildContentContext(content);
 
@@ -416,7 +421,11 @@ function firstPositiveMatch(
 		let match: RegExpExecArray | null;
 		while ((match = global.exec(content)) !== null) {
 			if (isPrecededByNegation(content, match.index)) continue;
-			if (isInsideCodeBlock(match.index, ctx) && !isInsideInlineCode(content, match.index)) {
+			if (
+				isInsideCodeBlock(match.index, ctx) &&
+				!isInsideInlineCode(content, match.index) &&
+				!allowCodeBlocks
+			) {
 				continue;
 			}
 			if (isDefenseSkill && isInThreatListingContext(content, match.index)) continue;
@@ -619,6 +628,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		REMOTE_TASK_MANAGEMENT_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (remoteTaskManagementMatch) {
 		add("remote_task_management", `Content pattern: ${remoteTaskManagementMatch}`);
