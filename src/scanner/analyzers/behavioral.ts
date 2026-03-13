@@ -151,7 +151,10 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		patterns: [
 			/maintains?\s+browser\s+sessions?\s+across\s+commands/i,
 			/browser\s+stays\s+open\s+between\s+commands/i,
+			/persists?\s+state\s+via\s+a\s+background\s+daemon/i,
+			/background\s+daemon/i,
 			/state\s+auto-(?:saved|restored)/i,
+			/session\s+saved/i,
 			/all\s+future\s+runs:\s+already\s+authenticated/i,
 		],
 		severity: "high",
@@ -259,6 +262,18 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Do not pass auth cookies or tokens in URLs. Query strings leak into browser history, logs, analytics, and referrers. Use secure headers or an explicit browser cookie API instead.",
+	},
+	{
+		name: "Cookie header replay",
+		patterns: [
+			/-H\s+["']Cookie:\s*[^"']+(?:cookie|token)[^"']*["']/i,
+			/\bCookie:\s*[A-Za-z0-9_-]+(?:cookie|token)=[^\s"']+/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat reusable Cookie headers as bearer credentials. Avoid embedding auth cookies in shell snippets or docs; prefer short-lived interactive auth or a dedicated secure credential handoff.",
 	},
 	{
 		name: "Local service exposure",

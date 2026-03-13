@@ -110,6 +110,16 @@ describe("analyzeContent", () => {
 		expect(triggerFindings[0]?.owaspCategory).toBe("ASST-11");
 	});
 
+	it("should flag browser-use style catch-all browser trigger descriptions", async () => {
+		const skill = parseSkill(
+			`---\nname: browser-use\ndescription: Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, or extract information from web pages.\n---\nBrowser automation help.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const triggerFindings = result.findings.filter((f) => f.id === "CONT-BROAD-TRIGGER");
+		expect(triggerFindings.length).toBe(1);
+	});
+
 	it("should NOT flag narrow trigger language", async () => {
 		const skill = parseSkill(
 			`---\nname: repo-summarizer\ndescription: Use when the user asks to summarize issues for a specific GitHub repository\n---\nSummarize GitHub issues for the requested repository only.`,

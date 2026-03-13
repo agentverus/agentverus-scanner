@@ -119,6 +119,7 @@ const BROAD_TRIGGER_PATTERNS = [
 	/\buse\s+proactively\b/i,
 	/\btriggers?\s+include\b[\s\S]{0,220}\b(?:any\s+task|any\s+request|everything)\b/i,
 	/\buse\s+when\b[\s\S]{0,180}\bany\s+task\s+requiring\b/i,
+	/\buse\s+when\s+the\s+user\s+needs\s+to\s+(?:navigate\s+websites|interact\s+with\s+web\s+pages|fill\s+forms|take\s+screenshots|extract\s+information\s+from\s+web\s+pages)/i,
 	/\bthis\s+skill\s+is\s+applicable\s+to\s+execute\s+the\s+workflow\s+or\s+actions\s+described\s+in\s+the\s+overview\b/i,
 ] as const;
 
