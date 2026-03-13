@@ -114,8 +114,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/(?:load|read|parse|apply)\s+(?:preferences|settings)\b/i,
 			/\.baoyu-skills\//i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-11",
 		recommendation:
 			"Be explicit when external project/home files can override skill behavior. Treat sidecar config or instruction files as untrusted input and constrain what they are allowed to change.",
@@ -333,8 +333,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
 			/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-04",
 		recommendation:
 			"Surface package bootstrap commands for review. Ephemeral package execution and install-time dependency pulls increase supply-chain risk, especially when versions are not pinned or provenance is unclear.",
@@ -348,8 +348,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/project-specific:\s*<project>\/\.claude\/skills/i,
 			/\{baseDir\}/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat dynamic skill path resolution and installation-path discovery as local filesystem reconnaissance. Scope which paths may be read or executed from, and avoid broad path probing unless the user explicitly requested it.",
@@ -387,8 +387,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/supports\s+multiple\s+servers/i,
 			/--server\s+["'][^"']+["']/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat helper workflows that start or manage local servers as privileged local process control. Require explicit approval before launching services, and scope which commands/ports may be started.",
