@@ -134,6 +134,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat browser profile reuse, remote-debugging attachment, and live-session access as sensitive credential access. Require explicit user consent, minimize scope, and clean up persisted state.",
 	},
 	{
+		name: "Browser profile copy",
+		patterns: [
+			/actual\s+Chrome\s+profile/i,
+			/login\s+sessions/i,
+			/persistent\s+but\s+empty\s+CLI\s+profile/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat copying or reusing a local browser profile as sensitive credential access. Prefer isolated ephemeral profiles unless the user explicitly approves session reuse.",
+	},
+	{
 		name: "Full browser profile sync",
 		patterns: [
 			/full\s+profile\s+sync/i,
@@ -145,6 +158,18 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Avoid syncing an entire browser profile or all cookies into agent-controlled workflows. Prefer the smallest domain-scoped auth state possible and require explicit user consent.",
+	},
+	{
+		name: "Browser JavaScript evaluation",
+		patterns: [
+			/\bbrowser-use\s+eval\b/i,
+			/\bagent-browser\s+eval\b/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat browser-side JavaScript evaluation as privileged execution. Constrain the origin, review the expression, and avoid combining it with authenticated sessions unless necessary.",
 	},
 	{
 		name: "Browser auth state handling",

@@ -10,6 +10,7 @@ This tool maintains browser sessions across commands and keeps the browser open 
 
 Connect to the user's running Chrome with --auto-connect or --cdp 9222.
 Use real Chrome with CDP for attached browsing.
+Use browser-use eval "document.cookie" to execute JavaScript in the page context.
 Use profile sync to copy your actual Chrome profile with login sessions.
 Use full profile sync to move the entire browser state and sync ALL cookies.
 First run: log in manually and keep the session saved in the default Chrome profile.

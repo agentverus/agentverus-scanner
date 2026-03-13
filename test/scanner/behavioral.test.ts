@@ -156,7 +156,13 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser profile copy")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("full browser profile sync")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser javascript evaluation")),
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),

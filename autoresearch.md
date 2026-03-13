@@ -60,7 +60,8 @@ Benchmark corpus:
 - Experiment 3: added detections for full-profile sync, secret-bearing CLI parameters, and localhost service access. Result: `public_issue_findings` improved from `52` to `61` (+9) with `safe_fixture_regressions` still `4`.
 - Session 2 pivot: benchmark now also emits `realtime_prefix_findings`; baseline for the realtime-focused pass is `43` while `realtime_prefix_skills` is already saturated at `10/10`, so the remaining opportunity is surfacing *more* medium+/high-confidence findings earlier in the stream.
 - Session 2 / Experiment 1: added persistent-session reuse and early CDP/browser-session wording coverage. Result: `realtime_prefix_findings` improved from `43` to `46` (+3) while `public_issue_findings` also rose from `61` to `64`.
-- Current artifact to watch: auth-cookie wording can trigger duplicate browser-auth findings on ClawDirect-style skills, and browser-use now shows duplicate full-profile-sync detections. Deduping or merging related browser-auth/profile signals may improve report quality without sacrificing coverage.
+- Session 2 / Experiment 2: added earlier browser-profile-copy and browser-side-JavaScript-execution signals. Result: `realtime_prefix_findings` improved from `46` to `49` (+3) while `public_issue_findings` rose from `64` to `67`.
+- Current artifact to watch: auth-cookie wording can trigger duplicate browser-auth findings on ClawDirect-style skills, and browser-use now shows duplicate full-profile-sync/browser-profile-copy detections. Deduping or merging related browser-auth/profile signals may improve report quality without sacrificing coverage.
 - Ideas backlog captured in `autoresearch.ideas.md` for deferred realtime/prescan API work and report-quality deduping.
 - Near-term promising directions:
   - stronger browser auth/profile/session risk detection
