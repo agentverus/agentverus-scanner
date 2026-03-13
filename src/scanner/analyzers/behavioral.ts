@@ -488,6 +488,20 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat helper workflows that start or manage local servers as privileged local process control. Require explicit approval before launching services, and scope which commands/ports may be started.",
 	},
 	{
+		name: "UI state enumeration",
+		patterns: [
+			/returns?\s+clickable\s+elements?\s+with\s+indices/i,
+			/get\s+element\s+refs?\s+like\s+@e\d+/i,
+			/snapshot\s+-i/i,
+			/identify\s+selectors?\s+from\s+rendered\s+state/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat DOM/accessibility snapshots and clickable-element inventories as sensitive page-state extraction. Be explicit about when UI enumeration is allowed, especially on authenticated or local-only apps.",
+	},
+	{
 		name: "Browser content extraction",
 		patterns: [
 			/extract\s+information\s+from\s+web\s+pages/i,
