@@ -157,6 +157,9 @@ const FILESYSTEM_DISCOVERY_PATTERNS: readonly RegExp[] = [
 	/\{baseDir\}/i,
 	/\bcommon\s+installation\s+paths\b/i,
 	/\bSKILL\.md\s+file'?s\s+directory\b/i,
+	/\bproject\s+structure\s+analysis\b/i,
+	/find\s+\.\s+-name\s+"Dockerfile\*"/i,
+	/\.dockerignore/i,
 	/\.claude\/plugins\/marketplaces\//i,
 ] as const;
 
@@ -186,6 +189,7 @@ const NETWORK_PATTERNS: readonly RegExp[] = [
 const BROWSER_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/\bbrowser\s+automation\b/i,
 	/\bPlaywright\b/i,
+	/\breal\s+Chrome\s+browser\b/i,
 	/\bnavigate\s+websites?\b/i,
 	/\binteract\s+with\s+web\s+pages?\b/i,
 	/\bfill\s+forms?\b/i,
