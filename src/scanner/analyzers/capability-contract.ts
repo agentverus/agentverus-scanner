@@ -564,7 +564,12 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	const systemMatch = firstPositiveMatch(skill.rawContent, SYSTEM_MOD_PATTERNS, isDefenseSkill);
 	if (systemMatch) add("system_modification", `Content pattern: ${systemMatch}`);
 
-	const fileWriteMatch = firstPositiveMatch(skill.rawContent, FILE_WRITE_PATTERNS, isDefenseSkill);
+	const fileWriteMatch = firstPositiveMatch(
+		skill.rawContent,
+		FILE_WRITE_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
 	if (fileWriteMatch) add("file_write", `Content pattern: ${fileWriteMatch}`);
 
 	const fileReadMatch = firstPositiveMatch(skill.rawContent, FILE_READ_PATTERNS, isDefenseSkill);

@@ -66,3 +66,4 @@
 {"run":69,"commit":"0866575","metric":282,"metrics":{},"status":"keep","description":"feat: broaden ui state and screenshot extraction patterns in behavioral scanner","timestamp":1773412174983,"segment":0}
 {"run":70,"commit":"76cba87","metric":284,"metrics":{},"status":"keep","description":"feat: infer local input control from click and selector guidance","timestamp":1773412718619,"segment":0}
 {"run":71,"commit":"93f5c8d","metric":289,"metrics":{},"status":"keep","description":"feat: infer agent browser resnapshot and ui workflow patterns earlier","timestamp":1773412912640,"segment":0}
+{"run":72,"commit":"4076270","metric":291,"metrics":{},"status":"keep","description":"feat: broaden ui action guidance detections for browser workflows","timestamp":1773413199607,"segment":0}
