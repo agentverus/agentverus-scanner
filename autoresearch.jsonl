@@ -5,3 +5,4 @@
 {"run":4,"commit":"ee2bd3b","metric":52,"metrics":{},"status":"keep","description":"feat: catch query-string credentials, saved browser profiles, and local file exposure","timestamp":1773377012124,"segment":0}
 {"run":5,"commit":"8a573d3","metric":61,"metrics":{},"status":"keep","description":"feat: flag full profile sync, secret CLI parameters, and localhost service access","timestamp":1773377190567,"segment":0}
 {"type":"config","name":"Improve realtime prefix detections on public skill corpus","metricName":"realtime_prefix_findings","metricUnit":"","bestDirection":"higher"}
+{"run":1,"commit":"9edbb93","metric":43,"metrics":{},"status":"keep","description":"chore: pivot benchmark to realtime prefix findings baseline","timestamp":1773377313719,"segment":0}

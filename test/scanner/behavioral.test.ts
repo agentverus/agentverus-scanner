@@ -150,6 +150,9 @@ describe("analyzeBehavioral", () => {
 		const result = await analyzeBehavioral(skill);
 
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("persistent session reuse")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
 		).toBe(true);
 		expect(

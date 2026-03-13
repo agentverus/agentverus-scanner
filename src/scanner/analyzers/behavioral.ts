@@ -108,10 +108,24 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Be explicit about sub-agent spawning and ensure delegated tasks are appropriately scoped.",
 	},
 	{
+		name: "Persistent session reuse",
+		patterns: [
+			/maintains?\s+browser\s+sessions?\s+across\s+commands/i,
+			/browser\s+stays\s+open\s+between\s+commands/i,
+			/state\s+auto-(?:saved|restored)/i,
+			/all\s+future\s+runs:\s+already\s+authenticated/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Call out when browser or auth state persists across commands. Reused authenticated sessions should require explicit user consent and clear cleanup guidance.",
+	},
+	{
 		name: "Browser session attachment",
 		patterns: [
 			/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|Chrome\s+DevTools|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
-			/(?:copy(?:ing)?\s+your\s+actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|profile\s+sync\b|local\s+Chrome\s+profile|cloud\s+profile)/i,
+			/(?:copy(?:ing)?\s+your\s+actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|profile\s+sync\b|local\s+Chrome\s+profile|cloud\s+profile|Chrome\s+with\s+CDP)/i,
 		],
 		severity: "high",
 		deduction: 15,
