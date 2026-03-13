@@ -599,6 +599,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		LOCAL_INPUT_CONTROL_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (localInputControlMatch) {
 		add("local_input_control", `Content pattern: ${localInputControlMatch}`);
