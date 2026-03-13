@@ -24,6 +24,8 @@ Run against http://localhost:3000/admin when attached to the dev server.
 Pass --secret apiKey=value to the remote task when needed.
 Bootstrap tooling with npx -y bun or pnpm dlx atxp-call when the runtime is missing.
 Auto-detect dev servers before choosing a localhost target.
+Determine this SKILL.md file's directory path as {baseDir} and resolve script paths from it.
+Common installation paths include ~/.claude/plugins/marketplaces/playwright-skill/skills/playwright-skill and project-specific .claude/skills/playwright-skill.
 Write custom Playwright code to /tmp/playwright-test-risk.js and execute it via node run.js /tmp/playwright-test-risk.js.
 Load saved prompt files with --promptfiles system.md content.md before generating images.
 Send prompts and reference images to OpenAI, Google, DashScope, or Replicate APIs.

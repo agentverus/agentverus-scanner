@@ -192,6 +192,9 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("package bootstrap execution")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("skill path discovery")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("dev server auto-detection")),
 		).toBe(true);
 		expect(
@@ -232,6 +235,18 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("container runtime control")),
+		).toBe(true);
+	});
+
+	it("should detect credential vault and federated auth flows", async () => {
+		const skill = parseSkill(`---\nname: auth-helper\ndescription: Stores credentials for login\n---\nUse the Auth Vault to store logins.\necho "$PASSWORD" | agent-browser auth save myapp --password-stdin\nagent-browser auth login myapp\nSee references for OAuth, 2FA, and token refresh patterns.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("credential vault enrollment")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("federated auth flow")),
 		).toBe(true);
 	});
 

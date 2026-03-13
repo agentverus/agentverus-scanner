@@ -252,6 +252,33 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat secret-bearing CLI parameters as credential handling. Avoid exposing secrets in command lines, logs, or reusable skill snippets; prefer secure secret stores or interactive injection.",
 	},
 	{
+		name: "Credential vault enrollment",
+		patterns: [
+			/\bauth\s+save\b/i,
+			/--password-stdin\b/i,
+			/auth\s+vault/i,
+			/\bauth\s+login\b/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat credential-vault setup and stored-login workflows as sensitive credential handling. Be explicit about what secrets enter the vault, where they are stored, and how they are protected or revoked.",
+	},
+	{
+		name: "Federated auth flow",
+		patterns: [
+			/\bOAuth\b/i,
+			/\b2FA\b/i,
+			/token\s+refresh/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat OAuth, 2FA, and token-refresh guidance as authentication-sensitive workflows. Explain scope, storage, and refresh behavior clearly so agents do not handle more credential material than necessary.",
+	},
+	{
 		name: "Credential in query string",
 		patterns: [
 			/(?:\b(?:cookie|token)\b.{0,120}\bquery\s+string\b|\bquery\s+string\b.{0,120}\b(?:cookie|token)\b)/i,
@@ -311,6 +338,21 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-04",
 		recommendation:
 			"Surface package bootstrap commands for review. Ephemeral package execution and install-time dependency pulls increase supply-chain risk, especially when versions are not pinned or provenance is unclear.",
+	},
+	{
+		name: "Skill path discovery",
+		patterns: [
+			/determine\s+this\s+SKILL\.md\s+file'?s\s+directory\s+path/i,
+			/common\s+installation\s+paths/i,
+			/\.claude\/plugins\/marketplaces\//i,
+			/project-specific:\s*<project>\/\.claude\/skills/i,
+			/\{baseDir\}/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat dynamic skill path resolution and installation-path discovery as local filesystem reconnaissance. Scope which paths may be read or executed from, and avoid broad path probing unless the user explicitly requested it.",
 	},
 	{
 		name: "Dev server auto-detection",
