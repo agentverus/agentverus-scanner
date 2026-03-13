@@ -696,16 +696,25 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 		}
 	}
 
-	// Informational: many external URLs
+	// Many external URLs can materially expand the attack surface, especially
+	// when the skill also discusses auth, cookies, APIs, or payments.
 	if (skill.urls.length > 5) {
+		const hasSensitiveUrlContext = /\b(?:auth|authentication|cookie|token|login|payment|payments|mcp|credential|secret)\b/i.test(
+			content,
+		);
+		const severity = hasSensitiveUrlContext ? "medium" : "info";
+		const deduction = hasSensitiveUrlContext ? 8 : 0;
+		score = Math.max(0, score - deduction);
 		findings.push({
 			id: "DEP-MANY-URLS",
 			category: "dependencies",
-			severity: "info",
+			severity,
 			title: `Many external URLs referenced (${skill.urls.length})`,
-			description: `The skill references ${skill.urls.length} external URLs. While not inherently dangerous, many external dependencies increase the attack surface.`,
+			description: hasSensitiveUrlContext
+				? `The skill references ${skill.urls.length} external URLs and also discusses auth/API/payment workflows, which increases the chance that sensitive operations depend on many remote endpoints.`
+				: `The skill references ${skill.urls.length} external URLs. While not inherently dangerous, many external dependencies increase the attack surface.`,
 			evidence: `URLs: ${skill.urls.slice(0, 5).join(", ")}${skill.urls.length > 5 ? "..." : ""}`,
-			deduction: 0,
+			deduction,
 			recommendation: "Minimize external dependencies to reduce supply chain risk.",
 			owaspCategory: "ASST-04",
 		});

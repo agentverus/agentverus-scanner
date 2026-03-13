@@ -24,3 +24,4 @@
 {"run":17,"commit":"c048edb","metric":149,"metrics":{},"status":"keep","description":"feat: classify localhost urls as medium-risk local service dependencies","timestamp":1773380781218,"segment":0}
 {"run":18,"commit":"cbe1eab","metric":156,"metrics":{},"status":"keep","description":"feat: broaden screenshot scraping and dom inspection detections in prefix scans","timestamp":1773381099442,"segment":0}
 {"run":19,"commit":"0c29734","metric":164,"metrics":{},"status":"keep","description":"feat: expand screenshot and browser log extraction coverage in prefix scans","timestamp":1773381369555,"segment":0}
+{"run":20,"commit":"0c540f3","metric":166,"metrics":{},"status":"keep","description":"feat: catch taking screenshots and extracting-data phrasing earlier","timestamp":1773381547898,"segment":0}
