@@ -255,6 +255,7 @@ EXPOSE 3000
 		);
 		expect(contractFindings.some((f) => f.title.includes("file write"))).toBe(true);
 		expect(contractFindings.some((f) => f.title.includes("server exposure"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
 	});
 
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {

@@ -368,6 +368,7 @@ const LOCAL_SERVICE_ACCESS_PATTERNS: readonly RegExp[] = [
 	/\bdetectDevServers\s*\(/i,
 	/\bstdio\s+for\s+local\s+servers?\b/i,
 	/\bPORT=\d{2,5}\b/i,
+	/\bEXPOSE\s+\d{2,5}\b/i,
 ] as const;
 
 const SESSION_MANAGEMENT_PATTERNS: readonly RegExp[] = [

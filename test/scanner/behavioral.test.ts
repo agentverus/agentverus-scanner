@@ -288,6 +288,15 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 	});
 
+	it("should detect local service exposure from exposed ports in docker snippets", async () => {
+		const skill = parseSkill(`---\nname: exposed-port-helper\ndescription: Documents a local app container\n---\n\`\`\`dockerfile\nEXPOSE 3000\n\`\`\``);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("local service access")),
+		).toBe(true);
+	});
+
 	it("should detect financial cost language and container runtime control", async () => {
 		const skill = parseSkill(`---\nname: paid-docker-helper\ndescription: Charges for premium actions and controls Docker\n---\nCost: $0.50 USD\nCharge for premium actions when the user enables deployment.\nRun docker build --no-cache -t test . and docker run --rm test.`);
 		const result = await analyzeBehavioral(skill);

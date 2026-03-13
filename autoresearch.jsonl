@@ -76,3 +76,4 @@
 {"run":74,"commit":"c4e38d2","metric":314,"metrics":{},"status":"discard","description":"chore: resume loop by revalidating current realtime prefix benchmark baseline","timestamp":1773429879408,"segment":1}
 {"run":75,"commit":"ab9afb3","metric":319,"metrics":{},"status":"keep","description":"feat: infer fenced setup commands and real-chrome profile attachment earlier","timestamp":1773430320360,"segment":1}
 {"run":76,"commit":"b0930df","metric":322,"metrics":{},"status":"keep","description":"feat: surface browser auth-state reuse and local server hints earlier","timestamp":1773430621882,"segment":1}
+{"run":77,"commit":"b83f3d2","metric":324,"metrics":{},"status":"keep","description":"feat: infer created files and exposed service ports earlier","timestamp":1773430784595,"segment":1}

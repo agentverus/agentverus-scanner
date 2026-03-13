@@ -454,6 +454,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Local service access",
 		patterns: [
 			/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i,
+			/\bEXPOSE\s+\d{2,5}\b/i,
 		],
 		severity: "high",
 		deduction: 15,
