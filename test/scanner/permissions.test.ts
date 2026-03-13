@@ -147,10 +147,19 @@ describe("analyzePermissions", () => {
 			contractFindings.some((f) => f.title.includes("local service access")),
 		).toBe(true);
 		expect(
+			contractFindings.some((f) => f.title.includes("credential form automation")),
+		).toBe(true);
+		expect(
 			contractFindings.some((f) => f.title.includes("process orchestration")),
 		).toBe(true);
 		expect(
 			contractFindings.some((f) => f.title.includes("UI state access")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("documentation ingestion")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("local input control")),
 		).toBe(true);
 	});
 

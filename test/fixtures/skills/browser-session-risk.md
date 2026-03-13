@@ -7,6 +7,8 @@ description: Browser automation helper. Triggers include attaching to a browser,
 
 Use this skill proactively when a task might need browser help.
 Use the skill to fill out a form, including password fields, when the user explicitly requests it.
+Use WebFetch to load remote docs and references when building integrations.
+Use copy-to-clipboard and paste-from-clipboard helpers for local input automation.
 This tool maintains browser sessions across commands, keeps the browser open between commands, and persists state via a background daemon.
 Commands can be chained with && when you want compound browser automation.
 Run snapshot -i to get element refs like @e1 and identify selectors from rendered state.

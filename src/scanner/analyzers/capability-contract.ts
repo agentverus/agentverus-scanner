@@ -22,11 +22,15 @@ type CapabilityKind =
 	| "remote_delegation"
 	| "local_service_access"
 	| "process_orchestration"
-	| "ui_state_access";
+	| "ui_state_access"
+	| "documentation_ingestion"
+	| "local_input_control"
+	| "credential_form_automation";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
 	"credential_handoff",
+	"credential_form_automation",
 	"exec",
 	"system_modification",
 	"file_write",
@@ -40,11 +44,14 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"local_service_access",
 	"process_orchestration",
 	"ui_state_access",
+	"documentation_ingestion",
+	"local_input_control",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	credential_access: "credential access",
 	credential_handoff: "credential handoff",
+	credential_form_automation: "credential form automation",
 	exec: "command execution",
 	system_modification: "system modification",
 	file_write: "file write",
@@ -58,6 +65,8 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	local_service_access: "local service access",
 	process_orchestration: "process orchestration",
 	ui_state_access: "UI state access",
+	documentation_ingestion: "documentation ingestion",
+	local_input_control: "local input control",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -65,6 +74,7 @@ const CAPABILITY_SEVERITY: Readonly<
 > = {
 	credential_access: { severity: "high", deduction: 15 },
 	credential_handoff: { severity: "high", deduction: 12 },
+	credential_form_automation: { severity: "medium", deduction: 8 },
 	exec: { severity: "high", deduction: 12 },
 	system_modification: { severity: "high", deduction: 12 },
 	file_write: { severity: "medium", deduction: 8 },
@@ -78,6 +88,8 @@ const CAPABILITY_SEVERITY: Readonly<
 	local_service_access: { severity: "medium", deduction: 8 },
 	process_orchestration: { severity: "medium", deduction: 8 },
 	ui_state_access: { severity: "medium", deduction: 8 },
+	documentation_ingestion: { severity: "medium", deduction: 8 },
+	local_input_control: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -180,6 +192,25 @@ const CONTENT_EXTRACTION_PATTERNS: readonly RegExp[] = [
 	/\bscreenshot\b/i,
 ] as const;
 
+const DOCUMENTATION_INGESTION_PATTERNS: readonly RegExp[] = [
+	/Use\s+WebFetch\s+to\s+load/i,
+	/web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
+	/fetch\s+specific\s+pages\s+with\s+`?\.md/i,
+] as const;
+
+const LOCAL_INPUT_CONTROL_PATTERNS: readonly RegExp[] = [
+	/copy-to-clipboard/i,
+	/paste-from-clipboard/i,
+	/paste\s+keystroke/i,
+] as const;
+
+const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
+	/input\s+type="password"/i,
+	/fill\s+@e\d+\s+"password123"/i,
+	/fill\s+out\s+a\s+form/i,
+	/login\s+to\s+a\s+site/i,
+] as const;
+
 const PROCESS_ORCHESTRATION_PATTERNS: readonly RegExp[] = [
 	/\bwith_server\.py\b/i,
 	/\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
@@ -214,6 +245,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["credential_handoff", "cookie_bootstrap", "browser_cookie"])) {
 		return "credential_handoff";
+	}
+	if (hasAny(["credential_form", "password_form", "login_form"])) {
+		return "credential_form_automation";
 	}
 	if (hasAny(["exec", "execute", "shell", "command", "spawn", "process"])) {
 		return "exec";
@@ -255,6 +289,12 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["extract", "scrape", "screenshot", "html", "text", "dom"])) {
 		return "content_extraction";
+	}
+	if (hasAny(["documentation_ingestion", "webfetch", "remote_docs"])) {
+		return "documentation_ingestion";
+	}
+	if (hasAny(["local_input_control", "clipboard", "paste_keystroke"])) {
+		return "local_input_control";
 	}
 	if (hasAny(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
 		return "process_orchestration";
@@ -403,6 +443,33 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("content_extraction", `Content pattern: ${contentExtractionMatch}`);
 	}
 
+	const documentationIngestionMatch = firstPositiveMatch(
+		skill.rawContent,
+		DOCUMENTATION_INGESTION_PATTERNS,
+		isDefenseSkill,
+	);
+	if (documentationIngestionMatch) {
+		add("documentation_ingestion", `Content pattern: ${documentationIngestionMatch}`);
+	}
+
+	const localInputControlMatch = firstPositiveMatch(
+		skill.rawContent,
+		LOCAL_INPUT_CONTROL_PATTERNS,
+		isDefenseSkill,
+	);
+	if (localInputControlMatch) {
+		add("local_input_control", `Content pattern: ${localInputControlMatch}`);
+	}
+
+	const credentialFormAutomationMatch = firstPositiveMatch(
+		skill.rawContent,
+		CREDENTIAL_FORM_AUTOMATION_PATTERNS,
+		isDefenseSkill,
+	);
+	if (credentialFormAutomationMatch) {
+		add("credential_form_automation", `Content pattern: ${credentialFormAutomationMatch}`);
+	}
+
 	const remoteDelegationMatch = firstPositiveMatch(
 		skill.rawContent,
 		REMOTE_DELEGATION_PATTERNS,
@@ -494,7 +561,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, credential_handoff, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, credential_handoff, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}
