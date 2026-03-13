@@ -73,7 +73,9 @@ const PRIVATE_IP_REGEX = /^(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|
 
 const LOCAL_SERVICE_HINT_PATTERNS = [
 	{ regex: /\bEXPOSE\s+\d{2,5}\b/i, title: "Local service port exposure" },
+	{ regex: /\bHEALTHCHECK\b/i, title: "Local service healthcheck reference" },
 	{ regex: /\bstdio\s+for\s+local\s+servers?\b/i, title: "Local server transport reference" },
+	{ regex: /\bMCP\s+endpoints?\s+directly\b/i, title: "Agent-callable endpoint reference" },
 ] as const;
 
 /** Download-and-execute patterns */

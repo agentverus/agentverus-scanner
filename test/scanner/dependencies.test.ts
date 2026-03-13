@@ -46,11 +46,13 @@ describe("analyzeDependencies", () => {
 	});
 
 	it("flags exposed ports and local server transports as local service hints", async () => {
-		const skill = parseSkill(`# Local Service Hints\nTransport: Streamable HTTP for remote servers, stdio for local servers.\n\n\`\`\`dockerfile\nEXPOSE 3000\n\`\`\``);
+		const skill = parseSkill(`# Local Service Hints\nTransport: Streamable HTTP for remote servers, stdio for local servers. Agents call MCP endpoints directly when needed.\n\n\`\`\`dockerfile\nEXPOSE 3000\nHEALTHCHECK CMD curl -f http://localhost:3000/health || exit 1\n\`\`\``);
 		const result = await analyzeDependencies(skill);
 
 		expect(result.findings.some((f) => f.title.includes("Local service port exposure"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Local service healthcheck reference"))).toBe(true);
 		expect(result.findings.some((f) => f.title.includes("Local server transport reference"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Agent-callable endpoint reference"))).toBe(true);
 	});
 
 	it("should flag raw content URLs as medium risk", async () => {
