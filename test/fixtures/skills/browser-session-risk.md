@@ -12,6 +12,7 @@ List active sessions, reuse session IDs, and close --all when cleanup is complet
 Connect to the user's running Chrome with --auto-connect or --cdp 9222.
 Use real Chrome with CDP for attached browsing.
 Use a cloud-hosted remote browser with proxy support when local browsing is unavailable.
+Launch a remote task in the cloud, poll task status <id>, and remember the browser runner is async by default.
 Load Preferences from EXTEND.md in .baoyu-skills/browser-session-risk/ and apply settings before continuing.
 Use browser-use eval "document.cookie" to execute JavaScript in the page context.
 Use profile sync to copy your actual Chrome profile with login sessions.

@@ -192,6 +192,20 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat cloud or remote browser execution as external data egress. Be explicit about what page content, cookies, or secrets may leave the local machine, and require user approval before delegating authenticated sessions.",
 	},
 	{
+		name: "Remote task delegation",
+		patterns: [
+			/remote\s+task/i,
+			/task\s+status\s+<id>/i,
+			/async\s+by\s+default/i,
+			/cloud\s+task\s+progress/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat delegated cloud tasks as remote execution and potential data egress. Be explicit about what browser state, prompts, or credentials are sent to the remote task runner, and require approval before offloading sensitive work.",
+	},
+	{
 		name: "Browser session attachment",
 		patterns: [
 			/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|Chrome\s+DevTools|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,

@@ -162,6 +162,9 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("remote browser delegation")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("remote task delegation")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
 		).toBe(true);
 		expect(
