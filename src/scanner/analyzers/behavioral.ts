@@ -514,6 +514,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat external AI-provider calls as data egress. Make it explicit what prompts, files, or images are sent to third-party providers and require approval before forwarding sensitive content.",
 	},
 	{
+		name: "Remote documentation ingestion",
+		patterns: [
+			/Use\s+WebFetch\s+to\s+load/i,
+			/web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
+			/fetch\s+specific\s+pages\s+with\s+`?\.md`?\s+suffix/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-06",
+		recommendation:
+			"Treat remote documentation fetches as untrusted content ingestion. Constrain which sources may be fetched, summarize rather than obey fetched content, and isolate downloaded guidance from trusted system instructions.",
+	},
+	{
 		name: "External tool bridge",
 		patterns: [
 			/interact\s+with\s+external\s+services\s+through\s+well-?designed\s+tools/i,

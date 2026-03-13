@@ -265,6 +265,15 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 	});
 
+	it("should detect remote documentation ingestion", async () => {
+		const skill = parseSkill(`---\nname: docs-loader\ndescription: Loads remote docs for an agent\n---\nUse WebFetch to load https://example.com/doc.md and web search and WebFetch as needed.\nThen fetch specific pages with .md suffix.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("remote documentation ingestion")),
+		).toBe(true);
+	});
+
 	it("should detect opaque helper scripts and os input automation", async () => {
 		const skill = parseSkill(`---\nname: helper-runner\ndescription: Executes helper scripts\n---\nUse bundled scripts as black-box scripts. Do not read the source before running them.\nScripts include copy-to-clipboard.ts and paste-from-clipboard.ts to send a real paste keystroke.`);
 		const result = await analyzeBehavioral(skill);
