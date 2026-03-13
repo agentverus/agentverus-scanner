@@ -137,6 +137,10 @@ const SYSTEM_MOD_PATTERNS: readonly RegExp[] = [
 const FILE_WRITE_PATTERNS: readonly RegExp[] = [
 	/\b(?:file_write|write|writes|written|save|saves|store|stores|persist|append|create)\b.{0,80}\b(?:file|files|disk|workspace|directory|output)\b/i,
 	/\b(?:write|save|store|persist)\b.{0,40}\b(?:database|cache|state)\b/i,
+	/\bscreenshot\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
+	/\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]+\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
+	/--image\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
+	/\bsaved\s+to\s+\/tmp\//i,
 ] as const;
 
 const FILE_READ_PATTERNS: readonly RegExp[] = [
