@@ -167,6 +167,8 @@ const CREDENTIAL_HANDOFF_PATTERNS: readonly RegExp[] = [
 	/\bget\s+authentication\s+cookie\b/i,
 	/\bauth\s+cookie\s+via\s+the\s+ATXP\s+tool\b/i,
 	/\bagents\s+get\s+an\s+auth\s+cookie\s+via\s+MCP\b/i,
+	/\buse\s+that\s+auth\s+state\b/i,
+	/\bstate\s+load\s+\.\/auth\.json\b/i,
 	/\bconfigure\s+browser\s+cookie\b/i,
 	/\bredirect\s+to\s+clean\s+the\s+URL\b/i,
 ] as const;
@@ -179,6 +181,7 @@ const CREDENTIAL_STORAGE_PATTERNS: readonly RegExp[] = [
 	/session\s+tokens?\s+in\s+plaintext/i,
 	/default\s+Chrome\s+profile/i,
 	/persistent\s+profile/i,
+	/persistent\s+but\s+empty\s+CLI\s+profile/i,
 	/credentials\s+stored\s+encrypted/i,
 ] as const;
 
