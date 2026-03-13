@@ -98,6 +98,12 @@ const REMOTE_SERVICE_HINT_PATTERNS = [
 			"The skill is explicitly designed to integrate remote services or APIs, which increases dependency trust and remote attack-surface considerations.",
 	},
 	{
+		regex: /\bfor\s+more\s+information,\s+see\s+https?:\/\/\S+|\breference\s+implementation\b|\bUse\s+WebFetch\s+to\s+load\s+https?:\/\/\S+|\bsitemap\.xml\b|\bREADME\.md\b/i,
+		title: "External documentation dependency",
+		description:
+			"The skill relies on external documentation, specs, or README content as part of its workflow, which introduces an additional remote dependency and trust boundary.",
+	},
+	{
 		regex: /\bquery\s+string\b.{0,120}\b(?:cookie|auth|token|session)\b|\b(?:cookie|auth|token|session)\b.{0,120}\bquery\s+string\b/i,
 		title: "Credential query-parameter transport",
 		description:
