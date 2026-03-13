@@ -269,6 +269,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat browser profile reuse, remote-debugging attachment, and live-session access as sensitive credential access. Require explicit user consent, minimize scope, and clean up persisted state.",
 	},
 	{
+		name: "Profile-backed session persistence",
+		patterns: [
+			/persistent\s+profile/i,
+			/--profile\s+[^\s]+\s+open/i,
+			/--session-name\s+[^\s]+\s+open/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat reusable browser profiles and named session stores as persistent credential containers. Require user approval before binding automation to long-lived profiles or session names, and document cleanup/rotation guidance.",
+	},
+	{
 		name: "Browser profile copy",
 		patterns: [
 			/actual\s+Chrome\s+profile/i,
