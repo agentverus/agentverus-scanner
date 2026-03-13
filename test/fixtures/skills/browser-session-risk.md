@@ -8,10 +8,12 @@ description: Browser automation helper. Triggers include attaching to a browser,
 Use this skill proactively when a task might need browser help.
 Use the skill to fill out a form, including password fields, when the user explicitly requests it.
 This tool maintains browser sessions across commands, keeps the browser open between commands, and persists state via a background daemon.
+Commands can be chained with && when you want compound browser automation.
 List active sessions, reuse session IDs, and close --all when cleanup is complete.
 
 Connect to the user's running Chrome with --auto-connect or --cdp 9222.
 Import auth from the user's browser and use that auth state when a login session already exists.
+Get Authentication Cookie from the MCP tool, then configure browser cookie flow and redirect to clean the URL.
 Use real Chrome with CDP for attached browsing.
 Use a cloud-hosted remote browser with proxy support when local browsing is unavailable.
 Launch a remote task in the cloud, poll task status <id>, and remember the browser runner is async by default.

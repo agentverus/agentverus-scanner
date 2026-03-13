@@ -30,3 +30,4 @@
 {"run":23,"commit":"11c0297","metric":172,"metrics":{},"status":"keep","description":"feat: surface remote task delegation and cloud task status workflows earlier","timestamp":1773387258530,"segment":0}
 {"run":24,"commit":"c51077a","metric":175,"metrics":{},"status":"keep","description":"feat: surface script-subdirectory and baseDir path resolution earlier","timestamp":1773387419852,"segment":0}
 {"run":25,"commit":"0ee28b9","metric":178,"metrics":{},"status":"keep","description":"feat: detect auth import from user browsers and automated password entry","timestamp":1773389113960,"segment":0}
+{"run":26,"commit":"7d749c9","metric":181,"metrics":{},"status":"keep","description":"feat: surface remote documentation ingestion in mcp builder workflows","timestamp":1773389246757,"segment":0}

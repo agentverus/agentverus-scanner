@@ -206,6 +206,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat delegated cloud tasks as remote execution and potential data egress. Be explicit about what browser state, prompts, or credentials are sent to the remote task runner, and require approval before offloading sensitive work.",
 	},
 	{
+		name: "Compound browser action chaining",
+		patterns: [
+			/commands?\s+can\s+be\s+chained\s+with\s+`?&&`?/i,
+			/\bopen\s+https?:\/\/\S+\s+&&\s+[^\n]+/i,
+			/\bfill\s+@e\d+\s+"[^"]+"\s+&&\s+fill\s+@e\d+\s+"[^"]+"\s+&&/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat chained browser commands as compound automation that can hide risky multi-step actions. Prefer explicit step-by-step review for authenticated or destructive workflows.",
+	},
+	{
 		name: "Auth import from user browser",
 		patterns: [
 			/import\s+auth\s+from\s+the\s+user'?s\s+browser/i,
@@ -216,6 +229,32 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Treat importing auth state from the user's browser as sensitive credential access. Require explicit user consent, minimize scope, and avoid persisting imported sessions longer than necessary.",
+	},
+	{
+		name: "MCP-issued browser auth cookie",
+		patterns: [
+			/get\s+authentication\s+cookie/i,
+			/auth\s+cookie\s+via\s+the\s+ATXP\s+tool/i,
+			/agents\s+get\s+an\s+auth\s+cookie\s+via\s+MCP/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat MCP-delivered browser cookies as bearer credentials. Make the trust boundary explicit, minimize cookie lifetime/scope, and avoid mixing installation guidance with reusable browser-session tokens.",
+	},
+	{
+		name: "Cookie bootstrap redirect",
+		patterns: [
+			/configure\s+browser\s+cookie/i,
+			/server\s+will[:]?/i,
+			/redirect\s+to\s+clean\s+the\s+URL/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat server-side cookie bootstrap redirects as credential handoff flows. Document URL leakage risks clearly and prefer safer cookie-setting mechanisms where possible.",
 	},
 	{
 		name: "Browser session attachment",

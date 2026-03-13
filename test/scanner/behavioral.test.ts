@@ -165,7 +165,16 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("remote task delegation")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("compound browser action chaining")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("auth import from user browser")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("mcp-issued browser auth cookie")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("cookie bootstrap redirect")),
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
