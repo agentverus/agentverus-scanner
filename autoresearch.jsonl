@@ -28,3 +28,4 @@
 {"run":21,"commit":"330d188","metric":167,"metrics":{},"status":"keep","description":"feat: escalate many-url dependency sprawl when auth context is present","timestamp":1773381817955,"segment":0}
 {"run":22,"commit":"aa11efe","metric":169,"metrics":{},"status":"keep","description":"feat: surface session inventory and bulk session reuse controls earlier","timestamp":1773382847133,"segment":0}
 {"run":23,"commit":"11c0297","metric":172,"metrics":{},"status":"keep","description":"feat: surface remote task delegation and cloud task status workflows earlier","timestamp":1773387258530,"segment":0}
+{"run":24,"commit":"c51077a","metric":175,"metrics":{},"status":"keep","description":"feat: surface script-subdirectory and baseDir path resolution earlier","timestamp":1773387419852,"segment":0}

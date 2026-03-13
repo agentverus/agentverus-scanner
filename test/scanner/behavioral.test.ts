@@ -165,6 +165,9 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("remote task delegation")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("auth import from user browser")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
 		).toBe(true);
 		expect(
@@ -175,6 +178,9 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser javascript evaluation")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("credential form automation")),
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),

@@ -206,6 +206,18 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat delegated cloud tasks as remote execution and potential data egress. Be explicit about what browser state, prompts, or credentials are sent to the remote task runner, and require approval before offloading sensitive work.",
 	},
 	{
+		name: "Auth import from user browser",
+		patterns: [
+			/import\s+auth\s+from\s+the\s+user'?s\s+browser/i,
+			/use\s+that\s+auth\s+state/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat importing auth state from the user's browser as sensitive credential access. Require explicit user consent, minimize scope, and avoid persisting imported sessions longer than necessary.",
+	},
+	{
 		name: "Browser session attachment",
 		patterns: [
 			/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|Chrome\s+DevTools|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
@@ -254,6 +266,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat browser-side JavaScript evaluation as privileged execution. Constrain the origin, review the expression, and avoid combining it with authenticated sessions unless necessary.",
+	},
+	{
+		name: "Credential form automation",
+		patterns: [
+			/input\s+type="password"/i,
+			/fill\s+@e\d+\s+"password123"/i,
+			/fill\s+out\s+a\s+form/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat automated interaction with login/password forms as sensitive credential handling. Require user approval before filling credentials or automating authenticated sign-in flows.",
 	},
 	{
 		name: "Browser auth state handling",
