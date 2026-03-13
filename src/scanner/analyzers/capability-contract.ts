@@ -18,7 +18,9 @@ type CapabilityKind =
 	| "session_management"
 	| "content_extraction"
 	| "remote_delegation"
-	| "local_service_access";
+	| "local_service_access"
+	| "process_orchestration"
+	| "ui_state_access";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -32,6 +34,8 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"content_extraction",
 	"remote_delegation",
 	"local_service_access",
+	"process_orchestration",
+	"ui_state_access",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -46,6 +50,8 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	content_extraction: "content extraction",
 	remote_delegation: "remote delegation",
 	local_service_access: "local service access",
+	process_orchestration: "process orchestration",
+	ui_state_access: "UI state access",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -62,6 +68,8 @@ const CAPABILITY_SEVERITY: Readonly<
 	content_extraction: { severity: "medium", deduction: 8 },
 	remote_delegation: { severity: "medium", deduction: 8 },
 	local_service_access: { severity: "medium", deduction: 8 },
+	process_orchestration: { severity: "medium", deduction: 8 },
+	ui_state_access: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -149,6 +157,21 @@ const CONTENT_EXTRACTION_PATTERNS: readonly RegExp[] = [
 	/\bscreenshot\b/i,
 ] as const;
 
+const PROCESS_ORCHESTRATION_PATTERNS: readonly RegExp[] = [
+	/\bwith_server\.py\b/i,
+	/\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
+	/\bnode\s+run\.js\s+\/tmp\//i,
+	/\bnpm\s+run\s+dev\b/i,
+	/\bpython\s+your_automation\.py\b/i,
+] as const;
+
+const UI_STATE_ACCESS_PATTERNS: readonly RegExp[] = [
+	/\bsnapshot\s+-i\b/i,
+	/clickable\s+elements?\s+with\s+indices/i,
+	/element\s+refs?\s+like\s+@e\d+/i,
+	/identify\s+selectors?\s+from\s+rendered\s+state/i,
+] as const;
+
 function tokenizeLower(input: string): string[] {
 	return input
 		.toLowerCase()
@@ -203,6 +226,12 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["extract", "scrape", "screenshot", "html", "text", "dom"])) {
 		return "content_extraction";
+	}
+	if (hasAny(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
+		return "process_orchestration";
+	}
+	if (hasAny(["ui_state", "snapshot", "selector", "dom_snapshot"])) {
+		return "ui_state_access";
 	}
 
 	return null;
@@ -345,6 +374,24 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("local_service_access", `Content pattern: ${localServiceAccessMatch}`);
 	}
 
+	const processOrchestrationMatch = firstPositiveMatch(
+		skill.rawContent,
+		PROCESS_ORCHESTRATION_PATTERNS,
+		isDefenseSkill,
+	);
+	if (processOrchestrationMatch) {
+		add("process_orchestration", `Content pattern: ${processOrchestrationMatch}`);
+	}
+
+	const uiStateAccessMatch = firstPositiveMatch(
+		skill.rawContent,
+		UI_STATE_ACCESS_PATTERNS,
+		isDefenseSkill,
+	);
+	if (uiStateAccessMatch) {
+		add("ui_state_access", `Content pattern: ${uiStateAccessMatch}`);
+	}
+
 	if (!inferred.has("network")) {
 		const firstUrl = skill.urls[0];
 		if (firstUrl) add("network", `URL reference: ${firstUrl}`);
@@ -400,7 +447,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, exec, system_modification, file_write, file_read, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, exec, system_modification, file_write, file_read, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}
