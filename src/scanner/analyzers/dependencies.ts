@@ -116,6 +116,12 @@ const REMOTE_SERVICE_HINT_PATTERNS = [
 			"The skill depends on local images, videos, thumbnails, or other media artifacts being passed into remote or browser-driven workflows, expanding the data-handoff surface.",
 	},
 	{
+		regex: /\bactual\s+Chrome\s+profile\b|\bpersistent\s+but\s+empty\s+CLI\s+profile\b|\b--profile\b|\b--session-name\b|\balready\s+authenticated\b|\bstate\s+auto-saved\b|\bsession\s+saved\b/i,
+		title: "Reusable authenticated browser container dependency",
+		description:
+			"The skill relies on reusable browser profiles, named sessions, or already-authenticated browser containers, which adds dependency risk around long-lived local session state.",
+	},
+	{
 		regex: /\bquery\s+string\b.{0,120}\b(?:cookie|auth|token|session)\b|\b(?:cookie|auth|token|session)\b.{0,120}\bquery\s+string\b/i,
 		title: "Credential query-parameter transport",
 		description:
