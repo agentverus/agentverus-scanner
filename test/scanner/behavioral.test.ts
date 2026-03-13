@@ -145,6 +145,21 @@ describe("analyzeBehavioral", () => {
 		expect(tamperFindings.length).toBe(0);
 	});
 
+	it("should detect browser session attachment and local exposure patterns", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("local service exposure")),
+		).toBe(true);
+	});
+
 	it("should not false-positive on existing safe fixtures for config tampering", async () => {
 		for (const fixture of ["safe-basic.md", "safe-complex.md"]) {
 			const skill = parseSkill(loadFixture(fixture));

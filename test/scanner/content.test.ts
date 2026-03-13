@@ -101,6 +101,25 @@ describe("analyzeContent", () => {
 		expect(genericFindings.length).toBe(1);
 	});
 
+	it("should flag overly broad activation triggers", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzeContent(skill);
+
+		const triggerFindings = result.findings.filter((f) => f.id === "CONT-BROAD-TRIGGER");
+		expect(triggerFindings.length).toBe(1);
+		expect(triggerFindings[0]?.owaspCategory).toBe("ASST-11");
+	});
+
+	it("should NOT flag narrow trigger language", async () => {
+		const skill = parseSkill(
+			`---\nname: repo-summarizer\ndescription: Use when the user asks to summarize issues for a specific GitHub repository\n---\nSummarize GitHub issues for the requested repository only.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const triggerFindings = result.findings.filter((f) => f.id === "CONT-BROAD-TRIGGER");
+		expect(triggerFindings.length).toBe(0);
+	});
+
 	it("should NOT flag specific descriptions", async () => {
 		const skill = parseSkill(
 			`---\nname: web-search\ndescription: Searches the web using Google Custom Search API and returns formatted results\n---\nSearch instructions here.`,

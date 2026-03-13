@@ -112,6 +112,18 @@ describe("analyzePermissions", () => {
 		).toBe(true);
 	});
 
+	it("should infer credential access from browser auth/session workflows", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential access")),
+		).toBe(true);
+	});
+
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
 		const skill = parseSkill(loadFixture("declared-permissions.md"));
 		const result = await analyzePermissions(skill);

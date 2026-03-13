@@ -54,6 +54,8 @@ Benchmark corpus:
 - Initial corpus includes public skills for browser automation, MCP building, ATXP cookie auth, Chrome profile reuse, and localhost/dev-server workflows.
 - Baseline run (`./autoresearch.sh`): `public_issue_findings=26`, `public_issue_skills=10`, `public_high_findings=9`, `realtime_prefix_skills=10`, `safe_fixture_regressions=4`, `safe_fixture_medium_plus=16`.
 - Baseline expectation confirmed: several public skills with sensitive browser/session/auth capabilities still score conditional/certified with only 1–2 actionable findings.
+- Experiment 1: added browser-session attachment, browser auth-state handling, local service exposure, and broad-trigger detections; expanded capability inference for browser auth/session workflows. Result: `public_issue_findings` improved from `26` to `43` (+17) with `safe_fixture_regressions` unchanged at `4`.
+- Current artifact to watch: auth-cookie wording can trigger duplicate browser-auth findings on ClawDirect-style skills; deduping or merging related browser auth signals may improve report quality without sacrificing coverage.
 - Near-term promising directions:
   - stronger browser auth/profile/session risk detection
   - local-to-public bridge detection (tunnels, share URLs, remote browser/session attachment)

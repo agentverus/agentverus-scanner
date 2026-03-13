@@ -22,6 +22,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/without\s+(?:any\s+)?restrictions/i,
 			/unrestricted\s+(?:access|mode|operation)/i,
 			/full\s+(?:system\s+)?access/i,
+			/no\s+restrictions?\s+on\s+(?:navigation|actions|output)/i,
 		],
 		severity: "high",
 		deduction: 20,
@@ -105,6 +106,44 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Be explicit about sub-agent spawning and ensure delegated tasks are appropriately scoped.",
+	},
+	{
+		name: "Browser session attachment",
+		patterns: [
+			/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|Chrome\s+DevTools|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
+			/(?:copy(?:ing)?\s+your\s+actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|profile\s+sync\b|local\s+Chrome\s+profile|cloud\s+profile)/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat browser profile reuse, remote-debugging attachment, and live-session access as sensitive credential access. Require explicit user consent, minimize scope, and clean up persisted state.",
+	},
+	{
+		name: "Browser auth state handling",
+		patterns: [
+			/(?:state\s+(?:save|load)\s+\S*auth\.json|state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext|auth(?:entication)?\s+cookie|http-?only\s+cookie|cookies?\s+(?:export|import|get|set|clear)\b|cookies?\s+and\s+localStorage)/i,
+			/(?:session\s+tokens?\s+in\s+plaintext|browser\s+session\s+is\s+authenticated|auto-saved\s+to\s+~\/\.agent-browser\/sessions)/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Avoid storing, exporting, or passing browser auth state unless the workflow clearly requires it. Prefer encrypted storage, short-lived state, and explicit user confirmation before reusing credentials.",
+	},
+	{
+		name: "Local service exposure",
+		patterns: [
+			/(?:browser-use\s+)?tunnel\s+\d+\b/i,
+			/trycloudflare\.com/i,
+			/session\s+share\b/i,
+			/public\s+share\s+url/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Do not expose local services, browser sessions, or internal tools publicly by default. Require explicit approval, constrain the shared surface, and shut down tunnels after use.",
 	},
 	{
 		name: "State persistence",

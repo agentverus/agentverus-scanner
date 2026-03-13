@@ -108,4 +108,13 @@ describe("scanSkill (integration)", () => {
 
 		expect(declaredReport.overall).toBeGreaterThan(undeclaredReport.overall);
 	});
+
+	it("browser session risk skill should surface browser auth and trigger risks", async () => {
+		const report = await scanSkill(loadFixture("browser-session-risk.md"));
+
+		expect(report.overall).toBeLessThan(90);
+		expect(report.badge).not.toBe("certified");
+		expect(report.findings.some((f) => f.owaspCategory === "ASST-05")).toBe(true);
+		expect(report.findings.some((f) => f.id === "CONT-BROAD-TRIGGER")).toBe(true);
+	});
 });

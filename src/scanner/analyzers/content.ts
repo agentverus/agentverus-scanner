@@ -114,6 +114,14 @@ const GENERIC_DESCRIPTION_PATTERNS = [
 	/\buse\s+(?:this|me)\s+for\s+(?:everything|anything)\b/i,
 ] as const;
 
+/** Overly broad activation instructions can hijack skill routing */
+const BROAD_TRIGGER_PATTERNS = [
+	/\buse\s+proactively\b/i,
+	/\btriggers?\s+include\b[\s\S]{0,220}\b(?:any\s+task|any\s+request|everything)\b/i,
+	/\buse\s+when\b[\s\S]{0,180}\bany\s+task\s+requiring\b/i,
+	/\bthis\s+skill\s+is\s+applicable\s+to\s+execute\s+the\s+workflow\s+or\s+actions\s+described\s+in\s+the\s+overview\b/i,
+] as const;
+
 /** Analyze content quality and safety boundaries */
 export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
@@ -338,6 +346,24 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 			deduction: 10,
 			recommendation:
 				"Rewrite the description to be specific about scope and use cases (when to invoke this skill and what it will do).",
+			owaspCategory: "ASST-11",
+		});
+	}
+
+	const combinedTriggerText = `${skill.description ?? ""}\n${content}`;
+	if (BROAD_TRIGGER_PATTERNS.some((p) => p.test(combinedTriggerText))) {
+		score = Math.max(0, score - 10);
+		findings.push({
+			id: "CONT-BROAD-TRIGGER",
+			category: "content",
+			severity: "medium",
+			title: "Overly broad activation triggers",
+			description:
+				"The skill uses broad trigger language (for example 'use proactively' or 'any task requiring ...'), which can cause trigger hijacking and unintended activation.",
+			evidence: (skill.description || content).slice(0, 160),
+			deduction: 10,
+			recommendation:
+				"Narrow the activation criteria. Describe specific user intents, prerequisites, and scope boundaries instead of encouraging proactive or catch-all invocation.",
 			owaspCategory: "ASST-11",
 		});
 	}
