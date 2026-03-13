@@ -313,6 +313,56 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Surface package bootstrap commands for review. Ephemeral package execution and install-time dependency pulls increase supply-chain risk, especially when versions are not pinned or provenance is unclear.",
 	},
 	{
+		name: "Dev server auto-detection",
+		patterns: [
+			/auto-?detect(?:s)?\s+(?:running\s+)?dev\s+servers?/i,
+			/detectDevServers\s*\(/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat automatic localhost/dev-server discovery as local service enumeration. Require explicit approval before probing local ports or reusing discovered internal services.",
+	},
+	{
+		name: "Temporary script execution",
+		patterns: [
+			/write\s+(?:custom\s+)?(?:Playwright\s+code|test\s+scripts?)\s+(?:in|to)\s+\/tmp/i,
+			/\bnode\s+-e\b/i,
+			/\bnode\s+run\.js\s+\/tmp\//i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat ad hoc script generation and immediate execution as privileged code execution. Review generated scripts before running them and avoid opaque wrapper commands where possible.",
+	},
+	{
+		name: "Prompt file ingestion",
+		patterns: [
+			/--promptfiles\b/i,
+			/saved\s+prompt\s+files/i,
+			/system\.md\s+content\.md/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-06",
+		recommendation:
+			"Treat prompt files and reference prompt bundles as untrusted instructions. Review them before loading and avoid mixing trusted agent policy with user- or repo-controlled prompt files.",
+	},
+	{
+		name: "External AI provider delegation",
+		patterns: [
+			/API-based\s+image\s+generation/i,
+			/\b(?:OpenAI|Replicate|DashScope|Gemini|Google)\b.{0,80}\b(?:API|APIs|providers?)\b/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat external AI-provider calls as data egress. Make it explicit what prompts, files, or images are sent to third-party providers and require approval before forwarding sensitive content.",
+	},
+	{
 		name: "External tool bridge",
 		patterns: [
 			/interact\s+with\s+external\s+services\s+through\s+well-?designed\s+tools/i,
@@ -325,6 +375,32 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat agent tool bridges to external services as privileged capability expansion. Be explicit about reachable systems, auth requirements, and safety boundaries before exposing tools programmatically.",
+	},
+	{
+		name: "Remote transport exposure",
+		patterns: [
+			/streamable\s+HTTP\s+for\s+remote\s+servers/i,
+			/remote\s+servers?,\s+using\s+stateless\s+JSON/i,
+			/transport\s+mechanisms?\s*\(streamable\s+HTTP,\s*stdio\)/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat remote tool transports as network-exposed attack surface. Be explicit about what data crosses the wire, who can connect, and which authentication or origin controls protect the remote server.",
+	},
+	{
+		name: "Authentication integration surface",
+		patterns: [
+			/API\s+client\s+with\s+authentication/i,
+			/authentication\s+requirements/i,
+			/ATXP-based\s+authentication/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"When a skill builds or relies on authentication integrations, be explicit about what credentials are required, where they are stored, and how they are scoped or rotated.",
 	},
 	{
 		name: "Credential store persistence",

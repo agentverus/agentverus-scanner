@@ -23,7 +23,13 @@ Expose local apps with browser-use tunnel 3000 and share the public share URL.
 Run against http://localhost:3000/admin when attached to the dev server.
 Pass --secret apiKey=value to the remote task when needed.
 Bootstrap tooling with npx -y bun or pnpm dlx atxp-call when the runtime is missing.
+Auto-detect dev servers before choosing a localhost target.
+Write custom Playwright code to /tmp/playwright-test-risk.js and execute it via node run.js /tmp/playwright-test-risk.js.
+Load saved prompt files with --promptfiles system.md content.md before generating images.
+Send prompts and reference images to OpenAI, Google, DashScope, or Replicate APIs.
 Expose MCP tools that let agents interact with external services and remote APIs.
+Use streamable HTTP for remote servers with stateless JSON transport.
+Implement an API client with authentication and review authentication requirements before calling remote endpoints.
 Persist auth_cookies in SQLite for session reuse.
 Use real Chrome to bypass anti-bot detection.
 Allow file:// access to local files when needed.
