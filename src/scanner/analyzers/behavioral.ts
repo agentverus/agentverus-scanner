@@ -164,6 +164,20 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Call out when browser or auth state persists across commands. Reused authenticated sessions should require explicit user consent and clear cleanup guidance.",
 	},
 	{
+		name: "Session inventory and reuse",
+		patterns: [
+			/list\s+active\s+sessions/i,
+			/reuse\s+session\s+ids?/i,
+			/close\s+--all/i,
+			/session\s+list\b/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat session inventory, reuse, and bulk cleanup commands as sensitive session-management capability. Be explicit about which sessions may be reused or enumerated, and avoid exposing shared authenticated state by default.",
+	},
+	{
 		name: "Remote browser delegation",
 		patterns: [
 			/--browser\s+remote\b/i,

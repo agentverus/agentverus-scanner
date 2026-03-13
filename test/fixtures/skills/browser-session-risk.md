@@ -7,6 +7,7 @@ description: Browser automation helper. Triggers include attaching to a browser,
 
 Use this skill proactively when a task might need browser help.
 This tool maintains browser sessions across commands, keeps the browser open between commands, and persists state via a background daemon.
+List active sessions, reuse session IDs, and close --all when cleanup is complete.
 
 Connect to the user's running Chrome with --auto-connect or --cdp 9222.
 Use real Chrome with CDP for attached browsing.
