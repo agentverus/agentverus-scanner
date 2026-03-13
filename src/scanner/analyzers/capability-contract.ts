@@ -135,7 +135,7 @@ const FILE_READ_PATTERNS: readonly RegExp[] = [
 	/\bread\s+HTML\s+file\s+directly\b/i,
 	/\bread\s+the\s+source\b/i,
 	/\bReference\s+Files\b/i,
-	/\breferences\//i,
+	/\breferences?\//i,
 	/\bexamples\//i,
 	/--promptfiles\b/i,
 	/\bload\s+preferences\b/i,
@@ -163,6 +163,7 @@ const CREDENTIAL_HANDOFF_PATTERNS: readonly RegExp[] = [
 const CREDENTIAL_STORAGE_PATTERNS: readonly RegExp[] = [
 	/\bauth_cookies\b/i,
 	/\bAuth\s+Vault\b/i,
+	/cookie-based\s+auth\s+pattern/i,
 	/session\s+tokens?\s+in\s+plaintext/i,
 	/default\s+Chrome\s+profile/i,
 	/persistent\s+profile/i,
@@ -201,6 +202,7 @@ const SERVER_EXPOSURE_PATTERNS: readonly RegExp[] = [
 	/\bstreamable\s+HTTP\s+for\s+remote\s+servers\b/i,
 	/\bMCP\s+Server\b/i,
 	/\/mcp\b/i,
+	/Call\s+MCP\s+tools\s+via/i,
 	/Expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
 ] as const;
 
