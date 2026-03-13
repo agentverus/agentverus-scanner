@@ -35,3 +35,4 @@
 {"run":28,"commit":"64809c9","metric":189,"metrics":{},"status":"keep","description":"feat: surface ui state enumeration in browser snapshot workflows","timestamp":1773390470199,"segment":0}
 {"run":29,"commit":"542fc2b","metric":193,"metrics":{},"status":"keep","description":"feat: surface profile-backed session persistence in browser automation skills","timestamp":1773390629397,"segment":0}
 {"run":30,"commit":"d1f8816","metric":196,"metrics":{},"status":"keep","description":"feat: raise chained browser actions and password form automation to medium-plus","timestamp":1773391399357,"segment":0}
+{"run":31,"commit":"1341f82","metric":200,"metrics":{},"status":"keep","description":"feat: detect auth-state replay files and password env piping earlier","timestamp":1773391588449,"segment":0}

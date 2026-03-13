@@ -12,7 +12,8 @@ type CapabilityKind =
 	| "exec"
 	| "system_modification"
 	| "file_write"
-	| "network";
+	| "network"
+	| "browser_automation";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -20,6 +21,7 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"system_modification",
 	"file_write",
 	"network",
+	"browser_automation",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -28,6 +30,7 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	system_modification: "system modification",
 	file_write: "file write",
 	network: "network access",
+	browser_automation: "browser automation",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -38,6 +41,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	system_modification: { severity: "high", deduction: 12 },
 	file_write: { severity: "medium", deduction: 8 },
 	network: { severity: "medium", deduction: 6 },
+	browser_automation: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -66,6 +70,16 @@ const FILE_WRITE_PATTERNS: readonly RegExp[] = [
 const NETWORK_PATTERNS: readonly RegExp[] = [
 	/https?:\/\/[^\s`"'<>()[\]{}]+/i,
 	/\b(?:fetch|curl|wget|webhook|network_unrestricted|network_restricted|api\s+(?:endpoint|request)|post\s+to\s+https?:\/\/)\b/i,
+] as const;
+
+const BROWSER_AUTOMATION_PATTERNS: readonly RegExp[] = [
+	/\bbrowser\s+automation\b/i,
+	/\bPlaywright\b/i,
+	/\bnavigate\s+websites?\b/i,
+	/\binteract\s+with\s+web\s+pages?\b/i,
+	/\bfill\s+forms?\b/i,
+	/\btake\s+screenshots?\b/i,
+	/\btest(?:ing)?\s+web\s+apps?\b/i,
 ] as const;
 
 function tokenizeLower(input: string): string[] {
@@ -100,6 +114,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["network", "http", "https", "fetch", "url", "webhook", "api"])) {
 		return "network";
+	}
+	if (hasAny(["browser", "playwright", "cdp", "chromium", "chrome", "webapp", "snapshot"])) {
+		return "browser_automation";
 	}
 
 	return null;
@@ -193,6 +210,15 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 
 	const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill);
 	if (networkMatch) add("network", `Content pattern: ${networkMatch}`);
+
+	const browserAutomationMatch = firstPositiveMatch(
+		skill.rawContent,
+		BROWSER_AUTOMATION_PATTERNS,
+		isDefenseSkill,
+	);
+	if (browserAutomationMatch) {
+		add("browser_automation", `Content pattern: ${browserAutomationMatch}`);
+	}
 
 	if (!inferred.has("network")) {
 		const firstUrl = skill.urls[0];

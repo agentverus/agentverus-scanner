@@ -122,6 +122,9 @@ describe("analyzePermissions", () => {
 		expect(
 			contractFindings.some((f) => f.title.includes("credential access")),
 		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("browser automation")),
+		).toBe(true);
 	});
 
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
