@@ -13,7 +13,9 @@ type CapabilityKind =
 	| "system_modification"
 	| "file_write"
 	| "network"
-	| "browser_automation";
+	| "browser_automation"
+	| "session_management"
+	| "content_extraction";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -22,6 +24,8 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"file_write",
 	"network",
 	"browser_automation",
+	"session_management",
+	"content_extraction",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -31,6 +35,8 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	file_write: "file write",
 	network: "network access",
 	browser_automation: "browser automation",
+	session_management: "session management",
+	content_extraction: "content extraction",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -42,6 +48,8 @@ const CAPABILITY_SEVERITY: Readonly<
 	file_write: { severity: "medium", deduction: 8 },
 	network: { severity: "medium", deduction: 6 },
 	browser_automation: { severity: "medium", deduction: 8 },
+	session_management: { severity: "medium", deduction: 8 },
+	content_extraction: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -82,6 +90,26 @@ const BROWSER_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/\btest(?:ing)?\s+web\s+apps?\b/i,
 ] as const;
 
+const SESSION_MANAGEMENT_PATTERNS: readonly RegExp[] = [
+	/\bbrowser\s+sessions?\s+across\s+commands/i,
+	/\bstate\s+(?:save|load)\s+\.\/auth\.json/i,
+	/\b--session-name\b/i,
+	/\bsession\s+list\b/i,
+	/\bclose\s+--all\b/i,
+	/\bbackground\s+daemon\b/i,
+] as const;
+
+const CONTENT_EXTRACTION_PATTERNS: readonly RegExp[] = [
+	/\bextract\s+information\s+from\s+web\s+pages?\b/i,
+	/\bextract(?:ing)?\s+data\b/i,
+	/\bdata\s+extraction\b/i,
+	/\bscrape\s+data\s+from\s+a\s+page\b/i,
+	/\bget\s+html\b/i,
+	/\bget\s+text\b/i,
+	/\bpage\.content\(\)/i,
+	/\bscreenshot\b/i,
+] as const;
+
 function tokenizeLower(input: string): string[] {
 	return input
 		.toLowerCase()
@@ -117,6 +145,12 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["browser", "playwright", "cdp", "chromium", "chrome", "webapp", "snapshot"])) {
 		return "browser_automation";
+	}
+	if (hasAny(["session", "session_name", "profile", "state", "cookie_store"])) {
+		return "session_management";
+	}
+	if (hasAny(["extract", "scrape", "screenshot", "html", "text", "dom"])) {
+		return "content_extraction";
 	}
 
 	return null;
@@ -220,6 +254,24 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("browser_automation", `Content pattern: ${browserAutomationMatch}`);
 	}
 
+	const sessionManagementMatch = firstPositiveMatch(
+		skill.rawContent,
+		SESSION_MANAGEMENT_PATTERNS,
+		isDefenseSkill,
+	);
+	if (sessionManagementMatch) {
+		add("session_management", `Content pattern: ${sessionManagementMatch}`);
+	}
+
+	const contentExtractionMatch = firstPositiveMatch(
+		skill.rawContent,
+		CONTENT_EXTRACTION_PATTERNS,
+		isDefenseSkill,
+	);
+	if (contentExtractionMatch) {
+		add("content_extraction", `Content pattern: ${contentExtractionMatch}`);
+	}
+
 	if (!inferred.has("network")) {
 		const firstUrl = skill.urls[0];
 		if (firstUrl) add("network", `URL reference: ${firstUrl}`);
@@ -273,7 +325,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, exec, system_modification, file_write, network) or add framework mapping support.",
+				"Use canonical capability names (credential_access, exec, system_modification, file_write, network, browser_automation, session_management, content_extraction) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}
