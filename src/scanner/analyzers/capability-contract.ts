@@ -265,6 +265,7 @@ const LOCAL_INPUT_CONTROL_PATTERNS: readonly RegExp[] = [
 const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/input\s+type="password"/i,
 	/fill\s+@e\d+\s+"password123"/i,
+	/form\s+filling/i,
 	/fill\s+out\s+a\s+form/i,
 	/login\s+to\s+a\s+site/i,
 	/test\s+login/i,
@@ -302,7 +303,9 @@ const UI_STATE_ACCESS_PATTERNS: readonly RegExp[] = [
 	/\bsnapshot\s+-i\b/i,
 	/clickable\s+elements?\s+with\s+indices/i,
 	/element\s+refs?\s+like\s+@e\d+/i,
-	/identify\s+selectors?\s+from\s+rendered\s+state/i,
+	/page\.locator\('button'\)\.all\(\)/i,
+	/discovering\s+buttons,\s+links,\s+and\s+inputs/i,
+	/identify\s+selectors?\s+from\s+(?:rendered\s+state|inspection\s+results)/i,
 ] as const;
 
 function tokenizeLower(input: string): string[] {

@@ -53,3 +53,4 @@
 {"run":48,"commit":"85d5aa6","metric":253,"metrics":{},"status":"keep","description":"feat: broaden documentation ingestion inference from reference and help phrasing","timestamp":1773405172390,"segment":0}
 {"run":49,"commit":"ce30f3b","metric":257,"metrics":{},"status":"keep","description":"feat: catch broad any-task browser automation scope earlier","timestamp":1773406121513,"segment":0}
 {"run":50,"commit":"dac1e07","metric":253,"metrics":{},"status":"keep","description":"feat: broaden docs-reference inference and allow env examples in capability inference","timestamp":1773406587901,"segment":0}
+{"run":51,"commit":"64a6843","metric":261,"metrics":{},"status":"keep","description":"feat: infer docker project discovery and real chrome browser automation phrasing","timestamp":1773406906834,"segment":0}
