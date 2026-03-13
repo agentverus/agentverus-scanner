@@ -202,6 +202,18 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 	});
 
+	it("should detect opaque helper scripts and os input automation", async () => {
+		const skill = parseSkill(`---\nname: helper-runner\ndescription: Executes helper scripts\n---\nUse bundled scripts as black-box scripts. Do not read the source before running them.\nScripts include copy-to-clipboard.ts and paste-from-clipboard.ts to send a real paste keystroke.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("opaque helper script execution")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("os input automation")),
+		).toBe(true);
+	});
+
 	it("should not false-positive on existing safe fixtures for config tampering", async () => {
 		for (const fixture of ["safe-basic.md", "safe-complex.md"]) {
 			const skill = parseSkill(loadFixture(fixture));

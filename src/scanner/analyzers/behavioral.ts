@@ -121,6 +121,32 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Be explicit when external project/home files can override skill behavior. Treat sidecar config or instruction files as untrusted input and constrain what they are allowed to change.",
 	},
 	{
+		name: "Opaque helper script execution",
+		patterns: [
+			/black-?box\s+scripts?/i,
+			/do\s+not\s+read\s+the\s+source/i,
+			/called?\s+directly\s+as\s+black-?box\s+scripts?/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-04",
+		recommendation:
+			"Avoid telling agents to execute bundled scripts as opaque black boxes. Encourage minimal inspection, provenance checks, or explicit trust boundaries before running helper code.",
+	},
+	{
+		name: "OS input automation",
+		patterns: [
+			/copy-to-clipboard/i,
+			/paste-from-clipboard/i,
+			/paste\s+keystroke/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat clipboard and synthetic keystroke automation as privileged local input control. Require explicit user approval and avoid combining it with authenticated browser sessions unless necessary.",
+	},
+	{
 		name: "Persistent session reuse",
 		patterns: [
 			/maintains?\s+browser\s+sessions?\s+across\s+commands/i,
@@ -128,8 +154,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/state\s+auto-(?:saved|restored)/i,
 			/all\s+future\s+runs:\s+already\s+authenticated/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Call out when browser or auth state persists across commands. Reused authenticated sessions should require explicit user consent and clear cleanup guidance.",
@@ -178,8 +204,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/\bbrowser-use\s+eval\b/i,
 			/\bagent-browser\s+eval\b/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat browser-side JavaScript evaluation as privileged execution. Constrain the origin, review the expression, and avoid combining it with authenticated sessions unless necessary.",
