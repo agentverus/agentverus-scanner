@@ -15,7 +15,9 @@ type CapabilityKind =
 	| "network"
 	| "browser_automation"
 	| "session_management"
-	| "content_extraction";
+	| "content_extraction"
+	| "remote_delegation"
+	| "local_service_access";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -26,6 +28,8 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"browser_automation",
 	"session_management",
 	"content_extraction",
+	"remote_delegation",
+	"local_service_access",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -37,6 +41,8 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	browser_automation: "browser automation",
 	session_management: "session management",
 	content_extraction: "content extraction",
+	remote_delegation: "remote delegation",
+	local_service_access: "local service access",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -50,6 +56,8 @@ const CAPABILITY_SEVERITY: Readonly<
 	browser_automation: { severity: "medium", deduction: 8 },
 	session_management: { severity: "medium", deduction: 8 },
 	content_extraction: { severity: "medium", deduction: 8 },
+	remote_delegation: { severity: "medium", deduction: 8 },
+	local_service_access: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -88,6 +96,19 @@ const BROWSER_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/\bfill\s+forms?\b/i,
 	/\btake\s+screenshots?\b/i,
 	/\btest(?:ing)?\s+web\s+apps?\b/i,
+] as const;
+
+const REMOTE_DELEGATION_PATTERNS: readonly RegExp[] = [
+	/\bcloud-hosted\s+browser\b/i,
+	/\bremote\s+task\b/i,
+	/\bstreamable\s+HTTP\b/i,
+	/\bexternal\s+services\s+through\s+well-?designed\s+tools\b/i,
+] as const;
+
+const LOCAL_SERVICE_ACCESS_PATTERNS: readonly RegExp[] = [
+	/\bhttps?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i,
+	/\bwith_server\.py\b/i,
+	/\bdetectDevServers\s*\(/i,
 ] as const;
 
 const SESSION_MANAGEMENT_PATTERNS: readonly RegExp[] = [
@@ -145,6 +166,12 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["browser", "playwright", "cdp", "chromium", "chrome", "webapp", "snapshot"])) {
 		return "browser_automation";
+	}
+	if (hasAny(["remote_delegation", "remote_task", "cloud_browser", "streamable_http"])) {
+		return "remote_delegation";
+	}
+	if (hasAny(["local_service_access", "localhost", "loopback", "port_probe"])) {
+		return "local_service_access";
 	}
 	if (hasAny(["session", "session_name", "profile", "state", "cookie_store"])) {
 		return "session_management";
@@ -272,6 +299,24 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("content_extraction", `Content pattern: ${contentExtractionMatch}`);
 	}
 
+	const remoteDelegationMatch = firstPositiveMatch(
+		skill.rawContent,
+		REMOTE_DELEGATION_PATTERNS,
+		isDefenseSkill,
+	);
+	if (remoteDelegationMatch) {
+		add("remote_delegation", `Content pattern: ${remoteDelegationMatch}`);
+	}
+
+	const localServiceAccessMatch = firstPositiveMatch(
+		skill.rawContent,
+		LOCAL_SERVICE_ACCESS_PATTERNS,
+		isDefenseSkill,
+	);
+	if (localServiceAccessMatch) {
+		add("local_service_access", `Content pattern: ${localServiceAccessMatch}`);
+	}
+
 	if (!inferred.has("network")) {
 		const firstUrl = skill.urls[0];
 		if (firstUrl) add("network", `URL reference: ${firstUrl}`);
@@ -308,7 +353,9 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 					? "ASST-05"
 					: capability === "network"
 						? "ASST-04"
-						: "ASST-03",
+						: capability === "content_extraction" || capability === "remote_delegation"
+							? "ASST-02"
+							: "ASST-03",
 		});
 		missingIndex += 1;
 	}
@@ -325,7 +372,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, exec, system_modification, file_write, network, browser_automation, session_management, content_extraction) or add framework mapping support.",
+				"Use canonical capability names (credential_access, exec, system_modification, file_write, network, browser_automation, session_management, content_extraction, remote_delegation, local_service_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}
