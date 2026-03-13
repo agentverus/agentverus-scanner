@@ -246,6 +246,9 @@ const DOCUMENTATION_INGESTION_PATTERNS: readonly RegExp[] = [
 	/Use\s+WebFetch\s+to\s+load/i,
 	/web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
 	/fetch\s+specific\s+pages\s+with\s+`?\.md/i,
+	/For\s+more\s+information,\s+see/i,
+	/See\s+\[references?\//i,
+	/\bReference\s+Files\b/i,
 ] as const;
 
 const LOCAL_INPUT_CONTROL_PATTERNS: readonly RegExp[] = [
