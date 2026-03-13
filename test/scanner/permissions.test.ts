@@ -123,6 +123,12 @@ describe("analyzePermissions", () => {
 			contractFindings.some((f) => f.title.includes("credential access")),
 		).toBe(true);
 		expect(
+			contractFindings.some((f) => f.title.includes("credential handoff")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential storage")),
+		).toBe(true);
+		expect(
 			contractFindings.some((f) => f.title.includes("browser automation")),
 		).toBe(true);
 		expect(

@@ -10,6 +10,7 @@ import {
 type CapabilityKind =
 	| "credential_access"
 	| "credential_handoff"
+	| "credential_storage"
 	| "exec"
 	| "system_modification"
 	| "file_write"
@@ -31,6 +32,7 @@ type CapabilityKind =
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
 	"credential_handoff",
+	"credential_storage",
 	"credential_form_automation",
 	"exec",
 	"system_modification",
@@ -53,6 +55,7 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	credential_access: "credential access",
 	credential_handoff: "credential handoff",
+	credential_storage: "credential storage",
 	credential_form_automation: "credential form automation",
 	exec: "command execution",
 	system_modification: "system modification",
@@ -77,6 +80,7 @@ const CAPABILITY_SEVERITY: Readonly<
 > = {
 	credential_access: { severity: "high", deduction: 15 },
 	credential_handoff: { severity: "high", deduction: 12 },
+	credential_storage: { severity: "high", deduction: 12 },
 	credential_form_automation: { severity: "medium", deduction: 8 },
 	exec: { severity: "high", deduction: 12 },
 	system_modification: { severity: "high", deduction: 12 },
@@ -146,6 +150,15 @@ const CREDENTIAL_HANDOFF_PATTERNS: readonly RegExp[] = [
 	/\bagents\s+get\s+an\s+auth\s+cookie\s+via\s+MCP\b/i,
 	/\bconfigure\s+browser\s+cookie\b/i,
 	/\bredirect\s+to\s+clean\s+the\s+URL\b/i,
+] as const;
+
+const CREDENTIAL_STORAGE_PATTERNS: readonly RegExp[] = [
+	/\bauth_cookies\b/i,
+	/\bAuth\s+Vault\b/i,
+	/session\s+tokens?\s+in\s+plaintext/i,
+	/default\s+Chrome\s+profile/i,
+	/persistent\s+profile/i,
+	/credentials\s+stored\s+encrypted/i,
 ] as const;
 
 const NETWORK_PATTERNS: readonly RegExp[] = [
@@ -254,6 +267,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["credential_handoff", "cookie_bootstrap", "browser_cookie"])) {
 		return "credential_handoff";
+	}
+	if (hasAny(["credential_storage", "vault", "auth_cookies"])) {
+		return "credential_storage";
 	}
 	if (hasAny(["credential_form", "password_form", "login_form"])) {
 		return "credential_form_automation";
@@ -395,6 +411,24 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	const credentialMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_PATTERNS, isDefenseSkill);
 	if (credentialMatch) add("credential_access", `Content pattern: ${credentialMatch}`);
 
+	const credentialHandoffMatch = firstPositiveMatch(
+		skill.rawContent,
+		CREDENTIAL_HANDOFF_PATTERNS,
+		isDefenseSkill,
+	);
+	if (credentialHandoffMatch) {
+		add("credential_handoff", `Content pattern: ${credentialHandoffMatch}`);
+	}
+
+	const credentialStorageMatch = firstPositiveMatch(
+		skill.rawContent,
+		CREDENTIAL_STORAGE_PATTERNS,
+		isDefenseSkill,
+	);
+	if (credentialStorageMatch) {
+		add("credential_storage", `Content pattern: ${credentialStorageMatch}`);
+	}
+
 	const execMatch = firstPositiveMatch(skill.rawContent, EXEC_PATTERNS, isDefenseSkill);
 	if (execMatch) add("exec", `Content pattern: ${execMatch}`);
 
@@ -414,15 +448,6 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	);
 	if (filesystemDiscoveryMatch) {
 		add("filesystem_discovery", `Content pattern: ${filesystemDiscoveryMatch}`);
-	}
-
-	const credentialHandoffMatch = firstPositiveMatch(
-		skill.rawContent,
-		CREDENTIAL_HANDOFF_PATTERNS,
-		isDefenseSkill,
-	);
-	if (credentialHandoffMatch) {
-		add("credential_handoff", `Content pattern: ${credentialHandoffMatch}`);
 	}
 
 	const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill);
@@ -559,7 +584,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			recommendation:
 				"Declare this capability explicitly in frontmatter permissions with a specific justification, or remove the risky behavior.",
 			owaspCategory:
-				capability === "credential_access" || capability === "credential_handoff"
+				capability === "credential_access" || capability === "credential_handoff" || capability === "credential_storage" || capability === "credential_form_automation"
 					? "ASST-05"
 					: capability === "network"
 						? "ASST-04"

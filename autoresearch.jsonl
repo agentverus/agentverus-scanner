@@ -43,3 +43,4 @@
 {"run":36,"commit":"b374c1d","metric":222,"metrics":{},"status":"keep","description":"feat: infer undeclared process orchestration and ui state access capabilities","timestamp":1773393332353,"segment":0}
 {"run":37,"commit":"6998a1f","metric":227,"metrics":{},"status":"keep","description":"feat: infer credential handoff and filesystem discovery capabilities","timestamp":1773393623022,"segment":0}
 {"run":38,"commit":"5185630","metric":230,"metrics":{},"status":"keep","description":"feat: infer documentation ingestion local input control and credential form capabilities","timestamp":1773394031196,"segment":0}
+{"run":39,"commit":"1d4040b","metric":231,"metrics":{},"status":"keep","description":"feat: infer package bootstrap capability from npx and npm install flows","timestamp":1773394334275,"segment":0}
