@@ -515,6 +515,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		CREDENTIAL_HANDOFF_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (credentialHandoffMatch) {
 		add("credential_handoff", `Content pattern: ${credentialHandoffMatch}`);
