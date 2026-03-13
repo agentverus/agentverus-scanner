@@ -17,6 +17,7 @@ List active sessions, reuse session IDs, and close --all when cleanup is complet
 Connect to the user's running Chrome with --auto-connect or --cdp 9222.
 Import auth from the user's browser and use that auth state when a login session already exists.
 Get Authentication Cookie from the MCP tool, then configure browser cookie flow and redirect to clean the URL.
+Expose tools programmatically at /mcp and use streamable HTTP for remote servers.
 Use a persistent profile with --profile ~/.myapp open https://app.example.com/dashboard.
 Reuse a named session with --session-name myapp open https://app.example.com/dashboard.
 Save auth state with state save ./auth.json and later state load ./auth.json before opening the dashboard.

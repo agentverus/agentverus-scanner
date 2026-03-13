@@ -21,6 +21,8 @@ type CapabilityKind =
 	| "session_management"
 	| "content_extraction"
 	| "remote_delegation"
+	| "remote_task_management"
+	| "server_exposure"
 	| "local_service_access"
 	| "process_orchestration"
 	| "ui_state_access"
@@ -44,6 +46,8 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"session_management",
 	"content_extraction",
 	"remote_delegation",
+	"remote_task_management",
+	"server_exposure",
 	"local_service_access",
 	"process_orchestration",
 	"ui_state_access",
@@ -67,6 +71,8 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	session_management: "session management",
 	content_extraction: "content extraction",
 	remote_delegation: "remote delegation",
+	remote_task_management: "remote task management",
+	server_exposure: "server exposure",
 	local_service_access: "local service access",
 	process_orchestration: "process orchestration",
 	ui_state_access: "UI state access",
@@ -92,6 +98,8 @@ const CAPABILITY_SEVERITY: Readonly<
 	session_management: { severity: "medium", deduction: 8 },
 	content_extraction: { severity: "medium", deduction: 8 },
 	remote_delegation: { severity: "medium", deduction: 8 },
+	remote_task_management: { severity: "medium", deduction: 8 },
+	server_exposure: { severity: "medium", deduction: 8 },
 	local_service_access: { severity: "medium", deduction: 8 },
 	process_orchestration: { severity: "medium", deduction: 8 },
 	ui_state_access: { severity: "medium", deduction: 8 },
@@ -181,6 +189,19 @@ const REMOTE_DELEGATION_PATTERNS: readonly RegExp[] = [
 	/\bremote\s+task\b/i,
 	/\bstreamable\s+HTTP\b/i,
 	/\bexternal\s+services\s+through\s+well-?designed\s+tools\b/i,
+] as const;
+
+const REMOTE_TASK_MANAGEMENT_PATTERNS: readonly RegExp[] = [
+	/\bremote\s+task\b/i,
+	/\btask\s+status\s+<id>\b/i,
+	/\basync\s+by\s+default\b/i,
+] as const;
+
+const SERVER_EXPOSURE_PATTERNS: readonly RegExp[] = [
+	/\bstreamable\s+HTTP\s+for\s+remote\s+servers\b/i,
+	/\bMCP\s+Server\b/i,
+	/\/mcp\b/i,
+	/Expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
 ] as const;
 
 const LOCAL_SERVICE_ACCESS_PATTERNS: readonly RegExp[] = [
@@ -305,6 +326,12 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["remote_delegation", "remote_task", "cloud_browser", "streamable_http"])) {
 		return "remote_delegation";
+	}
+	if (hasAny(["remote_task_management", "task_status", "async_runner"])) {
+		return "remote_task_management";
+	}
+	if (hasAny(["server_exposure", "mcp_server", "mcp_endpoint"])) {
+		return "server_exposure";
 	}
 	if (hasAny(["local_service_access", "localhost", "loopback", "port_probe"])) {
 		return "local_service_access";
@@ -525,6 +552,24 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("remote_delegation", `Content pattern: ${remoteDelegationMatch}`);
 	}
 
+	const remoteTaskManagementMatch = firstPositiveMatch(
+		skill.rawContent,
+		REMOTE_TASK_MANAGEMENT_PATTERNS,
+		isDefenseSkill,
+	);
+	if (remoteTaskManagementMatch) {
+		add("remote_task_management", `Content pattern: ${remoteTaskManagementMatch}`);
+	}
+
+	const serverExposureMatch = firstPositiveMatch(
+		skill.rawContent,
+		SERVER_EXPOSURE_PATTERNS,
+		isDefenseSkill,
+	);
+	if (serverExposureMatch) {
+		add("server_exposure", `Content pattern: ${serverExposureMatch}`);
+	}
+
 	const localServiceAccessMatch = firstPositiveMatch(
 		skill.rawContent,
 		LOCAL_SERVICE_ACCESS_PATTERNS,
@@ -588,7 +633,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 					? "ASST-05"
 					: capability === "network"
 						? "ASST-04"
-						: capability === "content_extraction" || capability === "remote_delegation"
+						: capability === "content_extraction" || capability === "remote_delegation" || capability === "remote_task_management"
 							? "ASST-02"
 							: "ASST-03",
 		});
@@ -607,7 +652,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, credential_handoff, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, package_bootstrap, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, credential_handoff, credential_storage, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, package_bootstrap, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}

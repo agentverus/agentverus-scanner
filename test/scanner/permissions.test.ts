@@ -170,6 +170,12 @@ describe("analyzePermissions", () => {
 		expect(
 			contractFindings.some((f) => f.title.includes("package bootstrap")),
 		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("remote task management")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("server exposure")),
+		).toBe(true);
 	});
 
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
