@@ -811,7 +811,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 
 	// Many external URLs can materially expand the attack surface, especially
 	// when the skill also discusses auth, cookies, APIs, or payments.
-	if (skill.urls.length > 5) {
+	if (skill.urls.length > 3) {
 		const hasSensitiveUrlContext = /\b(?:auth|authentication|cookie|token|login|payment|payments|mcp|credential|secret)\b/i.test(
 			content,
 		);

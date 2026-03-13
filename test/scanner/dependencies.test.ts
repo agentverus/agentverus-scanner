@@ -111,6 +111,15 @@ describe("analyzeDependencies", () => {
 		expect(finding?.severity).toBe("medium");
 	});
 
+	it("escalates early URL sprawl when auth or api context mixes several endpoints", async () => {
+		const skill = parseSkill(`# API Surface\nUse these endpoints after login: https://example.com/start https://example.com/dashboard https://example.com/api https://example.com/help\nSet the auth cookie first.`);
+		const result = await analyzeDependencies(skill);
+
+		const finding = result.findings.find((f) => f.id === "DEP-MANY-URLS");
+		expect(finding).toBeDefined();
+		expect(finding?.severity).toBe("medium");
+	});
+
 	it("detects critical lifecycle script", async () => {
 		const skill = parseSkill(loadFixture("lifecycle-scripts.md"));
 		const result = await analyzeDependencies(skill);
