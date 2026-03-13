@@ -283,6 +283,9 @@ describe("analyzeBehavioral", () => {
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("full browser profile sync")),
 		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),
+		).toBe(true);
 	});
 
 	it("should detect financial cost language and container runtime control", async () => {

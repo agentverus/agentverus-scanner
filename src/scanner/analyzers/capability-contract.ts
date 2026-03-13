@@ -267,6 +267,7 @@ const AUTH_STATE_MANAGEMENT_PATTERNS: readonly RegExp[] = [
 	/use\s+that\s+auth\s+state/i,
 	/cookies?\s+and\s+localStorage/i,
 	/auth(?:entication)?\s+cookie/i,
+	/actual\s+Chrome\s+profile\s*\(cookies,\s*logins,\s*extensions\)/i,
 ] as const;
 
 const NETWORK_PATTERNS: readonly RegExp[] = [
@@ -363,6 +364,8 @@ const LOCAL_SERVICE_ACCESS_PATTERNS: readonly RegExp[] = [
 	/\bhttps?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i,
 	/\bwith_server\.py\b/i,
 	/\bdetectDevServers\s*\(/i,
+	/\bstdio\s+for\s+local\s+servers?\b/i,
+	/\bPORT=\d{2,5}\b/i,
 ] as const;
 
 const SESSION_MANAGEMENT_PATTERNS: readonly RegExp[] = [
@@ -978,6 +981,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		LOCAL_SERVICE_ACCESS_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (localServiceAccessMatch) {
 		add("local_service_access", `Content pattern: ${localServiceAccessMatch}`);

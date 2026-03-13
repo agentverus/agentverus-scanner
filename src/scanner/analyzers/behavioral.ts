@@ -354,7 +354,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Browser auth state handling",
 		patterns: [
 			/(?:state\s+(?:save|load)\s+\S*auth\.json|state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext|auth(?:entication)?\s+cookie|http-?only\s+cookie|cookies?\s+(?:export|import|get|set|clear)\b|cookies?\s+and\s+localStorage)/i,
-			/(?:session\s+tokens?\s+in\s+plaintext|browser\s+session\s+is\s+authenticated|auto-saved\s+to\s+~\/\.agent-browser\/sessions|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile)/i,
+			/(?:session\s+tokens?\s+in\s+plaintext|browser\s+session\s+is\s+authenticated|auto-saved\s+to\s+~\/\.agent-browser\/sessions|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile|actual\s+Chrome\s+profile\s*\(cookies,\s*logins,\s*extensions\))/i,
 		],
 		severity: "high",
 		deduction: 15,

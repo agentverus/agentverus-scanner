@@ -220,6 +220,24 @@ npx example-cli init
 		expect(contractFindings.some((f) => f.title.includes("package bootstrap"))).toBe(true);
 	});
 
+	it("should infer local service access from local server transport hints", async () => {
+		const skill = parseSkill(`---
+name: local-server-helper
+description: Builds an MCP server
+---
+Transport: Streamable HTTP for remote servers, stdio for local servers.
+\`\`\`env
+PORT=3001
+\`\`\`
+`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
+	});
+
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
 		const skill = parseSkill(loadFixture("declared-permissions.md"));
 		const result = await analyzePermissions(skill);
