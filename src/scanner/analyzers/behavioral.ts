@@ -536,8 +536,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/snapshot\s+-i/i,
 			/identify\s+selectors?\s+from\s+rendered\s+state/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Treat DOM/accessibility snapshots and clickable-element inventories as sensitive page-state extraction. Be explicit about when UI enumeration is allowed, especially on authenticated or local-only apps.",

@@ -58,3 +58,4 @@
 {"run":53,"commit":"d91f17d","metric":265,"metrics":{},"status":"keep","description":"feat: broaden auth cookie storage and ai provider delegation inference","timestamp":1773407510449,"segment":0}
 {"run":54,"commit":"4e396a3","metric":266,"metrics":{},"status":"keep","description":"feat: broaden auth-state handoff and persistent cli profile inference","timestamp":1773407785131,"segment":0}
 {"run":58,"commit":"895c3dd","metric":269,"metrics":{},"status":"keep","description":"feat: widen auth-state handoff and persistent cli profile inference","timestamp":1773408891723,"segment":0}
+{"run":62,"commit":"31e98c4","metric":269,"metrics":{},"status":"keep","description":"feat: widen local input control inference for keyboard entry workflows","timestamp":1773409756379,"segment":0}
