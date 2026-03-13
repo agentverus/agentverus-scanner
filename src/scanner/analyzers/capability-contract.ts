@@ -361,6 +361,19 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	return null;
 }
 
+function isInsideInlineCode(content: string, matchIndex: number): boolean {
+	let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+	if (lineStart < 0) lineStart = 0;
+	let lineEnd = content.indexOf("\n", matchIndex);
+	if (lineEnd < 0) lineEnd = content.length;
+	const line = content.slice(lineStart, lineEnd);
+	const rel = matchIndex - lineStart;
+	const open = line.lastIndexOf("`", rel);
+	if (open < 0) return false;
+	const close = line.indexOf("`", open + 1);
+	return close >= rel;
+}
+
 function firstPositiveMatch(
 	content: string,
 	patterns: readonly RegExp[],
@@ -373,7 +386,9 @@ function firstPositiveMatch(
 		let match: RegExpExecArray | null;
 		while ((match = global.exec(content)) !== null) {
 			if (isPrecededByNegation(content, match.index)) continue;
-			if (isInsideCodeBlock(match.index, ctx)) continue;
+			if (isInsideCodeBlock(match.index, ctx) && !isInsideInlineCode(content, match.index)) {
+				continue;
+			}
 			if (isDefenseSkill && isInThreatListingContext(content, match.index)) continue;
 			return (match[0] ?? "").trim().slice(0, 180);
 		}
