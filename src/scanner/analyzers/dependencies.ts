@@ -407,6 +407,12 @@ function hasSensitiveUnknownUrlContext(content: string, url: string): boolean {
 	);
 }
 
+function hasCredentialBearingUrlParam(url: string): boolean {
+	return /[?&][^=#\s]*(?:cookie|token|auth|session)[^=#\s]*=|[?&][^=#\s]*=(?:<[^>]+>|\$\{?[A-Z0-9_]+\}?|\$[A-Z0-9_]+)/i.test(
+		url,
+	);
+}
+
 /**
  * Best-effort extraction of base domains that look like they belong to the skill's
  * own product/brand (self-references).
@@ -524,6 +530,23 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 							: classification.risk === "local"
 								? "Review localhost/private-network service references carefully. Local service URLs can expose internal apps, admin panels, or developer tooling to agent-driven workflows."
 								: "Verify that this external dependency is trustworthy and necessary.",
+				owaspCategory: "ASST-04",
+			});
+		}
+
+		if (hasCredentialBearingUrlParam(url)) {
+			score = Math.max(0, score - 8);
+			findings.push({
+				id: `DEP-URL-CRED-${findings.length + 1}`,
+				category: "dependencies",
+				severity: "medium",
+				title: "Credential-bearing URL parameter",
+				description:
+					"The skill includes a URL whose query parameters look like they carry cookies, auth state, or token material. URLs are commonly logged and replayed, so credential-bearing parameters expand the dependency risk surface even on first-party domains.",
+				evidence: url.slice(0, 200),
+				deduction: 8,
+				recommendation:
+					"Avoid query-string credential transport. Prefer secure headers, dedicated cookie APIs, or other mechanisms that do not expose bearer material in URLs.",
 				owaspCategory: "ASST-04",
 			});
 		}

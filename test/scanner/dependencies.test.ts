@@ -90,6 +90,15 @@ describe("analyzeDependencies", () => {
 		expect((finding?.deduction ?? 0) >= 8).toBe(true);
 	});
 
+	it("flags credential-bearing query parameters even on otherwise normal URLs", async () => {
+		const skill = parseSkill(`# Query Auth\nNavigate to https://app.example.com?session_token=<secret> and let the server clear the URL.`);
+		const result = await analyzeDependencies(skill);
+
+		const finding = result.findings.find((f) => f.title.includes("Credential-bearing URL parameter"));
+		expect(finding).toBeDefined();
+		expect(finding?.severity).toBe("medium");
+	});
+
 	it("detects critical lifecycle script", async () => {
 		const skill = parseSkill(loadFixture("lifecycle-scripts.md"));
 		const result = await analyzeDependencies(skill);
