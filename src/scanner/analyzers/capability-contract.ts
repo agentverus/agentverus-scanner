@@ -23,6 +23,10 @@ type CapabilityKind =
 	| "browser_automation"
 	| "browser_session_attachment"
 	| "browser_profile_copy"
+	| "browser_auth_state_handling"
+	| "persistent_session_reuse"
+	| "mcp_issued_browser_auth_cookie"
+	| "skill_path_discovery"
 	| "session_management"
 	| "content_extraction"
 	| "remote_delegation"
@@ -62,6 +66,10 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"browser_automation",
 	"browser_session_attachment",
 	"browser_profile_copy",
+	"browser_auth_state_handling",
+	"persistent_session_reuse",
+	"mcp_issued_browser_auth_cookie",
+	"skill_path_discovery",
 	"session_management",
 	"content_extraction",
 	"remote_delegation",
@@ -101,6 +109,10 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	browser_automation: "browser automation",
 	browser_session_attachment: "browser session attachment",
 	browser_profile_copy: "browser profile copy",
+	browser_auth_state_handling: "browser auth state handling",
+	persistent_session_reuse: "persistent session reuse",
+	mcp_issued_browser_auth_cookie: "MCP-issued browser auth cookie",
+	skill_path_discovery: "skill path discovery",
 	session_management: "session management",
 	content_extraction: "content extraction",
 	remote_delegation: "remote delegation",
@@ -142,6 +154,10 @@ const CAPABILITY_SEVERITY: Readonly<
 	browser_automation: { severity: "medium", deduction: 8 },
 	browser_session_attachment: { severity: "high", deduction: 12 },
 	browser_profile_copy: { severity: "high", deduction: 10 },
+	browser_auth_state_handling: { severity: "high", deduction: 12 },
+	persistent_session_reuse: { severity: "high", deduction: 10 },
+	mcp_issued_browser_auth_cookie: { severity: "high", deduction: 12 },
+	skill_path_discovery: { severity: "high", deduction: 10 },
 	session_management: { severity: "medium", deduction: 8 },
 	content_extraction: { severity: "medium", deduction: 8 },
 	remote_delegation: { severity: "medium", deduction: 8 },
@@ -283,6 +299,14 @@ const BROWSER_SESSION_ATTACHMENT_PATTERNS: readonly RegExp[] = [
 	/profile\s+sync\b/i,
 ] as const;
 
+const BROWSER_PROFILE_COPY_PATTERNS: readonly RegExp[] = [
+	/actual\s+Chrome\s+profile/i,
+	/login\s+sessions/i,
+	/persistent\s+but\s+empty\s+CLI\s+profile/i,
+	/full\s+profile\s+sync/i,
+	/sync\s+ALL\s+cookies/i,
+] as const;
+
 const REMOTE_DELEGATION_PATTERNS: readonly RegExp[] = [
 	/\bcloud-hosted\s+browser\b/i,
 	/\bremote\s+task\b/i,
@@ -311,6 +335,19 @@ const UNRESTRICTED_SCOPE_PATTERNS: readonly RegExp[] = [
 	/automating\s+any\s+browser\s+task/i,
 	/general-purpose\s+browser\s+automation/i,
 	/use\s+proactively/i,
+] as const;
+
+const COOKIE_URL_HANDOFF_PATTERNS: readonly RegExp[] = [
+	/query\s+string/i,
+	/\?[A-Za-z0-9_-]*(?:cookie|token)=/i,
+	/redirect\s+to\s+clean\s+the\s+URL/i,
+] as const;
+
+const CREDENTIAL_STORE_PERSISTENCE_PATTERNS: readonly RegExp[] = [
+	/auth_cookies/i,
+	/cookie\s+auth/i,
+	/Auth\s+Vault/i,
+	/cookie-based\s+auth\s+pattern/i,
 ] as const;
 
 const EXTERNAL_TOOL_BRIDGE_PATTERNS: readonly RegExp[] = [
@@ -382,6 +419,19 @@ const LOCAL_INPUT_CONTROL_PATTERNS: readonly RegExp[] = [
 	/\bbrowser-use\s+click\b/i,
 ] as const;
 
+const PROMPT_FILE_INGESTION_PATTERNS: readonly RegExp[] = [
+	/--promptfiles/i,
+	/saved\s+prompt\s+files/i,
+	/system\.md\s+content\.md/i,
+	/reference\s+images/i,
+] as const;
+
+const AUTOMATION_EVASION_PATTERNS: readonly RegExp[] = [
+	/bypass(?:es|ing)?\s+anti-automation/i,
+	/bypass(?:es|ing)?\s+anti-bot/i,
+	/anti-bot\s+detection/i,
+] as const;
+
 const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/input\s+type="password"/i,
 	/fill\s+@e\d+\s+"password123"/i,
@@ -396,6 +446,11 @@ const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
 const PACKAGE_BOOTSTRAP_PATTERNS: readonly RegExp[] = [
 	/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
 	/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
+] as const;
+
+const CONTAINER_RUNTIME_CONTROL_PATTERNS: readonly RegExp[] = [
+	/\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
+	/\bdocker-compose\s+config\b/i,
 ] as const;
 
 const ENVIRONMENT_CONFIGURATION_PATTERNS: readonly RegExp[] = [
@@ -734,6 +789,16 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("browser_session_attachment", `Content pattern: ${browserSessionAttachmentMatch}`);
 	}
 
+	const browserProfileCopyMatch = firstPositiveMatch(
+		skill.rawContent,
+		BROWSER_PROFILE_COPY_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (browserProfileCopyMatch) {
+		add("browser_profile_copy", `Content pattern: ${browserProfileCopyMatch}`);
+	}
+
 	const sessionManagementMatch = firstPositiveMatch(
 		skill.rawContent,
 		SESSION_MANAGEMENT_PATTERNS,
@@ -772,6 +837,26 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("local_input_control", `Content pattern: ${localInputControlMatch}`);
 	}
 
+	const promptFileIngestionMatch = firstPositiveMatch(
+		skill.rawContent,
+		PROMPT_FILE_INGESTION_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (promptFileIngestionMatch) {
+		add("prompt_file_ingestion", `Content pattern: ${promptFileIngestionMatch}`);
+	}
+
+	const automationEvasionMatch = firstPositiveMatch(
+		skill.rawContent,
+		AUTOMATION_EVASION_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (automationEvasionMatch) {
+		add("automation_evasion", `Content pattern: ${automationEvasionMatch}`);
+	}
+
 	const externalToolBridgeMatch = firstPositiveMatch(
 		skill.rawContent,
 		EXTERNAL_TOOL_BRIDGE_PATTERNS,
@@ -789,6 +874,36 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	);
 	if (packageBootstrapMatch) {
 		add("package_bootstrap", `Content pattern: ${packageBootstrapMatch}`);
+	}
+
+	const cookieUrlHandoffMatch = firstPositiveMatch(
+		skill.rawContent,
+		COOKIE_URL_HANDOFF_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (cookieUrlHandoffMatch) {
+		add("cookie_url_handoff", `Content pattern: ${cookieUrlHandoffMatch}`);
+	}
+
+	const credentialStorePersistenceMatch = firstPositiveMatch(
+		skill.rawContent,
+		CREDENTIAL_STORE_PERSISTENCE_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (credentialStorePersistenceMatch) {
+		add("credential_store_persistence", `Content pattern: ${credentialStorePersistenceMatch}`);
+	}
+
+	const containerRuntimeControlMatch = firstPositiveMatch(
+		skill.rawContent,
+		CONTAINER_RUNTIME_CONTROL_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (containerRuntimeControlMatch) {
+		add("container_runtime_control", `Content pattern: ${containerRuntimeControlMatch}`);
 	}
 
 	const environmentConfigurationMatch = firstPositiveMatch(
