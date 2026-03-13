@@ -1,0 +1,1 @@
+- Deduplicate related browser-auth/profile findings (for example auth cookie + browser session authenticated + query-string bootstrap + profile copy/full-profile sync) into a single merged explanation when they come from the same local context, so ClawDirect/browser-use reports stay readable while preserving coverage.

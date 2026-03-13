@@ -46,6 +46,17 @@ describe("analyzeBehavioral", () => {
 		expect(result.score).toBeGreaterThanOrEqual(90);
 	});
 
+	it("should detect broad any-task browser automation scope", async () => {
+		const skill = parseSkill(
+			`---\nname: broad-browser\ndescription: Browser helper\n---\nGeneral-purpose browser automation skill. I can handle any automation task you request and automate any browser task.`,
+		);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("unrestricted scope")),
+		).toBe(true);
+	});
+
 	// ── v0.4.0: System manipulation patterns ───────────────────────────────
 
 	it("should detect crontab manipulation", async () => {
@@ -143,6 +154,207 @@ describe("analyzeBehavioral", () => {
 				f.id.startsWith("BEH-CONFIG-TAMPER-WORKSPACE-"),
 		);
 		expect(tamperFindings.length).toBe(0);
+	});
+
+	it("should detect browser session attachment and local exposure patterns", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("persistent session reuse")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("session inventory and reuse")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("external instruction override file")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("remote browser delegation")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("remote task delegation")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("compound browser action chaining")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("auth import from user browser")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("mcp-issued browser auth cookie")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("cookie bootstrap redirect")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("profile-backed session persistence")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser profile copy")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("full browser profile sync")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser javascript evaluation")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("ui state enumeration")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("credential form automation")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("state file replay")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("environment secret piping")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("secret parameter handling")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("credential in query string")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("cookie header replay")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("local service exposure")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("local service access")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("package bootstrap execution")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("skill path discovery")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("dev server auto-detection")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("temporary script execution")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser content extraction")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("prompt file ingestion")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("external ai provider delegation")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("external tool bridge")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("remote transport exposure")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("authentication integration surface")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("credential store persistence")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("local file access")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("automation evasion")),
+		).toBe(true);
+	});
+
+	it("should detect real chrome cdp attachment and copied profile wording", async () => {
+		const skill = parseSkill(`---\nname: chrome-bridge\ndescription: Reuses browser sessions for automation\n---\nUse real Chrome with CDP for attached browsing. The browser copies your actual Chrome profile (cookies, logins, extensions) before opening the site.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("full browser profile sync")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),
+		).toBe(true);
+	});
+
+	it("should detect local service exposure from exposed ports in docker snippets", async () => {
+		const skill = parseSkill(`---\nname: exposed-port-helper\ndescription: Documents a local app container\n---\n\`\`\`dockerfile\nEXPOSE 3000\n\`\`\``);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("local service access")),
+		).toBe(true);
+	});
+
+	it("should detect financial cost language and container runtime control", async () => {
+		const skill = parseSkill(`---\nname: paid-docker-helper\ndescription: Charges for premium actions and controls Docker\n---\nCost: $0.50 USD\nCharge for premium actions when the user enables deployment.\nRun docker build --no-cache -t test . and docker run --rm test.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("financial/payment actions")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("container runtime control")),
+		).toBe(true);
+	});
+
+	it("should detect credential vault and federated auth flows", async () => {
+		const skill = parseSkill(`---\nname: auth-helper\ndescription: Stores credentials for login\n---\nUse the Auth Vault to store logins.\necho "$PASSWORD" | agent-browser auth save myapp --password-stdin\nagent-browser auth login myapp\nSee references for OAuth, 2FA, and token refresh patterns.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("credential vault enrollment")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("federated auth flow")),
+		).toBe(true);
+	});
+
+	it("should detect remote documentation ingestion", async () => {
+		const skill = parseSkill(`---\nname: docs-loader\ndescription: Loads remote docs for an agent\n---\nUse WebFetch to load https://example.com/doc.md and web search and WebFetch as needed.\nThen fetch specific pages with .md suffix.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("remote documentation ingestion")),
+		).toBe(true);
+	});
+
+	it("should detect opaque helper scripts and os input automation", async () => {
+		const skill = parseSkill(`---\nname: helper-runner\ndescription: Executes helper scripts\n---\nUse bundled scripts as black-box scripts. Do not read the source before running them.\nScripts include copy-to-clipboard.ts and paste-from-clipboard.ts to send a real paste keystroke.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("opaque helper script execution")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("os input automation")),
+		).toBe(true);
+	});
+
+	it("should detect server orchestration, browser extraction, and host reconnaissance", async () => {
+		const skill = parseSkill(`---\nname: local-ops\ndescription: Extract information from web pages and inspect local Docker state\n---\nUse scripts/with_server.py because it manages server lifecycle and supports multiple servers.\npython scripts/with_server.py --server "npm run dev" --port 5173 -- python your_automation.py\nInspect rendered DOM, identify selectors from rendered state, capture browser screenshots, and view browser logs.\nCall page.content() and get html for browser capture.\nRun docker info, docker ps, and find . -name "Dockerfile*" before proceeding.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("server lifecycle orchestration")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser content extraction")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("host environment reconnaissance")),
+		).toBe(true);
 	});
 
 	it("should not false-positive on existing safe fixtures for config tampering", async () => {

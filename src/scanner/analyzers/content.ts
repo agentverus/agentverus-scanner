@@ -114,6 +114,24 @@ const GENERIC_DESCRIPTION_PATTERNS = [
 	/\buse\s+(?:this|me)\s+for\s+(?:everything|anything)\b/i,
 ] as const;
 
+/** Overly broad activation instructions can hijack skill routing */
+const BROAD_TRIGGER_PATTERNS = [
+	/\buse\s+proactively\b/i,
+	/\btriggers?\s+include\b[\s\S]{0,220}\b(?:any\s+task|any\s+request|everything)\b/i,
+	/\buse\s+when\b[\s\S]{0,180}\bany\s+task\s+requiring\b/i,
+	/\buse\s+when\s+the\s+user\s+needs\s+to\s+(?:navigate\s+websites|interact\s+with\s+web\s+pages|fill\s+forms|take\s+screenshots|extract\s+information\s+from\s+web\s+pages)/i,
+	/\bany\s+automation\s+task\s+you\s+request\b/i,
+	/\bany\s+browser\s+task\s+possible\b/i,
+	/\bcomplete\s+browser\s+automation\b/i,
+	/\bthis\s+skill\s+is\s+applicable\s+to\s+execute\s+the\s+workflow\s+or\s+actions\s+described\s+in\s+the\s+overview\b/i,
+] as const;
+
+const HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS = [
+	/(?:--auto-connect|--cdp|profile\s+sync|actual\s+Chrome\s+profile|auth(?:entication)?\s+cookie|http-?only\s+cookie|query\s+string|auth_cookies|cookie\s+auth)/i,
+	/(?:with_server\.py|detectDevServers|\/tmp\/playwright-test|localhost|127\.0\.0\.1|file:\/\/)/i,
+	/(?:OpenAI|Replicate|DashScope|streamable\s+HTTP|external\s+services\s+through\s+well-?designed\s+tools|docker\s+(?:info|ps|build|run|exec)|copy-to-clipboard|paste-from-clipboard|--promptfiles)/i,
+] as const;
+
 /** Analyze content quality and safety boundaries */
 export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
@@ -342,6 +360,24 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 		});
 	}
 
+	const combinedTriggerText = `${skill.description ?? ""}\n${content}`;
+	if (BROAD_TRIGGER_PATTERNS.some((p) => p.test(combinedTriggerText))) {
+		score = Math.max(0, score - 10);
+		findings.push({
+			id: "CONT-BROAD-TRIGGER",
+			category: "content",
+			severity: "medium",
+			title: "Overly broad activation triggers",
+			description:
+				"The skill uses broad trigger language (for example 'use proactively' or 'any task requiring ...'), which can cause trigger hijacking and unintended activation.",
+			evidence: (skill.description || content).slice(0, 160),
+			deduction: 10,
+			recommendation:
+				"Narrow the activation criteria. Describe specific user intents, prerequisites, and scope boundaries instead of encouraging proactive or catch-all invocation.",
+			owaspCategory: "ASST-11",
+		});
+	}
+
 	// Check for missing description
 	if (!skill.description || skill.description.trim().length < 10) {
 		score = Math.max(0, score - 5);
@@ -364,16 +400,24 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 
 	// Missing safety boundaries penalty
 	if (!hasSafetyBoundaries) {
-		const deduction = 10;
+		const isHighRiskWithoutBoundaries = HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS.some((p) =>
+			p.test(combinedTriggerText),
+		);
+		const deduction = isHighRiskWithoutBoundaries ? 15 : 10;
 		score = Math.max(0, score - deduction);
 		findings.push({
 			id: "CONT-NO-SAFETY",
 			category: "content",
-			severity: "low",
-			title: "No explicit safety boundaries",
-			description:
-				"The skill does not include explicit safety boundaries defining what it should NOT do.",
-			evidence: "No safety boundary patterns found",
+			severity: isHighRiskWithoutBoundaries ? "medium" : "low",
+			title: isHighRiskWithoutBoundaries
+				? "High-risk workflow lacks explicit safety boundaries"
+				: "No explicit safety boundaries",
+			description: isHighRiskWithoutBoundaries
+				? "The skill performs or enables higher-risk operations but does not define explicit safety boundaries describing what it must not do."
+				: "The skill does not include explicit safety boundaries defining what it should NOT do.",
+			evidence: isHighRiskWithoutBoundaries
+				? "No safety boundary patterns found alongside high-risk capability language"
+				: "No safety boundary patterns found",
 			deduction,
 			recommendation:
 				"Add a 'Safety Boundaries' section listing what the skill must NOT do (e.g., no file deletion, no network access beyond needed APIs).",

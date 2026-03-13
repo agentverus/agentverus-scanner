@@ -1,0 +1,86 @@
+{"type":"config","name":"Improve public skill security coverage and realtime scanning","metricName":"public_issue_findings","metricUnit":"","bestDirection":"higher"}
+{"run":1,"commit":"29f9db8","metric":26,"metrics":{},"status":"keep","description":"chore: add autoresearch harness and baseline public skill coverage benchmark","timestamp":1773376302896,"segment":0}
+{"run":2,"commit":"f18927f","metric":26,"metrics":{},"status":"keep","description":"chore: persist baseline harness after disabling gpg signing","timestamp":1773376350878,"segment":0}
+{"run":3,"commit":"9ff0cc2","metric":43,"metrics":{},"status":"keep","description":"feat: detect browser auth state, session attachment, and broad activation triggers","timestamp":1773376743136,"segment":0}
+{"run":4,"commit":"ee2bd3b","metric":52,"metrics":{},"status":"keep","description":"feat: catch query-string credentials, saved browser profiles, and local file exposure","timestamp":1773377012124,"segment":0}
+{"run":5,"commit":"8a573d3","metric":61,"metrics":{},"status":"keep","description":"feat: flag full profile sync, secret CLI parameters, and localhost service access","timestamp":1773377190567,"segment":0}
+{"type":"config","name":"Improve realtime prefix detections on public skill corpus","metricName":"realtime_prefix_findings","metricUnit":"","bestDirection":"higher"}
+{"run":1,"commit":"9edbb93","metric":43,"metrics":{},"status":"keep","description":"chore: pivot benchmark to realtime prefix findings baseline","timestamp":1773377313719,"segment":0}
+{"run":2,"commit":"d204cb4","metric":46,"metrics":{},"status":"keep","description":"feat: surface persistent session reuse and early CDP browser wording","timestamp":1773377429841,"segment":0}
+{"run":3,"commit":"87f2376","metric":49,"metrics":{},"status":"keep","description":"feat: surface browser profile copy and browser-side javascript execution earlier","timestamp":1773377540403,"segment":0}
+{"run":4,"commit":"81e0cb4","metric":56,"metrics":{},"status":"keep","description":"feat: detect external override files, paid actions, and container runtime control earlier","timestamp":1773377876265,"segment":0}
+{"run":5,"commit":"2a6ba42","metric":63,"metrics":{},"status":"keep","description":"feat: flag opaque helper scripts and session reuse in realtime prefix scans","timestamp":1773378078847,"segment":0}
+{"run":6,"commit":"d93b823","metric":66,"metrics":{},"status":"keep","description":"feat: surface remote browser delegation risks in realtime prefix scans","timestamp":1773378153890,"segment":0}
+{"run":7,"commit":"e1f6cc9","metric":71,"metrics":{},"status":"keep","description":"feat: catch cookie header replay and catch-all browser trigger patterns earlier","timestamp":1773378467880,"segment":0}
+{"run":8,"commit":"455c48a","metric":72,"metrics":{},"status":"keep","description":"feat: surface package bootstrap execution in prefix scans","timestamp":1773378628551,"segment":0}
+{"run":9,"commit":"b252a7f","metric":78,"metrics":{},"status":"keep","description":"feat: surface mcp external service bridges and auth cookie stores earlier","timestamp":1773378816662,"segment":0}
+{"run":10,"commit":"cd05389","metric":92,"metrics":{},"status":"keep","description":"feat: detect prompt file ingestion, temp scripts, and remote transport exposure earlier","timestamp":1773379169876,"segment":0}
+{"run":11,"commit":"0c53220","metric":99,"metrics":{},"status":"keep","description":"feat: detect server lifecycle orchestration and browser content extraction earlier","timestamp":1773379481801,"segment":0}
+{"run":12,"commit":"87812ba","metric":108,"metrics":{},"status":"keep","description":"feat: detect credential vault onboarding and skill path discovery earlier","timestamp":1773379689330,"segment":0}
+{"run":13,"commit":"2441baa","metric":119,"metrics":{},"status":"keep","description":"feat: raise prefix-critical path and orchestration signals so code examples still count","timestamp":1773379929709,"segment":0}
+{"run":14,"commit":"009709f","metric":125,"metrics":{},"status":"keep","description":"feat: raise extraction and temp-script signals so code examples count earlier","timestamp":1773380137306,"segment":0}
+{"run":15,"commit":"59f04ce","metric":134,"metrics":{},"status":"keep","description":"feat: escalate missing safety boundaries on high-risk skill workflows","timestamp":1773380338821,"segment":0}
+{"run":16,"commit":"42e91db","metric":147,"metrics":{},"status":"keep","description":"feat: escalate unknown external urls in auth and api contexts","timestamp":1773380525651,"segment":0}
+{"run":17,"commit":"c048edb","metric":149,"metrics":{},"status":"keep","description":"feat: classify localhost urls as medium-risk local service dependencies","timestamp":1773380781218,"segment":0}
+{"run":18,"commit":"cbe1eab","metric":156,"metrics":{},"status":"keep","description":"feat: broaden screenshot scraping and dom inspection detections in prefix scans","timestamp":1773381099442,"segment":0}
+{"run":19,"commit":"0c29734","metric":164,"metrics":{},"status":"keep","description":"feat: expand screenshot and browser log extraction coverage in prefix scans","timestamp":1773381369555,"segment":0}
+{"run":20,"commit":"0c540f3","metric":166,"metrics":{},"status":"keep","description":"feat: catch taking screenshots and extracting-data phrasing earlier","timestamp":1773381547898,"segment":0}
+{"run":21,"commit":"330d188","metric":167,"metrics":{},"status":"keep","description":"feat: escalate many-url dependency sprawl when auth context is present","timestamp":1773381817955,"segment":0}
+{"run":22,"commit":"aa11efe","metric":169,"metrics":{},"status":"keep","description":"feat: surface session inventory and bulk session reuse controls earlier","timestamp":1773382847133,"segment":0}
+{"run":23,"commit":"11c0297","metric":172,"metrics":{},"status":"keep","description":"feat: surface remote task delegation and cloud task status workflows earlier","timestamp":1773387258530,"segment":0}
+{"run":24,"commit":"c51077a","metric":175,"metrics":{},"status":"keep","description":"feat: surface script-subdirectory and baseDir path resolution earlier","timestamp":1773387419852,"segment":0}
+{"run":25,"commit":"0ee28b9","metric":178,"metrics":{},"status":"keep","description":"feat: detect auth import from user browsers and automated password entry","timestamp":1773389113960,"segment":0}
+{"run":26,"commit":"7d749c9","metric":181,"metrics":{},"status":"keep","description":"feat: surface remote documentation ingestion in mcp builder workflows","timestamp":1773389246757,"segment":0}
+{"run":27,"commit":"a373730","metric":188,"metrics":{},"status":"keep","description":"feat: detect mcp-issued browser cookies and cookie bootstrap redirects","timestamp":1773390319055,"segment":0}
+{"run":28,"commit":"64809c9","metric":189,"metrics":{},"status":"keep","description":"feat: surface ui state enumeration in browser snapshot workflows","timestamp":1773390470199,"segment":0}
+{"run":29,"commit":"542fc2b","metric":193,"metrics":{},"status":"keep","description":"feat: surface profile-backed session persistence in browser automation skills","timestamp":1773390629397,"segment":0}
+{"run":30,"commit":"d1f8816","metric":196,"metrics":{},"status":"keep","description":"feat: raise chained browser actions and password form automation to medium-plus","timestamp":1773391399357,"segment":0}
+{"run":31,"commit":"1341f82","metric":200,"metrics":{},"status":"keep","description":"feat: detect auth-state replay files and password env piping earlier","timestamp":1773391588449,"segment":0}
+{"run":32,"commit":"43a4514","metric":205,"metrics":{},"status":"keep","description":"feat: infer undeclared browser automation capability on public skills","timestamp":1773391827993,"segment":0}
+{"run":33,"commit":"e5f373a","metric":211,"metrics":{},"status":"keep","description":"feat: infer undeclared session management and content extraction capabilities","timestamp":1773392297760,"segment":0}
+{"run":34,"commit":"622b9a6","metric":215,"metrics":{},"status":"keep","description":"feat: infer remote delegation and local service access capabilities","timestamp":1773392783413,"segment":0}
+{"run":35,"commit":"82d9015","metric":219,"metrics":{},"status":"keep","description":"feat: infer undeclared file read capability for prompt bundles and reference files","timestamp":1773393075623,"segment":0}
+{"run":36,"commit":"b374c1d","metric":222,"metrics":{},"status":"keep","description":"feat: infer undeclared process orchestration and ui state access capabilities","timestamp":1773393332353,"segment":0}
+{"run":37,"commit":"6998a1f","metric":227,"metrics":{},"status":"keep","description":"feat: infer credential handoff and filesystem discovery capabilities","timestamp":1773393623022,"segment":0}
+{"run":38,"commit":"5185630","metric":230,"metrics":{},"status":"keep","description":"feat: infer documentation ingestion local input control and credential form capabilities","timestamp":1773394031196,"segment":0}
+{"run":39,"commit":"1d4040b","metric":231,"metrics":{},"status":"keep","description":"feat: infer package bootstrap capability from npx and npm install flows","timestamp":1773394334275,"segment":0}
+{"run":40,"commit":"40662b0","metric":233,"metrics":{},"status":"keep","description":"feat: infer credential storage capability from vaults profiles and token stores","timestamp":1773394590131,"segment":0}
+{"run":43,"commit":"d8763b1","metric":242,"metrics":{},"status":"keep","description":"feat: infer environment configuration and payment processing capabilities","timestamp":1773403631490,"segment":0}
+{"run":44,"commit":"0e09879","metric":243,"metrics":{},"status":"keep","description":"feat: broaden reference path and cookie-auth inference for mcp and clawdirect","timestamp":1773403942900,"segment":0}
+{"run":45,"commit":"ea70a0c","metric":243,"metrics":{},"status":"keep","description":"feat: broaden capability inference for env vars paid actions and mcp cookie phrasing","timestamp":1773404678739,"segment":0}
+{"run":46,"commit":"610471f","metric":247,"metrics":{},"status":"keep","description":"feat: infer environment configuration and payment processing capabilities","timestamp":1773404808947,"segment":0}
+{"run":47,"commit":"b58b13c","metric":250,"metrics":{},"status":"keep","description":"feat: catch saved sessions login flows and remote task snippets in capability inference","timestamp":1773405026911,"segment":0}
+{"run":48,"commit":"85d5aa6","metric":253,"metrics":{},"status":"keep","description":"feat: broaden documentation ingestion inference from reference and help phrasing","timestamp":1773405172390,"segment":0}
+{"run":49,"commit":"ce30f3b","metric":257,"metrics":{},"status":"keep","description":"feat: catch broad any-task browser automation scope earlier","timestamp":1773406121513,"segment":0}
+{"run":50,"commit":"dac1e07","metric":253,"metrics":{},"status":"keep","description":"feat: broaden docs-reference inference and allow env examples in capability inference","timestamp":1773406587901,"segment":0}
+{"run":51,"commit":"64a6843","metric":261,"metrics":{},"status":"keep","description":"feat: infer docker project discovery and real chrome browser automation phrasing","timestamp":1773406906834,"segment":0}
+{"run":52,"commit":"8643c81","metric":263,"metrics":{},"status":"keep","description":"feat: infer form-filling and selector inspection from browser workflow phrasing","timestamp":1773407155713,"segment":0}
+{"run":53,"commit":"d91f17d","metric":265,"metrics":{},"status":"keep","description":"feat: broaden auth cookie storage and ai provider delegation inference","timestamp":1773407510449,"segment":0}
+{"run":54,"commit":"4e396a3","metric":266,"metrics":{},"status":"keep","description":"feat: broaden auth-state handoff and persistent cli profile inference","timestamp":1773407785131,"segment":0}
+{"run":58,"commit":"895c3dd","metric":269,"metrics":{},"status":"keep","description":"feat: widen auth-state handoff and persistent cli profile inference","timestamp":1773408891723,"segment":0}
+{"run":62,"commit":"31e98c4","metric":269,"metrics":{},"status":"keep","description":"feat: widen local input control inference for keyboard entry workflows","timestamp":1773409756379,"segment":0}
+{"run":63,"commit":"dbb0cfa","metric":271,"metrics":{},"status":"keep","description":"feat: raise ui state enumeration so snapshot examples count earlier","timestamp":1773410277393,"segment":0}
+{"run":64,"commit":"a74a1a7","metric":272,"metrics":{},"status":"keep","description":"feat: broaden local input control patterns for typed text and keyboard keys","timestamp":1773410684040,"segment":0}
+{"run":67,"commit":"760abe1","metric":277,"metrics":{},"status":"keep","description":"feat: infer browser automation from browse and click site phrasing","timestamp":1773411494103,"segment":0}
+{"run":68,"commit":"b9bb24e","metric":278,"metrics":{},"status":"keep","description":"feat: infer browser automation from browse entries and visit-site phrasing","timestamp":1773411790678,"segment":0}
+{"run":69,"commit":"0866575","metric":282,"metrics":{},"status":"keep","description":"feat: broaden ui state and screenshot extraction patterns in behavioral scanner","timestamp":1773412174983,"segment":0}
+{"run":70,"commit":"76cba87","metric":284,"metrics":{},"status":"keep","description":"feat: infer local input control from click and selector guidance","timestamp":1773412718619,"segment":0}
+{"run":71,"commit":"93f5c8d","metric":289,"metrics":{},"status":"keep","description":"feat: infer agent browser resnapshot and ui workflow patterns earlier","timestamp":1773412912640,"segment":0}
+{"run":72,"commit":"4076270","metric":291,"metrics":{},"status":"keep","description":"feat: broaden ui action guidance detections for browser workflows","timestamp":1773413199607,"segment":0}
+{"run":73,"commit":"3b67205","metric":291,"metrics":{},"status":"keep","description":"feat: infer file-write capability from screenshot and output examples","timestamp":1773413570527,"segment":0}
+{"run":74,"commit":"17efa2b","metric":0,"metrics":{},"status":"crash","description":"feat: infer browser session attachment external tool bridge and unrestricted scope capabilities","timestamp":1773414056944,"segment":0}
+{"run":75,"commit":"a6c8a68","metric":300,"metrics":{},"status":"keep","description":"feat: infer auth state management browser session attachment and tool bridge capabilities","timestamp":1773414823122,"segment":0}
+{"run":76,"commit":"4bdbb80","metric":301,"metrics":{},"status":"keep","description":"feat: infer command execution capability from fenced shell examples","timestamp":1773415039110,"segment":0}
+{"run":77,"commit":"9d576b6","metric":300,"metrics":{},"status":"keep","description":"feat: broaden auth and server capability inference across browser workflow docs","timestamp":1773415736163,"segment":0}
+{"run":82,"commit":"c4e38d2","metric":314,"metrics":{},"status":"keep","description":"feat: infer browser profile copy cookie url handoff and runtime control capabilities","timestamp":1773417849156,"segment":0}
+{"run":74,"commit":"c4e38d2","metric":314,"metrics":{},"status":"discard","description":"chore: resume loop by revalidating current realtime prefix benchmark baseline","timestamp":1773429879408,"segment":1}
+{"run":75,"commit":"ab9afb3","metric":319,"metrics":{},"status":"keep","description":"feat: infer fenced setup commands and real-chrome profile attachment earlier","timestamp":1773430320360,"segment":1}
+{"run":76,"commit":"b0930df","metric":322,"metrics":{},"status":"keep","description":"feat: surface browser auth-state reuse and local server hints earlier","timestamp":1773430621882,"segment":1}
+{"run":77,"commit":"b83f3d2","metric":324,"metrics":{},"status":"keep","description":"feat: infer created files and exposed service ports earlier","timestamp":1773430784595,"segment":1}
+{"run":78,"commit":"1ca40f7","metric":326,"metrics":{},"status":"keep","description":"feat: treat exposed container ports as earlier local service risk","timestamp":1773431029534,"segment":1}
+{"run":79,"commit":"4b2d7d0","metric":328,"metrics":{},"status":"keep","description":"feat: surface local service port and transport hints in dependency scans","timestamp":1773431157777,"segment":1}
+{"run":80,"commit":"5f566f8","metric":329,"metrics":{},"status":"keep","description":"feat: flag credential-bearing query parameters in dependency references","timestamp":1773431269386,"segment":1}
+{"run":81,"commit":"c94eb9e","metric":331,"metrics":{},"status":"keep","description":"feat: infer setup-structure writes and express web-server local access earlier","timestamp":1773431906104,"segment":1}
+{"run":82,"commit":"390df0b","metric":333,"metrics":{},"status":"keep","description":"feat: infer package-bootstrap risk from package.json workflow setup","timestamp":1773432038608,"segment":1}
+{"run":83,"commit":"13e1c7c","metric":335,"metrics":{},"status":"keep","description":"feat: infer network and server exposure from exposed ports and remote browser services","timestamp":1773432159514,"segment":1}
+{"run":84,"commit":"9ea030d","metric":337,"metrics":{},"status":"keep","description":"feat: surface healthcheck and direct endpoint local-service hints earlier","timestamp":1773432235164,"segment":1}

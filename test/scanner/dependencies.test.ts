@@ -36,6 +36,34 @@ describe("analyzeDependencies", () => {
 		expect(ipFindings.length).toBeGreaterThan(0);
 	});
 
+	it("flags localhost URLs as local service references", async () => {
+		const skill = parseSkill(`# Local URL\nUse http://localhost:3000/admin for review.`);
+		const result = await analyzeDependencies(skill);
+
+		const localFinding = result.findings.find((f) => f.title.includes("Local service URL"));
+		expect(localFinding).toBeDefined();
+		expect(localFinding?.severity).toBe("medium");
+	});
+
+	it("flags exposed ports and local server transports as local service hints", async () => {
+		const skill = parseSkill(`# Local Service Hints\nTransport: Streamable HTTP for remote servers, stdio for local servers. Agents call MCP endpoints directly when needed.\n\n\`\`\`dockerfile\nEXPOSE 3000\nHEALTHCHECK CMD curl -f http://localhost:3000/health || exit 1\n\`\`\``);
+		const result = await analyzeDependencies(skill);
+
+		expect(result.findings.some((f) => f.title.includes("Local service port exposure"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Local service healthcheck reference"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Local server transport reference"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Agent-callable endpoint reference"))).toBe(true);
+	});
+
+	it("flags hosted browser and provider integrations as remote service dependencies", async () => {
+		const skill = parseSkill(`# Remote Dependencies\nUse a cloud-hosted browser with proxy support.\nThis skill supports API-based image generation with OpenAI and Replicate providers.\nIt can integrate external APIs or services through well-designed tools.`);
+		const result = await analyzeDependencies(skill);
+
+		expect(result.findings.some((f) => f.title.includes("Hosted browser service dependency"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Third-party AI provider dependency"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("External service integration dependency"))).toBe(true);
+	});
+
 	it("should flag raw content URLs as medium risk", async () => {
 		const skill = parseSkill(loadFixture("suspicious-urls.md"));
 		const result = await analyzeDependencies(skill);
@@ -61,6 +89,25 @@ describe("analyzeDependencies", () => {
 		const result = await analyzeDependencies(skill);
 
 		expect(result.score).toBe(100);
+	});
+
+	it("escalates unknown URLs when auth or api context is present", async () => {
+		const skill = parseSkill(`# Auth Flow\nUse this API endpoint after login: https://portal.example.invalid/dashboard\nSet the auth cookie first.`);
+		const result = await analyzeDependencies(skill);
+
+		const finding = result.findings.find((f) => f.id.startsWith("DEP-URL-"));
+		expect(finding).toBeDefined();
+		expect(finding?.severity).toBe("medium");
+		expect((finding?.deduction ?? 0) >= 8).toBe(true);
+	});
+
+	it("flags credential-bearing query parameters even on otherwise normal URLs", async () => {
+		const skill = parseSkill(`# Query Auth\nNavigate to https://app.example.com?session_token=<secret> and let the server clear the URL.`);
+		const result = await analyzeDependencies(skill);
+
+		const finding = result.findings.find((f) => f.title.includes("Credential-bearing URL parameter"));
+		expect(finding).toBeDefined();
+		expect(finding?.severity).toBe("medium");
 	});
 
 	it("detects critical lifecycle script", async () => {

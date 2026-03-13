@@ -112,6 +112,196 @@ describe("analyzePermissions", () => {
 		).toBe(true);
 	});
 
+	it("should infer credential access from browser auth/session workflows", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential access")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential handoff")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential storage")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("auth state management")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("configuration override")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("browser automation")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("browser session attachment")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("file read")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("filesystem discovery")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential handoff")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("session management")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("content extraction")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("remote delegation")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("local service access")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("credential form automation")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("process orchestration")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("UI state access")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("documentation ingestion")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("local input control")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("external tool bridge")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("unrestricted scope")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("package bootstrap")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("environment configuration")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("payment processing")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("remote task management")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("server exposure")),
+		).toBe(true);
+	});
+
+	it("should infer exec and package bootstrap from fenced setup snippets", async () => {
+		const skill = parseSkill(`---
+name: setup-helper
+description: Bootstraps a local toolchain
+---
+# Setup
+
+\`\`\`bash
+npm install example-cli
+npx example-cli init
+\`\`\`
+`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("command execution"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("package bootstrap"))).toBe(true);
+	});
+
+	it("should infer local service access from local server transport hints", async () => {
+		const skill = parseSkill(`---
+name: local-server-helper
+description: Builds an MCP server
+---
+Transport: Streamable HTTP for remote servers, stdio for local servers.
+\`\`\`env
+PORT=3001
+\`\`\`
+`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
+	});
+
+	it("should infer file writes and server exposure from created files and exposed ports", async () => {
+		const skill = parseSkill(`---
+name: project-bootstrapper
+description: Sets up a web app skeleton
+---
+Set Up Project Structure
+Create \`tsconfig.json\`:
+\`\`\`dockerfile
+EXPOSE 3000
+\`\`\`
+`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("file write"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("server exposure"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("network access"))).toBe(true);
+	});
+
+	it("should infer local service access from express web-server endpoint guidance", async () => {
+		const skill = parseSkill(`---
+name: server-helper
+description: Builds an agent-facing web app
+---
+Your Web Server (Express) exposes MCP endpoints directly for programmatic agent access.`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
+	});
+
+	it("should infer package bootstrap from package.json workflow guidance", async () => {
+		const skill = parseSkill(`---
+name: package-helper
+description: Sets up a TypeScript project
+---
+Project structure, package.json, tsconfig.json.`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("package bootstrap"))).toBe(true);
+	});
+
+	it("should infer server exposure from cloud-hosted browser delegation", async () => {
+		const skill = parseSkill(`---
+name: remote-browser-helper
+description: Uses remote execution for browsing
+---
+Use a cloud-hosted browser with proxy support when local browsing is unavailable.`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("server exposure"))).toBe(true);
+	});
+
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
 		const skill = parseSkill(loadFixture("declared-permissions.md"));
 		const result = await analyzePermissions(skill);

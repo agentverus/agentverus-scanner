@@ -71,6 +71,34 @@ const IP_ADDRESS_REGEX = /^(?:\d{1,3}\.){3}\d{1,3}/;
 /** Private/localhost IP patterns — not suspicious */
 const PRIVATE_IP_REGEX = /^(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|0\.0\.0\.0|localhost)/;
 
+const LOCAL_SERVICE_HINT_PATTERNS = [
+	{ regex: /\bEXPOSE\s+\d{2,5}\b/i, title: "Local service port exposure" },
+	{ regex: /\bHEALTHCHECK\b/i, title: "Local service healthcheck reference" },
+	{ regex: /\bstdio\s+for\s+local\s+servers?\b/i, title: "Local server transport reference" },
+	{ regex: /\bMCP\s+endpoints?\s+directly\b/i, title: "Agent-callable endpoint reference" },
+] as const;
+
+const REMOTE_SERVICE_HINT_PATTERNS = [
+	{
+		regex: /\bcloud-hosted\s+browser\b|\bproxy\s+support\b/i,
+		title: "Hosted browser service dependency",
+		description:
+			"The skill depends on a hosted or proxy-backed browser service, which introduces an external execution surface and additional dependency trust requirements.",
+	},
+	{
+		regex: /\b(?:OpenAI|Google|DashScope|Replicate)\b.{0,80}\b(?:providers?|APIs?)\b|\bAPI-based\s+image\s+generation\b/i,
+		title: "Third-party AI provider dependency",
+		description:
+			"The skill relies on third-party AI providers or APIs, expanding the remote dependency surface for prompts, inputs, or generated artifacts.",
+	},
+	{
+		regex: /\bexternal\s+services\s+through\s+well-?designed\s+tools\b|\bintegrate\s+external\s+APIs?\s+or\s+services\b/i,
+		title: "External service integration dependency",
+		description:
+			"The skill is explicitly designed to integrate remote services or APIs, which increases dependency trust and remote attack-surface considerations.",
+	},
+] as const;
+
 /** Download-and-execute patterns */
 const DOWNLOAD_EXECUTE_PATTERNS = [
 	/download\s+and\s+(?:execute|eval)\b/i,
@@ -354,7 +382,7 @@ function getHostname(url: string): string {
 
 /** Classify a URL by risk level */
 function classifyUrl(url: string): {
-	risk: "trusted" | "raw" | "ip" | "data" | "unknown";
+	risk: "trusted" | "raw" | "ip" | "local" | "data" | "unknown";
 	deduction: number;
 } {
 	if (url.startsWith("data:")) {
@@ -364,11 +392,13 @@ function classifyUrl(url: string): {
 	const hostname = getHostname(url);
 
 	if (IP_ADDRESS_REGEX.test(hostname)) {
-		// Localhost and private IPs are not suspicious — they're local services
 		if (PRIVATE_IP_REGEX.test(hostname)) {
-			return { risk: "trusted", deduction: 0 };
+			return { risk: "local", deduction: 8 };
 		}
 		return { risk: "ip", deduction: 20 };
+	}
+	if (PRIVATE_IP_REGEX.test(hostname)) {
+		return { risk: "local", deduction: 8 };
 	}
 
 	const urlPath = url.replace(/^https?:\/\//, "");
@@ -386,6 +416,24 @@ function classifyUrl(url: string): {
 	}
 
 	return { risk: "unknown", deduction: 5 };
+}
+
+function hasSensitiveUnknownUrlContext(content: string, url: string): boolean {
+	const idx = content.indexOf(url);
+	if (idx < 0) return false;
+
+	const start = Math.max(0, idx - 220);
+	const end = Math.min(content.length, idx + url.length + 220);
+	const window = content.slice(start, end);
+	return /\b(?:auth|authentication|cookie|token|login|dashboard|session|mcp|api|endpoint|provider|oauth|2fa|refresh|credential|secret)\b/i.test(
+		window,
+	);
+}
+
+function hasCredentialBearingUrlParam(url: string): boolean {
+	return /[?&][^=#\s]*(?:cookie|token|auth|session)[^=#\s]*=|[?&][^=#\s]*=(?:<[^>]+>|\$\{?[A-Z0-9_]+\}?|\$[A-Z0-9_]+)/i.test(
+		url,
+	);
 }
 
 /**
@@ -466,9 +514,14 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			let severity: "high" | "medium" | "low" =
 				classification.risk === "ip" || classification.risk === "data"
 					? "high"
-					: classification.risk === "raw"
+					: classification.risk === "raw" || classification.risk === "local"
 						? "medium"
 						: "low";
+
+			if (classification.risk === "unknown" && hasSensitiveUnknownUrlContext(content, url)) {
+				severity = "medium";
+				effectiveDeduction = Math.max(effectiveDeduction, 8);
+			}
 
 			let titleSuffix = "";
 
@@ -488,8 +541,8 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				id: `DEP-URL-${findings.length + 1}`,
 				category: "dependencies",
 				severity,
-				title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : "Unknown external"} reference${titleSuffix}`,
-				description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : "an unknown external domain"} which is classified as ${severity} risk.`,
+				title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : classification.risk === "local" ? "Local service URL" : "Unknown external"} reference${titleSuffix}`,
+				description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : classification.risk === "local" ? "a localhost or private-network service URL" : "an unknown external domain"} which is classified as ${severity} risk.`,
 				evidence: url.slice(0, 200),
 				deduction: effectiveDeduction,
 				recommendation:
@@ -497,14 +550,89 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 						? "Replace direct IP addresses with proper domain names. IP-based URLs bypass DNS-based security controls."
 						: classification.risk === "raw"
 							? "Use official package registries instead of raw content URLs. Raw URLs can be changed without notice."
-							: "Verify that this external dependency is trustworthy and necessary.",
+							: classification.risk === "local"
+								? "Review localhost/private-network service references carefully. Local service URLs can expose internal apps, admin panels, or developer tooling to agent-driven workflows."
+								: "Verify that this external dependency is trustworthy and necessary.",
+				owaspCategory: "ASST-04",
+			});
+		}
+
+		if (hasCredentialBearingUrlParam(url)) {
+			score = Math.max(0, score - 8);
+			findings.push({
+				id: `DEP-URL-CRED-${findings.length + 1}`,
+				category: "dependencies",
+				severity: "medium",
+				title: "Credential-bearing URL parameter",
+				description:
+					"The skill includes a URL whose query parameters look like they carry cookies, auth state, or token material. URLs are commonly logged and replayed, so credential-bearing parameters expand the dependency risk surface even on first-party domains.",
+				evidence: url.slice(0, 200),
+				deduction: 8,
+				recommendation:
+					"Avoid query-string credential transport. Prefer secure headers, dedicated cookie APIs, or other mechanisms that do not expose bearer material in URLs.",
 				owaspCategory: "ASST-04",
 			});
 		}
 	}
 
-	// Check for download-and-execute patterns (context-aware)
+	// Check for local service hints that appear before concrete localhost URLs.
 	const ctx = buildContentContext(content);
+	for (const hint of LOCAL_SERVICE_HINT_PATTERNS) {
+		const globalHint = new RegExp(hint.regex.source, `${hint.regex.flags.replace("g", "")}g`);
+		let match: RegExpExecArray | null;
+		while ((match = globalHint.exec(content)) !== null) {
+			const { severityMultiplier } = adjustForContext(match.index, content, ctx);
+			if (severityMultiplier === 0) continue;
+
+			const lineNumber = content.slice(0, match.index).split("\n").length;
+			const deduction = 8;
+			score = Math.max(0, score - deduction);
+			findings.push({
+				id: `DEP-LOCAL-HINT-${findings.length + 1}`,
+				category: "dependencies",
+				severity: "medium",
+				title: hint.title,
+				description:
+					"The skill references a local-only service port or transport mode, which expands the reachable local attack surface even before explicit localhost URLs appear.",
+				evidence: match[0].slice(0, 200),
+				lineNumber,
+				deduction,
+				recommendation:
+					"Review local service and exposed-port guidance carefully. Local transports and exposed ports can make internal tools or apps reachable by agent-driven workflows.",
+				owaspCategory: "ASST-04",
+			});
+			break;
+		}
+	}
+
+	for (const hint of REMOTE_SERVICE_HINT_PATTERNS) {
+		const globalHint = new RegExp(hint.regex.source, `${hint.regex.flags.replace("g", "")}g`);
+		let match: RegExpExecArray | null;
+		while ((match = globalHint.exec(content)) !== null) {
+			const { severityMultiplier } = adjustForContext(match.index, content, ctx);
+			if (severityMultiplier === 0) continue;
+
+			const lineNumber = content.slice(0, match.index).split("\n").length;
+			const deduction = 8;
+			score = Math.max(0, score - deduction);
+			findings.push({
+				id: `DEP-REMOTE-HINT-${findings.length + 1}`,
+				category: "dependencies",
+				severity: "medium",
+				title: hint.title,
+				description: hint.description,
+				evidence: match[0].slice(0, 200),
+				lineNumber,
+				deduction,
+				recommendation:
+					"Review which external services or providers the skill depends on, what data crosses that boundary, and whether the dependency is necessary for the intended workflow.",
+				owaspCategory: "ASST-04",
+			});
+			break;
+		}
+	}
+
+	// Check for download-and-execute patterns (context-aware)
 	for (const pattern of DOWNLOAD_EXECUTE_PATTERNS) {
 		const globalPattern = new RegExp(pattern.source, `${pattern.flags.replace("g", "")}g`);
 		let match: RegExpExecArray | null;
@@ -675,16 +803,25 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 		}
 	}
 
-	// Informational: many external URLs
+	// Many external URLs can materially expand the attack surface, especially
+	// when the skill also discusses auth, cookies, APIs, or payments.
 	if (skill.urls.length > 5) {
+		const hasSensitiveUrlContext = /\b(?:auth|authentication|cookie|token|login|payment|payments|mcp|credential|secret)\b/i.test(
+			content,
+		);
+		const severity = hasSensitiveUrlContext ? "medium" : "info";
+		const deduction = hasSensitiveUrlContext ? 8 : 0;
+		score = Math.max(0, score - deduction);
 		findings.push({
 			id: "DEP-MANY-URLS",
 			category: "dependencies",
-			severity: "info",
+			severity,
 			title: `Many external URLs referenced (${skill.urls.length})`,
-			description: `The skill references ${skill.urls.length} external URLs. While not inherently dangerous, many external dependencies increase the attack surface.`,
+			description: hasSensitiveUrlContext
+				? `The skill references ${skill.urls.length} external URLs and also discusses auth/API/payment workflows, which increases the chance that sensitive operations depend on many remote endpoints.`
+				: `The skill references ${skill.urls.length} external URLs. While not inherently dangerous, many external dependencies increase the attack surface.`,
 			evidence: `URLs: ${skill.urls.slice(0, 5).join(", ")}${skill.urls.length > 5 ? "..." : ""}`,
-			deduction: 0,
+			deduction,
 			recommendation: "Minimize external dependencies to reduce supply chain risk.",
 			owaspCategory: "ASST-04",
 		});

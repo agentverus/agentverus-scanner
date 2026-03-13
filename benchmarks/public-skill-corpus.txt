@@ -1,0 +1,10 @@
+https://raw.githubusercontent.com/browser-use/browser-use/main/skills/browser-use/SKILL.md
+https://raw.githubusercontent.com/vercel-labs/agent-browser/main/skills/agent-browser/SKILL.md
+https://raw.githubusercontent.com/anthropics/skills/main/skills/webapp-testing/SKILL.md
+https://raw.githubusercontent.com/anthropics/skills/main/skills/mcp-builder/SKILL.md
+https://raw.githubusercontent.com/napoleond/clawdirect/main/skills/clawdirect/SKILL.md
+https://raw.githubusercontent.com/napoleond/clawdirect/main/skills/clawdirect-dev/SKILL.md
+https://raw.githubusercontent.com/jimliu/baoyu-skills/main/skills/baoyu-post-to-x/SKILL.md
+https://raw.githubusercontent.com/jimliu/baoyu-skills/main/skills/baoyu-image-gen/SKILL.md
+https://raw.githubusercontent.com/sickn33/antigravity-awesome-skills/main/skills/playwright-skill/SKILL.md
+https://raw.githubusercontent.com/sickn33/antigravity-awesome-skills/main/skills/docker-expert/SKILL.md

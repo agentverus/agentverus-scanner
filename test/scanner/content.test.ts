@@ -77,6 +77,15 @@ describe("analyzeContent", () => {
 		expect(noSafetyFindings.length).toBe(1);
 	});
 
+	it("should escalate missing safety boundaries for high-risk workflows", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzeContent(skill);
+
+		const noSafetyFindings = result.findings.filter((f) => f.id === "CONT-NO-SAFETY");
+		expect(noSafetyFindings.length).toBe(1);
+		expect(noSafetyFindings[0]?.severity).toBe("medium");
+	});
+
 	// ── v0.4.0: Generic description / trigger hijacking ────────────────────
 
 	it("should flag overly generic description (trigger hijacking)", async () => {
@@ -99,6 +108,45 @@ describe("analyzeContent", () => {
 
 		const genericFindings = result.findings.filter((f) => f.id === "CONT-GENERIC-DESC");
 		expect(genericFindings.length).toBe(1);
+	});
+
+	it("should flag overly broad activation triggers", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzeContent(skill);
+
+		const triggerFindings = result.findings.filter((f) => f.id === "CONT-BROAD-TRIGGER");
+		expect(triggerFindings.length).toBe(1);
+		expect(triggerFindings[0]?.owaspCategory).toBe("ASST-11");
+	});
+
+	it("should flag browser-use style catch-all browser trigger descriptions", async () => {
+		const skill = parseSkill(
+			`---\nname: browser-use\ndescription: Use when the user needs to navigate websites, interact with web pages, fill forms, take screenshots, or extract information from web pages.\n---\nBrowser automation help.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const triggerFindings = result.findings.filter((f) => f.id === "CONT-BROAD-TRIGGER");
+		expect(triggerFindings.length).toBe(1);
+	});
+
+	it("should flag any-automation-task trigger descriptions", async () => {
+		const skill = parseSkill(
+			`---\nname: playwright-skill\ndescription: Complete browser automation with Playwright.\n---\nI'll write custom Playwright code for any automation task you request.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const triggerFindings = result.findings.filter((f) => f.id === "CONT-BROAD-TRIGGER");
+		expect(triggerFindings.length).toBe(1);
+	});
+
+	it("should NOT flag narrow trigger language", async () => {
+		const skill = parseSkill(
+			`---\nname: repo-summarizer\ndescription: Use when the user asks to summarize issues for a specific GitHub repository\n---\nSummarize GitHub issues for the requested repository only.`,
+		);
+		const result = await analyzeContent(skill);
+
+		const triggerFindings = result.findings.filter((f) => f.id === "CONT-BROAD-TRIGGER");
+		expect(triggerFindings.length).toBe(0);
 	});
 
 	it("should NOT flag specific descriptions", async () => {
