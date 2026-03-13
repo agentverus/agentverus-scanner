@@ -110,6 +110,12 @@ const REMOTE_SERVICE_HINT_PATTERNS = [
 			"The skill bootstraps a package-managed project structure, which adds supply-chain exposure through manifest files, build configuration, and package-manager workflows.",
 	},
 	{
+		regex: /\breference\s+images\b|\b--image\b|\b--video\b|\bthumbnailMime\b|\btext,\s*images,\s*videos\b|\bimage\s+generation\b/i,
+		title: "Media artifact handoff dependency",
+		description:
+			"The skill depends on local images, videos, thumbnails, or other media artifacts being passed into remote or browser-driven workflows, expanding the data-handoff surface.",
+	},
+	{
 		regex: /\bquery\s+string\b.{0,120}\b(?:cookie|auth|token|session)\b|\b(?:cookie|auth|token|session)\b.{0,120}\bquery\s+string\b/i,
 		title: "Credential query-parameter transport",
 		description:
