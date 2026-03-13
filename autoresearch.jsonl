@@ -42,3 +42,4 @@
 {"run":35,"commit":"82d9015","metric":219,"metrics":{},"status":"keep","description":"feat: infer undeclared file read capability for prompt bundles and reference files","timestamp":1773393075623,"segment":0}
 {"run":36,"commit":"b374c1d","metric":222,"metrics":{},"status":"keep","description":"feat: infer undeclared process orchestration and ui state access capabilities","timestamp":1773393332353,"segment":0}
 {"run":37,"commit":"6998a1f","metric":227,"metrics":{},"status":"keep","description":"feat: infer credential handoff and filesystem discovery capabilities","timestamp":1773393623022,"segment":0}
+{"run":38,"commit":"5185630","metric":230,"metrics":{},"status":"keep","description":"feat: infer documentation ingestion local input control and credential form capabilities","timestamp":1773394031196,"segment":0}

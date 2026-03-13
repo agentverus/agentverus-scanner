@@ -25,7 +25,8 @@ type CapabilityKind =
 	| "ui_state_access"
 	| "documentation_ingestion"
 	| "local_input_control"
-	| "credential_form_automation";
+	| "credential_form_automation"
+	| "package_bootstrap";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -46,6 +47,7 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"ui_state_access",
 	"documentation_ingestion",
 	"local_input_control",
+	"package_bootstrap",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -67,6 +69,7 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	ui_state_access: "UI state access",
 	documentation_ingestion: "documentation ingestion",
 	local_input_control: "local input control",
+	package_bootstrap: "package bootstrap",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -90,6 +93,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	ui_state_access: { severity: "medium", deduction: 8 },
 	documentation_ingestion: { severity: "medium", deduction: 8 },
 	local_input_control: { severity: "medium", deduction: 8 },
+	package_bootstrap: { severity: "medium", deduction: 8 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -211,6 +215,11 @@ const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
 	/login\s+to\s+a\s+site/i,
 ] as const;
 
+const PACKAGE_BOOTSTRAP_PATTERNS: readonly RegExp[] = [
+	/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+	/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
+] as const;
+
 const PROCESS_ORCHESTRATION_PATTERNS: readonly RegExp[] = [
 	/\bwith_server\.py\b/i,
 	/\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
@@ -295,6 +304,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["local_input_control", "clipboard", "paste_keystroke"])) {
 		return "local_input_control";
+	}
+	if (hasAny(["package_bootstrap", "npx", "bunx", "pnpm_dlx"])) {
+		return "package_bootstrap";
 	}
 	if (hasAny(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
 		return "process_orchestration";
@@ -461,6 +473,15 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("local_input_control", `Content pattern: ${localInputControlMatch}`);
 	}
 
+	const packageBootstrapMatch = firstPositiveMatch(
+		skill.rawContent,
+		PACKAGE_BOOTSTRAP_PATTERNS,
+		isDefenseSkill,
+	);
+	if (packageBootstrapMatch) {
+		add("package_bootstrap", `Content pattern: ${packageBootstrapMatch}`);
+	}
+
 	const credentialFormAutomationMatch = firstPositiveMatch(
 		skill.rawContent,
 		CREDENTIAL_FORM_AUTOMATION_PATTERNS,
@@ -561,7 +582,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, credential_handoff, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, credential_handoff, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, session_management, content_extraction, documentation_ingestion, local_input_control, package_bootstrap, remote_delegation, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}

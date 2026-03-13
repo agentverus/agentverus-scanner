@@ -161,6 +161,9 @@ describe("analyzePermissions", () => {
 		expect(
 			contractFindings.some((f) => f.title.includes("local input control")),
 		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("package bootstrap")),
+		).toBe(true);
 	});
 
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
