@@ -6,4 +6,5 @@ packages/*/*.tsbuildinfo
 .env
 .env.*
 coverage/
+.cache/
 data/
