@@ -18,6 +18,7 @@ type CapabilityKind =
 	| "file_write"
 	| "file_read"
 	| "filesystem_discovery"
+	| "configuration_override"
 	| "network"
 	| "browser_automation"
 	| "browser_session_attachment"
@@ -35,7 +36,8 @@ type CapabilityKind =
 	| "credential_form_automation"
 	| "package_bootstrap"
 	| "environment_configuration"
-	| "payment_processing";
+	| "payment_processing"
+	| "unrestricted_scope";
 
 const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"credential_access",
@@ -49,6 +51,7 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"file_write",
 	"file_read",
 	"filesystem_discovery",
+	"configuration_override",
 	"network",
 	"browser_automation",
 	"browser_session_attachment",
@@ -66,6 +69,7 @@ const CAPABILITY_ORDER: readonly CapabilityKind[] = [
 	"package_bootstrap",
 	"environment_configuration",
 	"payment_processing",
+	"unrestricted_scope",
 ] as const;
 
 const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
@@ -80,6 +84,7 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	file_write: "file write",
 	file_read: "file read",
 	filesystem_discovery: "filesystem discovery",
+	configuration_override: "configuration override",
 	network: "network access",
 	browser_automation: "browser automation",
 	browser_session_attachment: "browser session attachment",
@@ -97,6 +102,7 @@ const CAPABILITY_LABELS: Readonly<Record<CapabilityKind, string>> = {
 	package_bootstrap: "package bootstrap",
 	environment_configuration: "environment configuration",
 	payment_processing: "payment processing",
+	unrestricted_scope: "unrestricted scope",
 };
 
 const CAPABILITY_SEVERITY: Readonly<
@@ -113,6 +119,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	file_write: { severity: "medium", deduction: 8 },
 	file_read: { severity: "medium", deduction: 6 },
 	filesystem_discovery: { severity: "medium", deduction: 8 },
+	configuration_override: { severity: "medium", deduction: 8 },
 	network: { severity: "medium", deduction: 6 },
 	browser_automation: { severity: "medium", deduction: 8 },
 	browser_session_attachment: { severity: "high", deduction: 12 },
@@ -130,6 +137,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	package_bootstrap: { severity: "medium", deduction: 8 },
 	environment_configuration: { severity: "medium", deduction: 8 },
 	payment_processing: { severity: "medium", deduction: 8 },
+	unrestricted_scope: { severity: "high", deduction: 10 },
 };
 
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
@@ -181,6 +189,13 @@ const FILESYSTEM_DISCOVERY_PATTERNS: readonly RegExp[] = [
 	/find\s+\.\s+-name\s+"Dockerfile\*"/i,
 	/\.dockerignore/i,
 	/\.claude\/plugins\/marketplaces\//i,
+] as const;
+
+const CONFIGURATION_OVERRIDE_PATTERNS: readonly RegExp[] = [
+	/\bEXTEND\.md\b/i,
+	/\bload\s+preferences\b/i,
+	/\.baoyu-skills\//i,
+	/\bapply\s+settings\b/i,
 ] as const;
 
 const CREDENTIAL_HANDOFF_PATTERNS: readonly RegExp[] = [
@@ -264,6 +279,14 @@ const SERVER_EXPOSURE_PATTERNS: readonly RegExp[] = [
 	/\/mcp\b/i,
 	/Call\s+MCP\s+tools\s+via/i,
 	/Expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
+] as const;
+
+const UNRESTRICTED_SCOPE_PATTERNS: readonly RegExp[] = [
+	/no\s+restrictions?\s+on\s+(?:navigation|actions|output)/i,
+	/any\s+automation\s+task\s+you\s+request/i,
+	/automating\s+any\s+browser\s+task/i,
+	/general-purpose\s+browser\s+automation/i,
+	/use\s+proactively/i,
 ] as const;
 
 const EXTERNAL_TOOL_BRIDGE_PATTERNS: readonly RegExp[] = [
@@ -411,6 +434,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	if (hasAny(["auth_state_management", "auth_state", "cookie_state"])) {
 		return "auth_state_management";
 	}
+	if (hasAny(["configuration_override", "extend_md", "preferences_file"])) {
+		return "configuration_override";
+	}
 	if (hasAny(["credential_form", "password_form", "login_form"])) {
 		return "credential_form_automation";
 	}
@@ -481,6 +507,9 @@ function normalizeCapability(rawKind: string): CapabilityKind | null {
 	}
 	if (hasAny(["payment_processing", "payments", "premium_actions"])) {
 		return "payment_processing";
+	}
+	if (hasAny(["unrestricted_scope", "no_restrictions", "proactive"])) {
+		return "unrestricted_scope";
 	}
 	if (hasAny(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
 		return "process_orchestration";
@@ -649,6 +678,16 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("filesystem_discovery", `Content pattern: ${filesystemDiscoveryMatch}`);
 	}
 
+	const configurationOverrideMatch = firstPositiveMatch(
+		skill.rawContent,
+		CONFIGURATION_OVERRIDE_PATTERNS,
+		isDefenseSkill,
+		true,
+	);
+	if (configurationOverrideMatch) {
+		add("configuration_override", `Content pattern: ${configurationOverrideMatch}`);
+	}
+
 	const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill);
 	if (networkMatch) add("network", `Content pattern: ${networkMatch}`);
 
@@ -745,6 +784,15 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 	);
 	if (paymentProcessingMatch) {
 		add("payment_processing", `Content pattern: ${paymentProcessingMatch}`);
+	}
+
+	const unrestrictedScopeMatch = firstPositiveMatch(
+		skill.rawContent,
+		UNRESTRICTED_SCOPE_PATTERNS,
+		isDefenseSkill,
+	);
+	if (unrestrictedScopeMatch) {
+		add("unrestricted_scope", `Content pattern: ${unrestrictedScopeMatch}`);
 	}
 
 	const credentialFormAutomationMatch = firstPositiveMatch(
@@ -866,7 +914,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			evidence: `Declaration kind: ${raw}`,
 			deduction: 0,
 			recommendation:
-				"Use canonical capability names (credential_access, credential_handoff, credential_storage, auth_state_management, credential_form_automation, exec, system_modification, file_write, file_read, filesystem_discovery, network, browser_automation, browser_session_attachment, session_management, content_extraction, documentation_ingestion, local_input_control, external_tool_bridge, package_bootstrap, environment_configuration, payment_processing, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+				"Use canonical capability names (credential_access, credential_handoff, credential_storage, auth_state_management, credential_form_automation, exec, system_modification, container_runtime_control, file_write, file_read, filesystem_discovery, configuration_override, network, browser_automation, browser_session_attachment, session_management, content_extraction, documentation_ingestion, local_input_control, external_tool_bridge, package_bootstrap, environment_configuration, payment_processing, unrestricted_scope, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
 			owaspCategory: "ASST-08",
 		});
 	}

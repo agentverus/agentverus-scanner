@@ -70,3 +70,4 @@
 {"run":73,"commit":"3b67205","metric":291,"metrics":{},"status":"keep","description":"feat: infer file-write capability from screenshot and output examples","timestamp":1773413570527,"segment":0}
 {"run":74,"commit":"17efa2b","metric":0,"metrics":{},"status":"crash","description":"feat: infer browser session attachment external tool bridge and unrestricted scope capabilities","timestamp":1773414056944,"segment":0}
 {"run":75,"commit":"a6c8a68","metric":300,"metrics":{},"status":"keep","description":"feat: infer auth state management browser session attachment and tool bridge capabilities","timestamp":1773414823122,"segment":0}
+{"run":76,"commit":"4bdbb80","metric":301,"metrics":{},"status":"keep","description":"feat: infer command execution capability from fenced shell examples","timestamp":1773415039110,"segment":0}

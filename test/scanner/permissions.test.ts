@@ -132,6 +132,9 @@ describe("analyzePermissions", () => {
 			contractFindings.some((f) => f.title.includes("auth state management")),
 		).toBe(true);
 		expect(
+			contractFindings.some((f) => f.title.includes("configuration override")),
+		).toBe(true);
+		expect(
 			contractFindings.some((f) => f.title.includes("browser automation")),
 		).toBe(true);
 		expect(
@@ -175,6 +178,9 @@ describe("analyzePermissions", () => {
 		).toBe(true);
 		expect(
 			contractFindings.some((f) => f.title.includes("external tool bridge")),
+		).toBe(true);
+		expect(
+			contractFindings.some((f) => f.title.includes("unrestricted scope")),
 		).toBe(true);
 		expect(
 			contractFindings.some((f) => f.title.includes("package bootstrap")),
