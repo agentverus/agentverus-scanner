@@ -45,6 +45,14 @@ describe("analyzeDependencies", () => {
 		expect(localFinding?.severity).toBe("medium");
 	});
 
+	it("flags exposed ports and local server transports as local service hints", async () => {
+		const skill = parseSkill(`# Local Service Hints\nTransport: Streamable HTTP for remote servers, stdio for local servers.\n\n\`\`\`dockerfile\nEXPOSE 3000\n\`\`\``);
+		const result = await analyzeDependencies(skill);
+
+		expect(result.findings.some((f) => f.title.includes("Local service port exposure"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Local server transport reference"))).toBe(true);
+	});
+
 	it("should flag raw content URLs as medium risk", async () => {
 		const skill = parseSkill(loadFixture("suspicious-urls.md"));
 		const result = await analyzeDependencies(skill);

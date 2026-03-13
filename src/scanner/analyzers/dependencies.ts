@@ -71,6 +71,11 @@ const IP_ADDRESS_REGEX = /^(?:\d{1,3}\.){3}\d{1,3}/;
 /** Private/localhost IP patterns — not suspicious */
 const PRIVATE_IP_REGEX = /^(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|0\.0\.0\.0|localhost)/;
 
+const LOCAL_SERVICE_HINT_PATTERNS = [
+	{ regex: /\bEXPOSE\s+\d{2,5}\b/i, title: "Local service port exposure" },
+	{ regex: /\bstdio\s+for\s+local\s+servers?\b/i, title: "Local server transport reference" },
+] as const;
+
 /** Download-and-execute patterns */
 const DOWNLOAD_EXECUTE_PATTERNS = [
 	/download\s+and\s+(?:execute|eval)\b/i,
@@ -524,8 +529,37 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 		}
 	}
 
-	// Check for download-and-execute patterns (context-aware)
+	// Check for local service hints that appear before concrete localhost URLs.
 	const ctx = buildContentContext(content);
+	for (const hint of LOCAL_SERVICE_HINT_PATTERNS) {
+		const globalHint = new RegExp(hint.regex.source, `${hint.regex.flags.replace("g", "")}g`);
+		let match: RegExpExecArray | null;
+		while ((match = globalHint.exec(content)) !== null) {
+			const { severityMultiplier } = adjustForContext(match.index, content, ctx);
+			if (severityMultiplier === 0) continue;
+
+			const lineNumber = content.slice(0, match.index).split("\n").length;
+			const deduction = 8;
+			score = Math.max(0, score - deduction);
+			findings.push({
+				id: `DEP-LOCAL-HINT-${findings.length + 1}`,
+				category: "dependencies",
+				severity: "medium",
+				title: hint.title,
+				description:
+					"The skill references a local-only service port or transport mode, which expands the reachable local attack surface even before explicit localhost URLs appear.",
+				evidence: match[0].slice(0, 200),
+				lineNumber,
+				deduction,
+				recommendation:
+					"Review local service and exposed-port guidance carefully. Local transports and exposed ports can make internal tools or apps reachable by agent-driven workflows.",
+				owaspCategory: "ASST-04",
+			});
+			break;
+		}
+	}
+
+	// Check for download-and-execute patterns (context-aware)
 	for (const pattern of DOWNLOAD_EXECUTE_PATTERNS) {
 		const globalPattern = new RegExp(pattern.source, `${pattern.flags.replace("g", "")}g`);
 		let match: RegExpExecArray | null;
