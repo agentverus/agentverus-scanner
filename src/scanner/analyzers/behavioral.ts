@@ -161,6 +161,20 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Call out when browser or auth state persists across commands. Reused authenticated sessions should require explicit user consent and clear cleanup guidance.",
 	},
 	{
+		name: "Remote browser delegation",
+		patterns: [
+			/--browser\s+remote\b/i,
+			/cloud-hosted\s+browser/i,
+			/remote\s+browser\b/i,
+			/proxy\s+support/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat cloud or remote browser execution as external data egress. Be explicit about what page content, cookies, or secrets may leave the local machine, and require user approval before delegating authenticated sessions.",
+	},
+	{
 		name: "Browser session attachment",
 		patterns: [
 			/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|Chrome\s+DevTools|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,

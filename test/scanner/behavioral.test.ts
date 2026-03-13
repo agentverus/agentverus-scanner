@@ -156,6 +156,9 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("external instruction override file")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("remote browser delegation")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser session attachment")),
 		).toBe(true);
 		expect(
