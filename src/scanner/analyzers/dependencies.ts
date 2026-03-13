@@ -97,6 +97,12 @@ const REMOTE_SERVICE_HINT_PATTERNS = [
 		description:
 			"The skill is explicitly designed to integrate remote services or APIs, which increases dependency trust and remote attack-surface considerations.",
 	},
+	{
+		regex: /\bquery\s+string\b.{0,120}\b(?:cookie|auth|token|session)\b|\b(?:cookie|auth|token|session)\b.{0,120}\bquery\s+string\b/i,
+		title: "Credential query-parameter transport",
+		description:
+			"The skill describes moving cookies, auth state, or token material through URL query parameters, which turns bearer material into a dependency on URL handling, logging, and redirect hygiene.",
+	},
 ] as const;
 
 /** Download-and-execute patterns */
