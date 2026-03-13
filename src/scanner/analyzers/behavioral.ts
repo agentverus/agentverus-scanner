@@ -313,6 +313,33 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Surface package bootstrap commands for review. Ephemeral package execution and install-time dependency pulls increase supply-chain risk, especially when versions are not pinned or provenance is unclear.",
 	},
 	{
+		name: "External tool bridge",
+		patterns: [
+			/interact\s+with\s+external\s+services\s+through\s+well-?designed\s+tools/i,
+			/interact\s+with\s+external\s+services/i,
+			/external\s+services?.{0,60}(?:remote\s+)?APIs?|(?:remote\s+)?APIs?.{0,60}external\s+services?/i,
+			/expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat agent tool bridges to external services as privileged capability expansion. Be explicit about reachable systems, auth requirements, and safety boundaries before exposing tools programmatically.",
+	},
+	{
+		name: "Credential store persistence",
+		patterns: [
+			/\bauth_cookies\b/i,
+			/(?:cookie\s+auth|auth\s+cookie)/i,
+			/SQLite\b.{0,120}\bauth_cookies\b|\bauth_cookies\b.{0,120}SQLite/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat persistent cookie stores and auth databases as sensitive credential material. Minimize retention, protect at rest, and avoid encouraging reusable bearer-cookie storage without clear security controls.",
+	},
+	{
 		name: "Container runtime control",
 		patterns: [
 			/\bdocker\s+(?:info|context|ps|images|build(?:x)?|run|exec|stop|compose)\b/i,
