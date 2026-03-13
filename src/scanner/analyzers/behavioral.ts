@@ -372,6 +372,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		patterns: [
 			/determine\s+this\s+SKILL\.md\s+file'?s\s+directory\s+path/i,
 			/common\s+installation\s+paths/i,
+			/scripts?\s+are\s+located\s+in\s+the\s+`?scripts\/?`?\s+subdirectory/i,
+			/script\s+path\s*=\s*`?\{baseDir\}\/scripts\//i,
 			/\.claude\/plugins\/marketplaces\//i,
 			/project-specific:\s*<project>\/\.claude\/skills/i,
 			/\{baseDir\}/i,
