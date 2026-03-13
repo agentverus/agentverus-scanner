@@ -202,6 +202,7 @@ const SYSTEM_MOD_PATTERNS: readonly RegExp[] = [
 const FILE_WRITE_PATTERNS: readonly RegExp[] = [
 	/\b(?:file_write|write|writes|written|save|saves|store|stores|persist|append|create)\b.{0,80}\b(?:file|files|disk|workspace|directory|output)\b/i,
 	/\b(?:write|save|store|persist)\b.{0,40}\b(?:database|cache|state)\b/i,
+	/\bcreate\s+`[^`\n]+(?:\.[a-z0-9]+|\/[a-z0-9._-]+)`/i,
 	/\bscreenshot\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
 	/\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]+\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
 	/--image\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
@@ -328,6 +329,7 @@ const SERVER_EXPOSURE_PATTERNS: readonly RegExp[] = [
 	/\bstreamable\s+HTTP\s+for\s+remote\s+servers\b/i,
 	/\bMCP\s+Server\b/i,
 	/\/mcp\b/i,
+	/\bEXPOSE\s+\d{2,5}\b/i,
 	/Call\s+MCP\s+tools\s+via/i,
 	/Expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
 ] as const;
@@ -972,6 +974,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		SERVER_EXPOSURE_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (serverExposureMatch) {
 		add("server_exposure", `Content pattern: ${serverExposureMatch}`);

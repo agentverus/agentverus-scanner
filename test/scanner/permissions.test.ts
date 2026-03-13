@@ -238,6 +238,25 @@ PORT=3001
 		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
 	});
 
+	it("should infer file writes and server exposure from created files and exposed ports", async () => {
+		const skill = parseSkill(`---
+name: project-bootstrapper
+description: Sets up a web app skeleton
+---
+Create \`tsconfig.json\`:
+\`\`\`dockerfile
+EXPOSE 3000
+\`\`\`
+`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("file write"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("server exposure"))).toBe(true);
+	});
+
 	it("should avoid missing-contract findings when declarations match inferred behavior", async () => {
 		const skill = parseSkill(loadFixture("declared-permissions.md"));
 		const result = await analyzePermissions(skill);
