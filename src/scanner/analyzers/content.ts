@@ -123,6 +123,12 @@ const BROAD_TRIGGER_PATTERNS = [
 	/\bthis\s+skill\s+is\s+applicable\s+to\s+execute\s+the\s+workflow\s+or\s+actions\s+described\s+in\s+the\s+overview\b/i,
 ] as const;
 
+const HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS = [
+	/(?:--auto-connect|--cdp|profile\s+sync|actual\s+Chrome\s+profile|auth(?:entication)?\s+cookie|http-?only\s+cookie|query\s+string|auth_cookies|cookie\s+auth)/i,
+	/(?:with_server\.py|detectDevServers|\/tmp\/playwright-test|localhost|127\.0\.0\.1|file:\/\/)/i,
+	/(?:OpenAI|Replicate|DashScope|streamable\s+HTTP|external\s+services\s+through\s+well-?designed\s+tools|docker\s+(?:info|ps|build|run|exec)|copy-to-clipboard|paste-from-clipboard|--promptfiles)/i,
+] as const;
+
 /** Analyze content quality and safety boundaries */
 export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
@@ -391,16 +397,24 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 
 	// Missing safety boundaries penalty
 	if (!hasSafetyBoundaries) {
-		const deduction = 10;
+		const isHighRiskWithoutBoundaries = HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS.some((p) =>
+			p.test(combinedTriggerText),
+		);
+		const deduction = isHighRiskWithoutBoundaries ? 15 : 10;
 		score = Math.max(0, score - deduction);
 		findings.push({
 			id: "CONT-NO-SAFETY",
 			category: "content",
-			severity: "low",
-			title: "No explicit safety boundaries",
-			description:
-				"The skill does not include explicit safety boundaries defining what it should NOT do.",
-			evidence: "No safety boundary patterns found",
+			severity: isHighRiskWithoutBoundaries ? "medium" : "low",
+			title: isHighRiskWithoutBoundaries
+				? "High-risk workflow lacks explicit safety boundaries"
+				: "No explicit safety boundaries",
+			description: isHighRiskWithoutBoundaries
+				? "The skill performs or enables higher-risk operations but does not define explicit safety boundaries describing what it must not do."
+				: "The skill does not include explicit safety boundaries defining what it should NOT do.",
+			evidence: isHighRiskWithoutBoundaries
+				? "No safety boundary patterns found alongside high-risk capability language"
+				: "No safety boundary patterns found",
 			deduction,
 			recommendation:
 				"Add a 'Safety Boundaries' section listing what the skill must NOT do (e.g., no file deletion, no network access beyond needed APIs).",

@@ -77,6 +77,15 @@ describe("analyzeContent", () => {
 		expect(noSafetyFindings.length).toBe(1);
 	});
 
+	it("should escalate missing safety boundaries for high-risk workflows", async () => {
+		const skill = parseSkill(loadFixture("browser-session-risk.md"));
+		const result = await analyzeContent(skill);
+
+		const noSafetyFindings = result.findings.filter((f) => f.id === "CONT-NO-SAFETY");
+		expect(noSafetyFindings.length).toBe(1);
+		expect(noSafetyFindings[0]?.severity).toBe("medium");
+	});
+
 	// ── v0.4.0: Generic description / trigger hijacking ────────────────────
 
 	it("should flag overly generic description (trigger hijacking)", async () => {
