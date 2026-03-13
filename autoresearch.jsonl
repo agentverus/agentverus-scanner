@@ -3,3 +3,5 @@
 {"run":2,"commit":"f18927f","metric":26,"metrics":{},"status":"keep","description":"chore: persist baseline harness after disabling gpg signing","timestamp":1773376350878,"segment":0}
 {"run":3,"commit":"9ff0cc2","metric":43,"metrics":{},"status":"keep","description":"feat: detect browser auth state, session attachment, and broad activation triggers","timestamp":1773376743136,"segment":0}
 {"run":4,"commit":"ee2bd3b","metric":52,"metrics":{},"status":"keep","description":"feat: catch query-string credentials, saved browser profiles, and local file exposure","timestamp":1773377012124,"segment":0}
+{"run":5,"commit":"8a573d3","metric":61,"metrics":{},"status":"keep","description":"feat: flag full profile sync, secret CLI parameters, and localhost service access","timestamp":1773377190567,"segment":0}
+{"type":"config","name":"Improve realtime prefix detections on public skill corpus","metricName":"realtime_prefix_findings","metricUnit":"","bestDirection":"higher"}

@@ -144,6 +144,10 @@ async function main(): Promise<void> {
 
 	const publicIssueFindings = publicResults.reduce((sum, result) => sum + result.mediumPlusFindings, 0);
 	const publicIssueSkills = publicResults.filter((result) => result.mediumPlusFindings > 0).length;
+	const realtimePrefixFindings = publicResults.reduce(
+		(sum, result) => sum + result.prefixMediumPlusFindings,
+		0,
+	);
 	const realtimePrefixSkills = publicResults.filter((result) => result.prefixMediumPlusFindings > 0).length;
 	const publicHighFindings = publicResults.reduce((sum, result) => sum + highCount(result.fullReport), 0);
 	const safeFixtureRegressions = Object.values(safeReports).filter((report) => highCount(report) > 0).length;
@@ -155,6 +159,7 @@ async function main(): Promise<void> {
 	console.log(`METRIC public_issue_findings=${publicIssueFindings}`);
 	console.log(`METRIC public_issue_skills=${publicIssueSkills}`);
 	console.log(`METRIC public_high_findings=${publicHighFindings}`);
+	console.log(`METRIC realtime_prefix_findings=${realtimePrefixFindings}`);
 	console.log(`METRIC realtime_prefix_skills=${realtimePrefixSkills}`);
 	console.log(`METRIC safe_fixture_regressions=${safeFixtureRegressions}`);
 	console.log(`METRIC safe_fixture_medium_plus=${safeFixtureMediumPlus}`);

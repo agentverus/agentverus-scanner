@@ -14,7 +14,8 @@ The current benchmark targets public skills that expose risky agent surfaces but
 A secondary objective is to make these detections usable earlier in the workflow, so future scanner APIs can support pre-scan and realtime/incremental evaluation without adding deployment complexity for AI agents.
 
 ## Metrics
-- **Primary**: `public_issue_findings` (count, higher is better)
+- **Primary (session 1)**: `public_issue_findings` (count, higher is better)
+- **Primary (next focus)**: `realtime_prefix_findings` (count, higher is better)
 - **Secondary**: `public_issue_skills`, `public_high_findings`, `realtime_prefix_skills`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
 
 ## How to Run
@@ -57,6 +58,7 @@ Benchmark corpus:
 - Experiment 1: added browser-session attachment, browser auth-state handling, local service exposure, and broad-trigger detections; expanded capability inference for browser auth/session workflows. Result: `public_issue_findings` improved from `26` to `43` (+17) with `safe_fixture_regressions` unchanged at `4`.
 - Experiment 2: extended lexical coverage for query-string credential transport, saved/default browser profiles, local file access, and automation-evasion language. Result: `public_issue_findings` improved from `43` to `52` (+9) with `safe_fixture_regressions` still `4`.
 - Experiment 3: added detections for full-profile sync, secret-bearing CLI parameters, and localhost service access. Result: `public_issue_findings` improved from `52` to `61` (+9) with `safe_fixture_regressions` still `4`.
+- Session 2 pivot: benchmark now also emits `realtime_prefix_findings`; baseline for the realtime-focused pass is `43` while `realtime_prefix_skills` is already saturated at `10/10`, so the remaining opportunity is surfacing *more* medium+/high-confidence findings earlier in the stream.
 - Current artifact to watch: auth-cookie wording can trigger duplicate browser-auth findings on ClawDirect-style skills, and browser-use now shows duplicate full-profile-sync detections. Deduping or merging related browser-auth/profile signals may improve report quality without sacrificing coverage.
 - Ideas backlog captured in `autoresearch.ideas.md` for deferred realtime/prescan API work and report-quality deduping.
 - Near-term promising directions:
