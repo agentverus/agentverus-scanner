@@ -56,13 +56,14 @@ describe("analyzeDependencies", () => {
 	});
 
 	it("flags hosted browser and provider integrations as remote service dependencies", async () => {
-		const skill = parseSkill(`# Remote Dependencies\nFor more information, see https://example.com/guide/README.md\nUse a cloud-hosted browser with proxy support.\nThis skill supports API-based image generation with OpenAI and Replicate providers.\nIt can integrate external APIs or services through well-designed tools.\nPass the cookie value in the query string when bootstrapping browser auth.\nStore sessions in Auth Vault or state save ./auth.json for reuse.`);
+		const skill = parseSkill(`# Remote Dependencies\nSet Up Project Structure with package.json and tsconfig.json.\nFor more information, see https://example.com/guide/README.md\nUse a cloud-hosted browser with proxy support.\nThis skill supports API-based image generation with OpenAI and Replicate providers.\nIt can integrate external APIs or services through well-designed tools.\nPass the cookie value in the query string when bootstrapping browser auth.\nStore sessions in Auth Vault or state save ./auth.json for reuse.`);
 		const result = await analyzeDependencies(skill);
 
 		expect(result.findings.some((f) => f.title.includes("Hosted browser service dependency"))).toBe(true);
 		expect(result.findings.some((f) => f.title.includes("Third-party AI provider dependency"))).toBe(true);
 		expect(result.findings.some((f) => f.title.includes("External service integration dependency"))).toBe(true);
 		expect(result.findings.some((f) => f.title.includes("External documentation dependency"))).toBe(true);
+		expect(result.findings.some((f) => f.title.includes("Package-managed project bootstrap dependency"))).toBe(true);
 		expect(result.findings.some((f) => f.title.includes("Credential query-parameter transport"))).toBe(true);
 		expect(result.findings.some((f) => f.title.includes("Persistent credential-state store dependency"))).toBe(true);
 	});

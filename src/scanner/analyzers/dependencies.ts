@@ -104,6 +104,12 @@ const REMOTE_SERVICE_HINT_PATTERNS = [
 			"The skill relies on external documentation, specs, or README content as part of its workflow, which introduces an additional remote dependency and trust boundary.",
 	},
 	{
+		regex: /\bpackage(?:\*|)\.json\b|\btsconfig\.json\b|\bSet\s+Up\s+Project\s+Structure\b|\bproject\s+structure\b/i,
+		title: "Package-managed project bootstrap dependency",
+		description:
+			"The skill bootstraps a package-managed project structure, which adds supply-chain exposure through manifest files, build configuration, and package-manager workflows.",
+	},
+	{
 		regex: /\bquery\s+string\b.{0,120}\b(?:cookie|auth|token|session)\b|\b(?:cookie|auth|token|session)\b.{0,120}\bquery\s+string\b/i,
 		title: "Credential query-parameter transport",
 		description:

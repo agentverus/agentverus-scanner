@@ -89,3 +89,4 @@
 {"run":87,"commit":"4976167","metric":344,"metrics":{},"status":"keep","description":"feat: escalate early endpoint sprawl when auth and api context is present","timestamp":1773444742940,"segment":1}
 {"run":88,"commit":"406704b","metric":348,"metrics":{},"status":"keep","description":"feat: surface persistent credential-store dependencies earlier","timestamp":1773444866861,"segment":1}
 {"run":89,"commit":"5dd0c39","metric":351,"metrics":{},"status":"keep","description":"feat: surface external documentation dependencies earlier","timestamp":1773444961740,"segment":1}
+{"run":90,"commit":"32742b7","metric":352,"metrics":{},"status":"keep","description":"feat: infer local service access from webapp testing trigger language","timestamp":1773445042570,"segment":1}
