@@ -247,6 +247,21 @@ describe("analyzeBehavioral", () => {
 		).toBe(true);
 	});
 
+	it("should detect server orchestration, browser extraction, and host reconnaissance", async () => {
+		const skill = parseSkill(`---\nname: local-ops\ndescription: Extract information from web pages and inspect local Docker state\n---\nUse scripts/with_server.py because it manages server lifecycle and supports multiple servers.\npython scripts/with_server.py --server "npm run dev" --port 5173 -- python your_automation.py\nCall page.content() and get html for browser capture.\nRun docker info, docker ps, and find . -name "Dockerfile*" before proceeding.`);
+		const result = await analyzeBehavioral(skill);
+
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("server lifecycle orchestration")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("browser content extraction")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("host environment reconnaissance")),
+		).toBe(true);
+	});
+
 	it("should not false-positive on existing safe fixtures for config tampering", async () => {
 		for (const fixture of ["safe-basic.md", "safe-complex.md"]) {
 			const skill = parseSkill(loadFixture(fixture));

@@ -338,6 +338,48 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat ad hoc script generation and immediate execution as privileged code execution. Review generated scripts before running them and avoid opaque wrapper commands where possible.",
 	},
 	{
+		name: "Server lifecycle orchestration",
+		patterns: [
+			/with_server\.py/i,
+			/manages?\s+server\s+lifecycle/i,
+			/supports\s+multiple\s+servers/i,
+			/--server\s+["'][^"']+["']/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat helper workflows that start or manage local servers as privileged local process control. Require explicit approval before launching services, and scope which commands/ports may be started.",
+	},
+	{
+		name: "Browser content extraction",
+		patterns: [
+			/extract\s+information\s+from\s+web\s+pages/i,
+			/\bget\s+html\b/i,
+			/\bget\s+text\b/i,
+			/page\.content\(\)/i,
+			/screenshot\s+\(base64\)/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat browser page capture and HTML/text extraction as potential data-access operations, especially when sessions may be authenticated. Make the data-access scope explicit and avoid collecting more page content than needed.",
+	},
+	{
+		name: "Host environment reconnaissance",
+		patterns: [
+			/\bdocker\s+(?:info|context\s+ls|ps|images)\b/i,
+			/find\s+\.\s+-name\s+["']Dockerfile\*/i,
+			/find\s+\.\s+-name\s+["']\.dockerignore["']/i,
+		],
+		severity: "medium",
+		deduction: 10,
+		owaspCategory: "ASST-03",
+		recommendation:
+			"Treat environment discovery and host/container enumeration as privileged reconnaissance. Be explicit about what local state is probed and avoid broad scanning unless the user requested it.",
+	},
+	{
 		name: "Prompt file ingestion",
 		patterns: [
 			/--promptfiles\b/i,
