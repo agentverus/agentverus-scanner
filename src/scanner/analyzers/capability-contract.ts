@@ -202,6 +202,8 @@ const SYSTEM_MOD_PATTERNS: readonly RegExp[] = [
 const FILE_WRITE_PATTERNS: readonly RegExp[] = [
 	/\b(?:file_write|write|writes|written|save|saves|store|stores|persist|append|create)\b.{0,80}\b(?:file|files|disk|workspace|directory|output)\b/i,
 	/\b(?:write|save|store|persist)\b.{0,40}\b(?:database|cache|state)\b/i,
+	/\bset\s+up\s+project\s+structure\b/i,
+	/\bproject\s+structure,\s*package\.json,\s*tsconfig\.json\b/i,
 	/\bcreate\s+`[^`\n]+(?:\.[a-z0-9]+|\/[a-z0-9._-]+)`/i,
 	/\bscreenshot\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
 	/\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]+\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
@@ -369,6 +371,8 @@ const LOCAL_SERVICE_ACCESS_PATTERNS: readonly RegExp[] = [
 	/\bstdio\s+for\s+local\s+servers?\b/i,
 	/\bPORT=\d{2,5}\b/i,
 	/\bEXPOSE\s+\d{2,5}\b/i,
+	/\bweb\s+server\b.{0,80}\bexpress\b|\bexpress\b.{0,80}\bweb\s+server\b/i,
+	/\bMCP\s+endpoints?\s+directly\b/i,
 ] as const;
 
 const SESSION_MANAGEMENT_PATTERNS: readonly RegExp[] = [

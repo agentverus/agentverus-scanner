@@ -79,3 +79,4 @@
 {"run":77,"commit":"b83f3d2","metric":324,"metrics":{},"status":"keep","description":"feat: infer created files and exposed service ports earlier","timestamp":1773430784595,"segment":1}
 {"run":78,"commit":"1ca40f7","metric":326,"metrics":{},"status":"keep","description":"feat: treat exposed container ports as earlier local service risk","timestamp":1773431029534,"segment":1}
 {"run":79,"commit":"4b2d7d0","metric":328,"metrics":{},"status":"keep","description":"feat: surface local service port and transport hints in dependency scans","timestamp":1773431157777,"segment":1}
+{"run":80,"commit":"5f566f8","metric":329,"metrics":{},"status":"keep","description":"feat: flag credential-bearing query parameters in dependency references","timestamp":1773431269386,"segment":1}

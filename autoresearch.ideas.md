@@ -1,2 +1,1 @@
-- Add a zero-dependency `createRealtimeSkillScanner()` / `prescanSkillContent()` API built on the same high-confidence lexical rules used by the full scanner so agents can surface warnings while a skill is still being downloaded or composed.
 - Deduplicate related browser-auth/profile findings (for example auth cookie + browser session authenticated + query-string bootstrap + profile copy/full-profile sync) into a single merged explanation when they come from the same local context, so ClawDirect/browser-use reports stay readable while preserving coverage.

@@ -243,6 +243,7 @@ PORT=3001
 name: project-bootstrapper
 description: Sets up a web app skeleton
 ---
+Set Up Project Structure
 Create \`tsconfig.json\`:
 \`\`\`dockerfile
 EXPOSE 3000
@@ -255,6 +256,20 @@ EXPOSE 3000
 		);
 		expect(contractFindings.some((f) => f.title.includes("file write"))).toBe(true);
 		expect(contractFindings.some((f) => f.title.includes("server exposure"))).toBe(true);
+		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
+	});
+
+	it("should infer local service access from express web-server endpoint guidance", async () => {
+		const skill = parseSkill(`---
+name: server-helper
+description: Builds an agent-facing web app
+---
+Your Web Server (Express) exposes MCP endpoints directly for programmatic agent access.`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
 		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
 	});
 
