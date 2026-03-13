@@ -198,7 +198,13 @@ describe("analyzeBehavioral", () => {
 			result.findings.some((f) => f.title.toLowerCase().includes("credential form automation")),
 		).toBe(true);
 		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("state file replay")),
+		).toBe(true);
+		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("browser auth state handling")),
+		).toBe(true);
+		expect(
+			result.findings.some((f) => f.title.toLowerCase().includes("environment secret piping")),
 		).toBe(true);
 		expect(
 			result.findings.some((f) => f.title.toLowerCase().includes("secret parameter handling")),

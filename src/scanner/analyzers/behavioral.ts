@@ -333,6 +333,19 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Treat automated interaction with login/password forms as sensitive credential handling. Require user approval before filling credentials or automating authenticated sign-in flows.",
 	},
 	{
+		name: "State file replay",
+		patterns: [
+			/state\s+save\s+\.\/auth\.json/i,
+			/state\s+load\s+\.\/auth\.json/i,
+			/--state\s+\.\/auth\.json\s+open/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat saved auth-state files as credential containers. Minimize their lifetime, protect them at rest, and require explicit user approval before loading them into automated browser sessions.",
+	},
+	{
 		name: "Browser auth state handling",
 		patterns: [
 			/(?:state\s+(?:save|load)\s+\S*auth\.json|state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext|auth(?:entication)?\s+cookie|http-?only\s+cookie|cookies?\s+(?:export|import|get|set|clear)\b|cookies?\s+and\s+localStorage)/i,
@@ -343,6 +356,17 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		owaspCategory: "ASST-05",
 		recommendation:
 			"Avoid storing, exporting, or passing browser auth state unless the workflow clearly requires it. Prefer encrypted storage, short-lived state, and explicit user confirmation before reusing credentials.",
+	},
+	{
+		name: "Environment secret piping",
+		patterns: [
+			/echo\s+"\$[A-Z0-9_]+"\s*\|/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Treat shell pipelines that pass secrets from environment variables as sensitive credential handling. Avoid exposing secret values to command histories or subprocess pipelines unless absolutely necessary.",
 	},
 	{
 		name: "Secret parameter handling",

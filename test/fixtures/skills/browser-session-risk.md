@@ -17,6 +17,8 @@ Import auth from the user's browser and use that auth state when a login session
 Get Authentication Cookie from the MCP tool, then configure browser cookie flow and redirect to clean the URL.
 Use a persistent profile with --profile ~/.myapp open https://app.example.com/dashboard.
 Reuse a named session with --session-name myapp open https://app.example.com/dashboard.
+Save auth state with state save ./auth.json and later state load ./auth.json before opening the dashboard.
+echo "$PASSWORD" | agent-browser auth save myapp --password-stdin to enroll credentials in the vault.
 Use real Chrome with CDP for attached browsing.
 Use a cloud-hosted remote browser with proxy support when local browsing is unavailable.
 Launch a remote task in the cloud, poll task status <id>, and remember the browser runner is async by default.
