@@ -275,6 +275,11 @@ const LOCAL_INPUT_CONTROL_PATTERNS: readonly RegExp[] = [
 	/type\s+"text"/i,
 	/type\s+into\s+focused\s+element/i,
 	/send\s+keyboard\s+keys/i,
+	/click\s+buttons/i,
+	/click\s+the\s+"?\+1"?\s+button/i,
+	/\bclick\s+@e\d+/i,
+	/\bclick\s+<index>/i,
+	/\bbrowser-use\s+click\b/i,
 ] as const;
 
 const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [

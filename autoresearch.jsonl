@@ -60,3 +60,4 @@
 {"run":58,"commit":"895c3dd","metric":269,"metrics":{},"status":"keep","description":"feat: widen auth-state handoff and persistent cli profile inference","timestamp":1773408891723,"segment":0}
 {"run":62,"commit":"31e98c4","metric":269,"metrics":{},"status":"keep","description":"feat: widen local input control inference for keyboard entry workflows","timestamp":1773409756379,"segment":0}
 {"run":63,"commit":"dbb0cfa","metric":271,"metrics":{},"status":"keep","description":"feat: raise ui state enumeration so snapshot examples count earlier","timestamp":1773410277393,"segment":0}
+{"run":64,"commit":"a74a1a7","metric":272,"metrics":{},"status":"keep","description":"feat: broaden local input control patterns for typed text and keyboard keys","timestamp":1773410684040,"segment":0}
