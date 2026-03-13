@@ -51,3 +51,4 @@
 {"run":46,"commit":"610471f","metric":247,"metrics":{},"status":"keep","description":"feat: infer environment configuration and payment processing capabilities","timestamp":1773404808947,"segment":0}
 {"run":47,"commit":"b58b13c","metric":250,"metrics":{},"status":"keep","description":"feat: catch saved sessions login flows and remote task snippets in capability inference","timestamp":1773405026911,"segment":0}
 {"run":48,"commit":"85d5aa6","metric":253,"metrics":{},"status":"keep","description":"feat: broaden documentation ingestion inference from reference and help phrasing","timestamp":1773405172390,"segment":0}
+{"run":49,"commit":"ce30f3b","metric":257,"metrics":{},"status":"keep","description":"feat: catch broad any-task browser automation scope earlier","timestamp":1773406121513,"segment":0}

@@ -248,6 +248,7 @@ const DOCUMENTATION_INGESTION_PATTERNS: readonly RegExp[] = [
 	/fetch\s+specific\s+pages\s+with\s+`?\.md/i,
 	/For\s+more\s+information,\s+see/i,
 	/See\s+\[references?\//i,
+	/\breferences?\//i,
 	/\bReference\s+Files\b/i,
 ] as const;
 
@@ -568,6 +569,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		DOCUMENTATION_INGESTION_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (documentationIngestionMatch) {
 		add("documentation_ingestion", `Content pattern: ${documentationIngestionMatch}`);
@@ -595,6 +597,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		skill.rawContent,
 		ENVIRONMENT_CONFIGURATION_PATTERNS,
 		isDefenseSkill,
+		true,
 	);
 	if (environmentConfigurationMatch) {
 		add("environment_configuration", `Content pattern: ${environmentConfigurationMatch}`);
