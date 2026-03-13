@@ -17,3 +17,4 @@
 {"run":10,"commit":"cd05389","metric":92,"metrics":{},"status":"keep","description":"feat: detect prompt file ingestion, temp scripts, and remote transport exposure earlier","timestamp":1773379169876,"segment":0}
 {"run":11,"commit":"0c53220","metric":99,"metrics":{},"status":"keep","description":"feat: detect server lifecycle orchestration and browser content extraction earlier","timestamp":1773379481801,"segment":0}
 {"run":12,"commit":"87812ba","metric":108,"metrics":{},"status":"keep","description":"feat: detect credential vault onboarding and skill path discovery earlier","timestamp":1773379689330,"segment":0}
+{"run":13,"commit":"2441baa","metric":119,"metrics":{},"status":"keep","description":"feat: raise prefix-critical path and orchestration signals so code examples still count","timestamp":1773379929709,"segment":0}

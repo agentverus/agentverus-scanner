@@ -140,8 +140,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/paste-from-clipboard/i,
 			/paste\s+keystroke/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat clipboard and synthetic keystroke automation as privileged local input control. Require explicit user approval and avoid combining it with authenticated browser sessions unless necessary.",
@@ -373,8 +373,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/\bnode\s+-e\b/i,
 			/\bnode\s+run\.js\s+\/tmp\//i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat ad hoc script generation and immediate execution as privileged code execution. Review generated scripts before running them and avoid opaque wrapper commands where possible.",
@@ -402,8 +402,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/page\.content\(\)/i,
 			/screenshot\s+\(base64\)/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Treat browser page capture and HTML/text extraction as potential data-access operations, especially when sessions may be authenticated. Make the data-access scope explicit and avoid collecting more page content than needed.",
