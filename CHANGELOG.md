@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-03-14
+
+### Added
+
+- **Broader browser workflow inference**: capability and risk detection now catches more authenticated browser-session reuse, profile attachment, remote browser delegation, UI control, screenshot extraction, local service access, credential storage, and package-bootstrap patterns earlier in scan output.
+- **Expanded auth and dependency coverage**: scanner findings now better surface credential-bearing query parameters, exposed localhost and service-port references, persistent credential stores, remote documentation/service dependencies, and browser-auth handoff patterns.
+
+### Changed
+
+- **Capability-contract inference refinements**: undeclared capability detection is broader and more consistent for browser-centric and auth-heavy skills, improving earlier surfacing of risky behavior.
+- **Auth/profile finding deduplication**: overlapping auth, cookie, session, dependency, and permission-contract findings are merged into cleaner rendered summaries while preserving underlying badge calculations.
+
+### Tests
+
+- Added `test/fixtures/skills/browser-session-risk.md` and expanded behavioral, content, dependencies, permissions, integration, and scoring coverage around the new browser-session and auth-heavy detection paths.
+
 ## [0.6.1] - 2026-03-01
 
 ### Fixed
@@ -233,7 +249,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.4.0...v0.5.0
