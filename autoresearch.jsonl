@@ -123,3 +123,4 @@
 {"run":3,"commit":"84e7d41","metric":52,"metrics":{},"status":"keep","description":"feat: merge repeated browser content extraction findings in rendered reports","timestamp":1773463994282,"segment":1}
 {"run":4,"commit":"913bea5","metric":44,"metrics":{},"status":"keep","description":"feat: merge repeated ui state enumeration findings in rendered reports","timestamp":1773464045207,"segment":1}
 {"run":5,"commit":"21fc439","metric":44,"metrics":{},"status":"keep","description":"feat: merge repeated ui state enumeration findings in rendered reports","timestamp":1773464126813,"segment":1}
+{"run":6,"commit":"83dee66","metric":35,"metrics":{},"status":"keep","description":"feat: merge repeated skill path and external override finding families","timestamp":1773464194516,"segment":1}

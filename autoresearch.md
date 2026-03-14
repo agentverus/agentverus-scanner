@@ -84,8 +84,15 @@ Benchmark details:
   - `public_issue_findings`: `246 -> 237`
   - `realtime_prefix_findings`: `234 -> 225`
   - `safe_fixture_regressions`: unchanged at `4`
+- Experiment 4: merge repeated behavioral `server lifecycle orchestration` and `remote documentation ingestion` findings, which reduced repeated rendered setup/orchestration guidance in `webapp-testing` and `mcp-builder`. Result:
+  - `rendered_duplicate_findings`: `35 -> 30`
+  - `rendered_duplicate_groups`: `23 -> 21`
+  - `prefix_rendered_duplicate_findings`: `33 -> 28`
+  - `public_issue_findings`: `237 -> 232`
+  - `realtime_prefix_findings`: `225 -> 220`
+  - `safe_fixture_regressions`: unchanged at `4`
 - Likely next promising families if this direction continues:
-  - `behavioral::server lifecycle orchestration detected`
-  - `behavioral::remote documentation ingestion detected`
-  - `behavioral::external tool bridge detected`
   - `behavioral::host environment reconnaissance detected`
+  - `behavioral::external tool bridge detected`
+  - `behavioral::remote transport exposure detected`
+  - `behavioral::unrestricted scope detected`
