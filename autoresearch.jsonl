@@ -109,3 +109,5 @@
 {"run":10,"commit":"93fc283","metric":13,"metrics":{},"status":"keep","description":"feat: merge auth contract summaries into strongest behavioral auth findings","timestamp":1773457904366,"segment":1}
 {"run":11,"commit":"c09632b","metric":11,"metrics":{},"status":"keep","description":"feat: merge broader behavioral auth families after report shaping","timestamp":1773458042678,"segment":1}
 {"run":14,"commit":"061496c","metric":6,"metrics":{},"status":"keep","description":"feat: fold cookie-backed credential persistence into cookie auth summaries","timestamp":1773458581354,"segment":1}
+{"run":15,"commit":"bdb1705","metric":5,"metrics":{},"status":"keep","description":"feat: narrow auth-profile dedup matching to real auth and session terms","timestamp":1773458647202,"segment":1}
+{"type":"config","name":"Reduce merged auth/profile title suffix clutter","metricName":"auth_merge_suffixes","metricUnit":"","bestDirection":"lower"}

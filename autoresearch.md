@@ -5,17 +5,20 @@ Reduce redundant browser auth/profile/session findings in AgentVerus Scanner rep
 
 Phase 1 of this report-quality pass targeted exact same-context overlap and has already succeeded: identical/local-equivalent auth-profile findings no longer stack up repeatedly in the final report.
 
-The new focus is Phase 2: reduce the **total number of auth/profile findings** that remain after exact-overlap cleanup by merging repeated same-family findings that still describe the same product risk in a noisy way, for example:
-- repeated `Persistent session reuse detected` findings from nearby prose + repeated workflow bullets
-- repeated `Full browser profile sync detected` or `Cookie bootstrap redirect detected` findings that restate the same flow several times
-- repeated code-block auth/session findings with the same conceptual meaning but slightly different evidence strings
+The new focus is Phase 3: clean up the **rendered merged titles themselves** now that overlap and total finding count are both much lower.
 
-The goal is to lower report noise while preserving meaningful independent findings and keeping badge/score decisions anchored to the raw underlying risk signal.
+The remaining product issue is that merged findings can accumulate stacked title suffixes like:
+- `(merged auth/dependency context)`
+- `(merged auth contract context)`
+- `(merged behavioral auth summary)`
+
+These suffix chains make the deduped report harder to read even when the underlying count is low. The goal is to collapse each merged finding to one clean summary title while preserving the merged detail in the description and keeping badge/score decisions anchored to the raw underlying risk signal.
 
 ## Metrics
 - **Primary (phase 1)**: `auth_profile_overlap` (count, lower is better)
 - **Primary (phase 2)**: `auth_profile_findings` (count, lower is better)
-- **Secondary**: `auth_profile_overlap`, `auth_profile_overlap_groups`, `auth_profile_skills_with_overlap`, `prefix_auth_profile_overlap`, `public_issue_findings`, `public_high_findings`, `realtime_prefix_findings`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
+- **Primary (phase 3)**: `auth_merge_suffixes` (count, lower is better)
+- **Secondary**: `auth_profile_overlap`, `auth_profile_overlap_groups`, `auth_profile_findings`, `auth_profile_skills_with_overlap`, `prefix_auth_profile_overlap`, `public_issue_findings`, `public_high_findings`, `realtime_prefix_findings`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
 
 ## How to Run
 `./autoresearch.sh` — runs a fast typecheck gate and then executes `scripts/benchmark-auth-profile-dedup.mts`.
@@ -137,9 +140,12 @@ Benchmark details:
   - `public_issue_findings`: `270 -> 272`
   - `realtime_prefix_findings`: `256 -> 258`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 2 / Experiment 10:
-  - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
-  - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
-  - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings
-  - `baoyu-post-to-x`: repeated session/auth/profile signals around default Chrome profile + saved session reuse
-- Active deferred idea from `autoresearch.ideas.md`: deduplicate related browser-auth/profile findings into a single merged explanation when they come from the same local context or repeated same-family signal.
+- Phase 3 baseline (after auth/profile finding-count cleanup):
+  - `auth_profile_findings=5`
+  - `auth_merge_suffixes=14`
+  - `public_issue_findings=272`
+  - `realtime_prefix_findings=258`
+- Current remaining report-noise hotspots after Phase 3 baseline:
+  - stacked merged-title suffixes on the surviving per-skill summaries
+  - examples: `(merged auth/dependency context) (merged auth contract context) (merged behavioral auth summary)`
+- Active deferred idea from `autoresearch.ideas.md`: none beyond the current merged-title cleanup focus.
