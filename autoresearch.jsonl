@@ -98,3 +98,4 @@
 {"run":2,"commit":"20795df","metric":0,"metrics":{},"status":"keep","description":"feat: merge same-evidence auth/profile findings in report output while preserving raw badge calculation","timestamp":1773456316501,"segment":1}
 {"type":"config","name":"Reduce browser auth/profile finding count after overlap cleanup","metricName":"auth_profile_findings","metricUnit":"","bestDirection":"lower"}
 {"run":1,"commit":"e2d56f6","metric":84,"metrics":{},"status":"keep","description":"chore: baseline repeated auth/profile finding count after exact-overlap dedup","timestamp":1773456519135,"segment":1}
+{"run":2,"commit":"572a757","metric":66,"metrics":{},"status":"keep","description":"feat: merge repeated auth-profile finding families in report output despite differing evidence","timestamp":1773456643855,"segment":1}

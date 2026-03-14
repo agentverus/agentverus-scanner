@@ -83,7 +83,13 @@ Benchmark details:
   - `public_issue_findings`: `371 -> 353`
   - `realtime_prefix_findings`: `333 -> 319`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 2 / Experiment 1:
+- Phase 2 / Experiment 2: merged broader auth-risk families across related categories (for example browser-profile contract mismatches + profile-copy/full-sync behavior, or query-string/cookie transport findings across dependencies + behavioral) while still keeping badge calculation on raw findings. Result:
+  - `auth_profile_findings`: `66 -> 35`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `353 -> 322`
+  - `realtime_prefix_findings`: `319 -> 292`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 2 / Experiment 2:
   - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
   - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
   - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings

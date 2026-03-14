@@ -87,26 +87,78 @@ function overlapPriority(finding: Finding): number {
 	);
 }
 
-function mergeFindingGroup(
-	group: readonly Finding[],
-	reason: "same local context" | "repeated finding family",
-): Finding {
-	const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
-	const primary = sortedGroup[0]!;
-	const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => f.title))].slice(0, 6);
-	return {
-		...primary,
-		title: `${primary.title} (merged overlapping auth/profile signals)`,
-		description: `${primary.description}\n\nMerged overlapping signals from the ${reason}:${mergedSignals.length > 0 ? `\n- ${mergedSignals.join("\n- ")}` : ""}`,
-	};
-}
-
 function normalizeAuthTitle(title: string): string {
 	return title
 		.toLowerCase()
 		.replace(/\s*\(inside code block\)/g, "")
 		.replace(/\s*\(merged overlapping auth\/profile signals\)/g, "")
 		.trim();
+}
+
+function cleanMergedTitle(title: string): string {
+	return title
+		.replace(/\s*\(inside code block\)/gi, "")
+		.replace(/\s*\(merged overlapping auth\/profile signals\)/gi, "")
+		.trim();
+}
+
+function authFamilyKey(finding: Finding): string | null {
+	const hay = `${finding.title}\n${finding.description}\n${finding.evidence}`.toLowerCase();
+
+	if (finding.category === "permissions" && finding.title.startsWith("Capability contract mismatch")) {
+		if (/(profile|chrome|cdp|browser session|browser profile|auth state)/i.test(hay)) {
+			return "permissions::browser-profile-auth";
+		}
+		if (/(auth cookie|cookie url|query string|credential handoff)/i.test(hay)) {
+			return "permissions::cookie-handoff";
+		}
+		if (/(credential storage|credential store|auth vault|auth_cookies)/i.test(hay)) {
+			return "permissions::credential-store";
+		}
+		if (/(persistent session|session management|session saved|state save|state load|session-name|background daemon)/i.test(hay)) {
+			return "permissions::session-state";
+		}
+	}
+
+	if (finding.category === "behavioral") {
+		if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay)/i.test(hay)) {
+			return "behavioral::cookie-handoff-flow";
+		}
+		if (/(browser profile copy|full browser profile sync|browser session attachment|profile-backed session persistence|auth import from user browser|browser auth state handling)/i.test(hay)) {
+			return "behavioral::browser-profile-flow";
+		}
+		if (/(persistent session reuse|session inventory and reuse|state file replay)/i.test(hay)) {
+			return "behavioral::session-reuse-flow";
+		}
+		if (/(credential vault enrollment|federated auth flow|environment secret piping)/i.test(hay)) {
+			return "behavioral::credential-store-flow";
+		}
+	}
+
+	if (finding.category === "dependencies") {
+		if (/(credential-bearing url parameter|credential query-parameter transport)/i.test(hay)) {
+			return "dependencies::query-auth-transport";
+		}
+		if (/(persistent credential-state store|reusable authenticated browser container)/i.test(hay)) {
+			return "dependencies::session-store";
+		}
+	}
+
+	return null;
+}
+
+function mergeFindingGroup(
+	group: readonly Finding[],
+	reason: "same local context" | "repeated finding family" | "same auth risk family",
+): Finding {
+	const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
+	const primary = sortedGroup[0]!;
+	const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => cleanMergedTitle(f.title)))].slice(0, 6);
+	return {
+		...primary,
+		title: `${cleanMergedTitle(primary.title)} (merged overlapping auth/profile signals)`,
+		description: `${primary.description}\n\nMerged overlapping signals from the ${reason}:${mergedSignals.length > 0 ? `\n- ${mergedSignals.join("\n- ")}` : ""}`,
+	};
 }
 
 function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
@@ -155,17 +207,49 @@ function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Find
 		}
 	}
 
-	const merged: Finding[] = [...finalPassThrough];
+	const stageTwo: Finding[] = [...finalPassThrough];
 	for (const group of familyGroups.values()) {
 		if (group.length === 1) {
-			merged.push(group[0]!);
+			stageTwo.push(group[0]!);
 			continue;
 		}
 
-		merged.push(mergeFindingGroup(group, "repeated finding family"));
+		stageTwo.push(mergeFindingGroup(group, "repeated finding family"));
 	}
 
-	return merged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+	const finalMerged: Finding[] = [];
+	const familyPassThrough: Finding[] = [];
+	const authFamilies = new Map<string, Finding[]>();
+	for (const finding of stageTwo) {
+		if (!isBrowserAuthOverlapCandidate(finding)) {
+			familyPassThrough.push(finding);
+			continue;
+		}
+
+		const familyKey = authFamilyKey(finding);
+		if (!familyKey) {
+			familyPassThrough.push(finding);
+			continue;
+		}
+
+		const group = authFamilies.get(familyKey);
+		if (group) {
+			group.push(finding);
+		} else {
+			authFamilies.set(familyKey, [finding]);
+		}
+	}
+
+	finalMerged.push(...familyPassThrough);
+	for (const group of authFamilies.values()) {
+		if (group.length === 1) {
+			finalMerged.push(group[0]!);
+			continue;
+		}
+		finalMerged.push(mergeFindingGroup(group, "same auth risk family"));
+	}
+
+	return finalMerged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
 }
 
 function determineBadge(score: number, findings: readonly Finding[]): BadgeTier {
