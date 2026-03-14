@@ -73,7 +73,17 @@ Benchmark details:
   - `auth_profile_findings`: `111 -> 84`
   - `prefix_auth_profile_overlap`: `26 -> 0`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 1:
+- Phase 2 baseline (after exact-overlap dedup):
+  - `auth_profile_findings=84`
+  - `public_issue_findings=371`
+  - `realtime_prefix_findings=333`
+- Phase 2 / Experiment 1: merged repeated same-family auth/profile findings across equivalent titles (for example repeated `Persistent session reuse detected`, `Cookie bootstrap redirect detected`, and similar code-block variants) while still calculating badges from raw findings. Result:
+  - `auth_profile_findings`: `84 -> 66`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `371 -> 353`
+  - `realtime_prefix_findings`: `333 -> 319`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 2 / Experiment 1:
   - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
   - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
   - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings

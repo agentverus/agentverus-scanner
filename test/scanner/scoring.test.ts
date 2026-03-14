@@ -255,6 +255,47 @@ describe("aggregateScores", () => {
 		expect(report.findings[0]?.description).toContain('Full browser profile sync detected');
 	});
 
+	it('should merge repeated auth finding families even when evidence differs', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected',
+						description: 't',
+						evidence: 'browser stays open between commands',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected (inside code block)',
+						description: 't',
+						evidence: 'state auto-saved',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toContain('Persistent session reuse detected');
+		expect(report.findings[0]?.description).toContain('repeated finding family');
+	});
+
 	// --- Config tampering badge cap ---
 
 	it("should cap badge to SUSPICIOUS for high config-tamper finding (BEH-CONFIG-TAMPER-*)", () => {

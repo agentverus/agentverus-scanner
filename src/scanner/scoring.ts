@@ -87,6 +87,28 @@ function overlapPriority(finding: Finding): number {
 	);
 }
 
+function mergeFindingGroup(
+	group: readonly Finding[],
+	reason: "same local context" | "repeated finding family",
+): Finding {
+	const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
+	const primary = sortedGroup[0]!;
+	const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => f.title))].slice(0, 6);
+	return {
+		...primary,
+		title: `${primary.title} (merged overlapping auth/profile signals)`,
+		description: `${primary.description}\n\nMerged overlapping signals from the ${reason}:${mergedSignals.length > 0 ? `\n- ${mergedSignals.join("\n- ")}` : ""}`,
+	};
+}
+
+function normalizeAuthTitle(title: string): string {
+	return title
+		.toLowerCase()
+		.replace(/\s*\(inside code block\)/g, "")
+		.replace(/\s*\(merged overlapping auth\/profile signals\)/g, "")
+		.trim();
+}
+
 function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
 	const passthrough: Finding[] = [];
 	const overlapGroups = new Map<string, Finding[]>();
@@ -106,21 +128,41 @@ function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Find
 		}
 	}
 
-	const merged: Finding[] = [...passthrough];
+	const stageOne: Finding[] = [...passthrough];
 	for (const group of overlapGroups.values()) {
+		if (group.length === 1) {
+			stageOne.push(group[0]!);
+			continue;
+		}
+
+		stageOne.push(mergeFindingGroup(group, "same local context"));
+	}
+
+	const finalPassThrough: Finding[] = [];
+	const familyGroups = new Map<string, Finding[]>();
+	for (const finding of stageOne) {
+		if (!isBrowserAuthOverlapCandidate(finding)) {
+			finalPassThrough.push(finding);
+			continue;
+		}
+
+		const familyKey = `${finding.category}::${normalizeAuthTitle(finding.title)}`;
+		const group = familyGroups.get(familyKey);
+		if (group) {
+			group.push(finding);
+		} else {
+			familyGroups.set(familyKey, [finding]);
+		}
+	}
+
+	const merged: Finding[] = [...finalPassThrough];
+	for (const group of familyGroups.values()) {
 		if (group.length === 1) {
 			merged.push(group[0]!);
 			continue;
 		}
 
-		const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
-		const primary = sortedGroup[0]!;
-		const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => f.title))].slice(0, 6);
-		merged.push({
-			...primary,
-			title: `${primary.title} (merged overlapping auth/profile signals)`,
-			description: `${primary.description}\n\nMerged overlapping signals from the same local context:${mergedSignals.length > 0 ? `\n- ${mergedSignals.join("\n- ")}` : ""}`,
-		});
+		merged.push(mergeFindingGroup(group, "repeated finding family"));
 	}
 
 	return merged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
