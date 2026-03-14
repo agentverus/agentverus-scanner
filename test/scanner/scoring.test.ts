@@ -296,6 +296,47 @@ describe("aggregateScores", () => {
 		expect(report.findings[0]?.description).toContain('repeated finding family');
 	});
 
+	it('should merge generic dependency auth context into a stronger specific dependency finding', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'DEP-1',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Many external URLs referenced (8)',
+						description: 't',
+						evidence: 'URLs: https://site.com/login, https://site.com/dashboard',
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+					{
+						id: 'DEP-2',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Credential-bearing URL parameter',
+						description: 't',
+						evidence: 'https://site.com?session_token=<secret>',
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+				],
+			}),
+			behavioral: makeCategoryScore(95, 0.15),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toContain('merged auth-related dependency context');
+		expect(report.findings[0]?.description).toContain('Many external URLs referenced');
+	});
+
 	it('should merge auth findings that map to the same broader risk family', () => {
 		const categories: Record<Category, CategoryScore> = {
 			permissions: makeCategoryScore(95, 0.20, {

@@ -89,7 +89,13 @@ Benchmark details:
   - `public_issue_findings`: `353 -> 322`
   - `realtime_prefix_findings`: `319 -> 292`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 2 / Experiment 2:
+- Phase 2 / Experiment 3: merged generic auth-related dependency context (`Many external URLs referenced`, `Unknown external reference`, `Local service URL reference`) into stronger specific auth dependency findings in the rendered report. Result:
+  - `auth_profile_findings`: `35 -> 30`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `322 -> 295`
+  - `realtime_prefix_findings`: `292 -> 280`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 2 / Experiment 3:
   - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
   - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
   - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings

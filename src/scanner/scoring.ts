@@ -161,6 +161,48 @@ function mergeFindingGroup(
 	};
 }
 
+function isGenericAuthDependencyFinding(finding: Finding): boolean {
+	if (finding.category !== "dependencies") return false;
+	return (
+		finding.title.startsWith("Many external URLs referenced") ||
+		finding.title.startsWith("Unknown external reference") ||
+		finding.title.startsWith("Local service URL reference")
+	);
+}
+
+function isSpecificAuthDependencyFinding(finding: Finding): boolean {
+	if (finding.category !== "dependencies") return false;
+	return isBrowserAuthOverlapCandidate(finding) && !isGenericAuthDependencyFinding(finding);
+}
+
+function mergeGenericAuthDependencyFindings(findings: readonly Finding[]): Finding[] {
+	const generic = findings.filter(isGenericAuthDependencyFinding);
+	const specific = findings.filter(isSpecificAuthDependencyFinding);
+	if (generic.length === 0 || specific.length === 0) return [...findings];
+
+	const primary = [...specific].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0]!;
+	const mergedGenericTitles = [...new Set(generic.map((f) => cleanMergedTitle(f.title)))];
+	const mergedDescription = `${primary.description}\n\nMerged related generic dependency context:\n- ${mergedGenericTitles.join("\n- ")}`;
+	const mergedPrimary: Finding = {
+		...primary,
+		title: `${cleanMergedTitle(primary.title)} (merged auth-related dependency context)`,
+		description: mergedDescription,
+	};
+
+	const output: Finding[] = [];
+	let replaced = false;
+	for (const finding of findings) {
+		if (isGenericAuthDependencyFinding(finding)) continue;
+		if (!replaced && finding === primary) {
+			output.push(mergedPrimary);
+			replaced = true;
+			continue;
+		}
+		output.push(finding);
+	}
+	return output;
+}
+
 function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
 	const passthrough: Finding[] = [];
 	const overlapGroups = new Map<string, Finding[]>();
@@ -301,7 +343,9 @@ export function aggregateScores(
 	// Determine badge tier from raw findings so report dedup does not silently
 	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
-	const reportFindings = mergeOverlappingBrowserAuthFindings(allFindings);
+	const reportFindings = mergeGenericAuthDependencyFindings(
+		mergeOverlappingBrowserAuthFindings(allFindings),
+	);
 
 	return {
 		overall,
