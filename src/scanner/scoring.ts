@@ -446,6 +446,7 @@ function compactMergedDescriptions(findings: readonly Finding[]): Finding[] {
 
 const TARGET_RENDERED_DUPLICATE_KEYS = new Set<string>([
 	"behavioral::browser content extraction detected",
+	"behavioral::ui state enumeration detected",
 ]);
 
 function mergeSelectedRenderedDuplicates(findings: readonly Finding[]): Finding[] {

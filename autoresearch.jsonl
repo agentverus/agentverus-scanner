@@ -120,3 +120,4 @@
 {"run":3,"commit":"4ccd196","metric":5,"metrics":{},"status":"keep","description":"feat: collapse stacked merged auth description sections into one block","timestamp":1773459509640,"segment":1}
 {"run":4,"commit":"f90537e","metric":0,"metrics":{},"status":"keep","description":"feat: rename merged auth description sections to cleaner related-context text","timestamp":1773459676873,"segment":1}
 {"type":"config","name":"Reduce repeated rendered finding families in reports","metricName":"rendered_duplicate_findings","metricUnit":"","bestDirection":"lower"}
+{"run":3,"commit":"84e7d41","metric":52,"metrics":{},"status":"keep","description":"feat: merge repeated browser content extraction findings in rendered reports","timestamp":1773463994282,"segment":1}
