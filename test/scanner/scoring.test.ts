@@ -420,6 +420,46 @@ describe("aggregateScores", () => {
 		expect(report.findings[0]?.description).toContain('same auth risk family');
 	});
 
+	it('should merge multiple high behavioral auth findings into one summary', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected',
+						description: 't',
+						evidence: 'session saved',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Credential vault enrollment detected',
+						description: 't',
+						evidence: 'Auth vault',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toContain('merged behavioral auth summary');
+	});
+
 	it('should merge auth-related permission contract mismatches into one behavioral summary when present', () => {
 		const categories: Record<Category, CategoryScore> = {
 			permissions: makeCategoryScore(95, 0.20, {
