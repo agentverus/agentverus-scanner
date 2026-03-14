@@ -5,20 +5,21 @@ Reduce redundant browser auth/profile/session findings in AgentVerus Scanner rep
 
 Phase 1 of this report-quality pass targeted exact same-context overlap and has already succeeded: identical/local-equivalent auth-profile findings no longer stack up repeatedly in the final report.
 
-The new focus is Phase 3: clean up the **rendered merged titles themselves** now that overlap and total finding count are both much lower.
+The new focus is Phase 4: clean up the **rendered merged descriptions themselves** now that overlap, finding count, and title suffix clutter are all much lower.
 
-The remaining product issue is that merged findings can accumulate stacked title suffixes like:
-- `(merged auth/dependency context)`
-- `(merged auth contract context)`
-- `(merged behavioral auth summary)`
+The remaining product issue is that merged findings can accumulate multiple `Merged ...` sections in the description, for example:
+- `Merged related dependency context:`
+- `Merged auth/session capability-contract context:`
+- `Merged additional behavioral auth/profile signals:`
 
-These suffix chains make the deduped report harder to read even when the underlying count is low. The goal is to collapse each merged finding to one clean summary title while preserving the merged detail in the description and keeping badge/score decisions anchored to the raw underlying risk signal.
+Even when the title is clean, stacked merge sections still make the final report harder to skim. The goal is to collapse each merged finding to a single clean merged-description section while preserving useful detail and keeping badge/score decisions anchored to the raw underlying risk signal.
 
 ## Metrics
 - **Primary (phase 1)**: `auth_profile_overlap` (count, lower is better)
 - **Primary (phase 2)**: `auth_profile_findings` (count, lower is better)
 - **Primary (phase 3)**: `auth_merge_suffixes` (count, lower is better)
-- **Secondary**: `auth_profile_overlap`, `auth_profile_overlap_groups`, `auth_profile_findings`, `auth_profile_skills_with_overlap`, `prefix_auth_profile_overlap`, `public_issue_findings`, `public_high_findings`, `realtime_prefix_findings`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
+- **Primary (phase 4)**: `auth_merge_description_sections` (count, lower is better)
+- **Secondary**: `auth_profile_overlap`, `auth_profile_overlap_groups`, `auth_profile_findings`, `auth_merge_suffixes`, `auth_profile_skills_with_overlap`, `prefix_auth_profile_overlap`, `public_issue_findings`, `public_high_findings`, `realtime_prefix_findings`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
 
 ## How to Run
 `./autoresearch.sh` — runs a fast typecheck gate and then executes `scripts/benchmark-auth-profile-dedup.mts`.
@@ -157,6 +158,13 @@ Benchmark details:
   - `public_issue_findings`: stayed at `272`
   - `realtime_prefix_findings`: stayed at `258`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 3 / Experiment 2:
-  - none identified in the benchmarked target set; titles are now clean and overlap/count metrics are minimized for the chosen report-shaping approach
+- Phase 4 baseline (after merged-title cleanup):
+  - `auth_profile_findings=5`
+  - `auth_merge_suffixes=0`
+  - `auth_merge_description_sections=24`
+  - `public_issue_findings=272`
+  - `realtime_prefix_findings=258`
+- Current remaining report-noise hotspots after Phase 4 baseline:
+  - stacked `Merged ...` sections in the surviving auth/profile finding descriptions
+  - the remaining likely optimization is consolidating multiple merge paragraphs into one merged-auth-context section per finding
 - Active deferred idea from `autoresearch.ideas.md`: none.

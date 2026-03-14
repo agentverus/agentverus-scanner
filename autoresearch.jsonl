@@ -113,3 +113,5 @@
 {"type":"config","name":"Reduce merged auth/profile title suffix clutter","metricName":"auth_merge_suffixes","metricUnit":"","bestDirection":"lower"}
 {"run":1,"commit":"54d1f6a","metric":14,"metrics":{},"status":"keep","description":"chore: baseline merged-title suffix clutter after auth/profile dedup","timestamp":1773458830494,"segment":1}
 {"run":2,"commit":"a88f61e","metric":5,"metrics":{},"status":"keep","description":"feat: normalize merged title suffixes to a single clean annotation","timestamp":1773458876419,"segment":1}
+{"run":3,"commit":"fbce46a","metric":0,"metrics":{},"status":"keep","description":"feat: move auth-profile merge provenance out of titles and into descriptions","timestamp":1773459068399,"segment":1}
+{"type":"config","name":"Reduce merged auth/profile description section clutter","metricName":"auth_merge_description_sections","metricUnit":"","bestDirection":"lower"}

@@ -97,6 +97,14 @@ function mergeSuffixCount(findings: readonly Finding[]): number {
 	return total;
 }
 
+function mergeDescriptionSectionCount(findings: readonly Finding[]): number {
+	let total = 0;
+	for (const finding of findings) {
+		total += (finding.description.match(/(?:^|\n\n)Merged /g) ?? []).length;
+	}
+	return total;
+}
+
 async function loadPublicCorpusUrls(): Promise<readonly string[]> {
 	const content = await readFile(PUBLIC_CORPUS_PATH, "utf-8");
 	return content
@@ -160,6 +168,7 @@ async function main(): Promise<void> {
 	let authProfileSkillsWithOverlap = 0;
 	let prefixAuthProfileOverlap = 0;
 	let authMergeSuffixes = 0;
+	let authMergeDescriptionSections = 0;
 
 	for (const result of publicResults) {
 		if (!TARGET_LABELS.has(result.label)) continue;
@@ -172,6 +181,7 @@ async function main(): Promise<void> {
 		authProfileOverlapGroups += fullOverlap.groups;
 		authProfileFindings += fullRelevant.length;
 		authMergeSuffixes += mergeSuffixCount(fullRelevant);
+		authMergeDescriptionSections += mergeDescriptionSectionCount(fullRelevant);
 		prefixAuthProfileOverlap += prefixOverlap.overlap;
 		if (fullOverlap.overlap > 0) authProfileSkillsWithOverlap += 1;
 
@@ -199,6 +209,7 @@ async function main(): Promise<void> {
 	console.log(`METRIC auth_profile_overlap_groups=${authProfileOverlapGroups}`);
 	console.log(`METRIC auth_profile_findings=${authProfileFindings}`);
 	console.log(`METRIC auth_merge_suffixes=${authMergeSuffixes}`);
+	console.log(`METRIC auth_merge_description_sections=${authMergeDescriptionSections}`);
 	console.log(`METRIC auth_profile_skills_with_overlap=${authProfileSkillsWithOverlap}`);
 	console.log(`METRIC prefix_auth_profile_overlap=${prefixAuthProfileOverlap}`);
 	console.log(`METRIC public_issue_findings=${publicIssueFindings}`);
