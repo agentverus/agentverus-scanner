@@ -238,6 +238,37 @@ function mergeGenericAuthDependencyFindings(findings: readonly Finding[]): Findi
 	return output;
 }
 
+function mergeAuthPermissionIntoBehavior(findings: readonly Finding[]): Finding[] {
+	const permissionFindings = findings.filter(isAuthPermissionContractFinding);
+	const behavioralFindings = findings.filter(
+		(finding) => finding.category === "behavioral" && isBrowserAuthOverlapCandidate(finding),
+	);
+	if (permissionFindings.length === 0 || behavioralFindings.length === 0) return [...findings];
+
+	const primary = [...behavioralFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0]!;
+	const mergedPermissionTitles = [
+		...new Set(permissionFindings.map((finding) => cleanMergedTitle(finding.title))),
+	];
+	const mergedPrimary: Finding = {
+		...primary,
+		title: `${cleanMergedTitle(primary.title)} (merged auth contract context)`,
+		description: `${primary.description}\n\nMerged auth/session capability-contract context:\n- ${mergedPermissionTitles.join("\n- ")}`,
+	};
+
+	const output: Finding[] = [];
+	let replaced = false;
+	for (const finding of findings) {
+		if (isAuthPermissionContractFinding(finding)) continue;
+		if (!replaced && finding === primary) {
+			output.push(mergedPrimary);
+			replaced = true;
+			continue;
+		}
+		output.push(finding);
+	}
+	return output;
+}
+
 function behavioralDependencyFamily(finding: Finding): string | null {
 	const hay = `${cleanMergedTitle(finding.title)}\n${finding.description}\n${finding.evidence}`.toLowerCase();
 	if (/(credential-bearing url parameter|credential query-parameter transport)/i.test(hay)) {
@@ -442,9 +473,11 @@ export function aggregateScores(
 	// Determine badge tier from raw findings so report dedup does not silently
 	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
-	const reportFindings = mergeSpecificAuthDependenciesIntoBehavior(
-		mergeGenericAuthDependencyFindings(
-			mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+	const reportFindings = mergeAuthPermissionIntoBehavior(
+		mergeSpecificAuthDependenciesIntoBehavior(
+			mergeGenericAuthDependencyFindings(
+				mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+			),
 		),
 	);
 

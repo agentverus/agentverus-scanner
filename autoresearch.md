@@ -107,7 +107,13 @@ Benchmark details:
   - `public_issue_findings`: `289 -> 283`
   - `realtime_prefix_findings`: `274 -> 268`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 2 / Experiment 5:
+- Phase 2 / Experiment 6: merged auth-related permission-contract summaries into the strongest rendered behavioral auth finding per skill, which removed another layer of report-level duplication between “undeclared capability” and “observed auth behavior” while preserving raw badge/score inputs. Result:
+  - `auth_profile_findings`: `18 -> 13`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `283 -> 278`
+  - `realtime_prefix_findings`: `268 -> 263`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 2 / Experiment 6:
   - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
   - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
   - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings
