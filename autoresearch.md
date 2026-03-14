@@ -145,7 +145,13 @@ Benchmark details:
   - `auth_merge_suffixes=14`
   - `public_issue_findings=272`
   - `realtime_prefix_findings=258`
-- Current remaining report-noise hotspots after Phase 3 baseline:
-  - stacked merged-title suffixes on the surviving per-skill summaries
-  - examples: `(merged auth/dependency context) (merged auth contract context) (merged behavioral auth summary)`
+- Phase 3 / Experiment 1: generalized title cleanup to strip any prior `(merged ...)` suffix before appending the current merge label, collapsing stacked suffix chains down to one clean title suffix per surviving finding. Result:
+  - `auth_merge_suffixes`: `14 -> 5`
+  - `auth_profile_findings`: stayed at `5`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 3 / Experiment 1:
+  - surviving merged titles still say `merged ...`, even though the suffix count is now minimal
+  - the remaining possible improvement is deciding whether even the single suffix should be replaced with a cleaner stable label or moved entirely into description-only text
 - Active deferred idea from `autoresearch.ideas.md`: none beyond the current merged-title cleanup focus.

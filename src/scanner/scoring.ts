@@ -98,7 +98,7 @@ function normalizeAuthTitle(title: string): string {
 function cleanMergedTitle(title: string): string {
 	return title
 		.replace(/\s*\(inside code block\)/gi, "")
-		.replace(/\s*\(merged overlapping auth\/profile signals\)/gi, "")
+		.replace(/\s*\(merged[^)]*\)/gi, "")
 		.trim();
 }
 

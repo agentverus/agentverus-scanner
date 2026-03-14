@@ -111,3 +111,4 @@
 {"run":14,"commit":"061496c","metric":6,"metrics":{},"status":"keep","description":"feat: fold cookie-backed credential persistence into cookie auth summaries","timestamp":1773458581354,"segment":1}
 {"run":15,"commit":"bdb1705","metric":5,"metrics":{},"status":"keep","description":"feat: narrow auth-profile dedup matching to real auth and session terms","timestamp":1773458647202,"segment":1}
 {"type":"config","name":"Reduce merged auth/profile title suffix clutter","metricName":"auth_merge_suffixes","metricUnit":"","bestDirection":"lower"}
+{"run":1,"commit":"54d1f6a","metric":14,"metrics":{},"status":"keep","description":"chore: baseline merged-title suffix clutter after auth/profile dedup","timestamp":1773458830494,"segment":1}
