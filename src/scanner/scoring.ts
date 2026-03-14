@@ -16,7 +16,7 @@ const SEVERITY_ORDER: Record<string, number> = {
 	info: 4,
 };
 
-const AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|chrome|cdp|token|vault|login)/i;
+const AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|token|vault|login)/i;
 const CATEGORY_PREFERENCE: Record<Category, number> = {
 	behavioral: 0,
 	injection: 1,

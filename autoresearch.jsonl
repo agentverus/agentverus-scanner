@@ -108,3 +108,4 @@
 {"run":9,"commit":"0a4a4ec","metric":18,"metrics":{},"status":"keep","description":"feat: merge specific auth-related dependency signals into behavioral findings","timestamp":1773457722052,"segment":1}
 {"run":10,"commit":"93fc283","metric":13,"metrics":{},"status":"keep","description":"feat: merge auth contract summaries into strongest behavioral auth findings","timestamp":1773457904366,"segment":1}
 {"run":11,"commit":"c09632b","metric":11,"metrics":{},"status":"keep","description":"feat: merge broader behavioral auth families after report shaping","timestamp":1773458042678,"segment":1}
+{"run":14,"commit":"061496c","metric":6,"metrics":{},"status":"keep","description":"feat: fold cookie-backed credential persistence into cookie auth summaries","timestamp":1773458581354,"segment":1}

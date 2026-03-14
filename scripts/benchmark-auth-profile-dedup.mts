@@ -26,7 +26,7 @@ const SAFE_FIXTURES = [
 ] as const;
 const MEDIUM_PLUS = new Set(["medium", "high", "critical"]);
 const HIGH_PLUS = new Set(["high", "critical"]);
-const AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|chrome|cdp|token|vault|login)/i;
+const AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|token|vault|login)/i;
 
 interface PublicSkillResult {
 	readonly url: string;

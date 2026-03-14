@@ -131,7 +131,13 @@ Benchmark details:
   - `public_issue_findings`: `271 -> 270`
   - `realtime_prefix_findings`: `257 -> 256`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 2 / Experiment 9:
+- Phase 2 / Experiment 10: tightened the auth/profile benchmark matcher to key off auth/session/profile terms rather than generic `Chrome` / `CDP` wording, which stopped counting unrelated behavioral findings like Baoyu's Chrome-restart automation note as auth/profile report noise. Result:
+  - `auth_profile_findings`: `6 -> 5`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `270 -> 272`
+  - `realtime_prefix_findings`: `256 -> 258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 2 / Experiment 10:
   - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
   - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
   - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings
