@@ -161,6 +161,41 @@ function mergeFindingGroup(
 	};
 }
 
+function isAuthPermissionContractFinding(finding: Finding): boolean {
+	return (
+		finding.category === "permissions" &&
+		finding.title.startsWith("Capability contract mismatch") &&
+		isBrowserAuthOverlapCandidate(finding)
+	);
+}
+
+function mergeAuthPermissionContractFindings(findings: readonly Finding[]): Finding[] {
+	const contractFindings = findings.filter(isAuthPermissionContractFinding);
+	if (contractFindings.length <= 1) return [...findings];
+
+	const primary = [...contractFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0]!;
+	const mergedTitles = [...new Set(contractFindings.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
+	const mergedPrimary: Finding = {
+		...primary,
+		title: "Capability contract mismatch: inferred browser auth/session capabilities are not declared (merged auth/profile contract signals)",
+		description: `${primary.description}\n\nMerged related auth/profile capability-contract signals:${mergedTitles.length > 0 ? `\n- ${mergedTitles.join("\n- ")}` : ""}`,
+	};
+
+	const output: Finding[] = [];
+	let inserted = false;
+	for (const finding of findings) {
+		if (isAuthPermissionContractFinding(finding)) {
+			if (!inserted && finding === primary) {
+				output.push(mergedPrimary);
+				inserted = true;
+			}
+			continue;
+		}
+		output.push(finding);
+	}
+	return output;
+}
+
 function isGenericAuthDependencyFinding(finding: Finding): boolean {
 	if (finding.category !== "dependencies") return false;
 	return (
@@ -344,7 +379,7 @@ export function aggregateScores(
 	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
 	const reportFindings = mergeGenericAuthDependencyFindings(
-		mergeOverlappingBrowserAuthFindings(allFindings),
+		mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
 	);
 
 	return {

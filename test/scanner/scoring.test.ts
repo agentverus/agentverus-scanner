@@ -337,6 +337,46 @@ describe("aggregateScores", () => {
 		expect(report.findings[0]?.description).toContain('Many external URLs referenced');
 	});
 
+	it('should merge auth-related permission contract mismatches into one summary finding', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20, {
+				findings: [
+					{
+						id: 'PERM-1',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred credential access is not declared',
+						description: 't',
+						evidence: 'actual Chrome profile',
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'PERM-2',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred credential handoff is not declared',
+						description: 't',
+						evidence: 'use that auth state',
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toContain('merged overlapping auth/profile signals');
+	});
+
 	it('should merge auth findings that map to the same broader risk family', () => {
 		const categories: Record<Category, CategoryScore> = {
 			permissions: makeCategoryScore(95, 0.20, {
