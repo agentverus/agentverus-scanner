@@ -184,6 +184,420 @@ describe("aggregateScores", () => {
 		expect(report.findings[2]?.severity).toBe("low");
 	});
 
+	it("should merge overlapping browser auth findings in report output without relaxing badge calculation", () => {
+		const sharedEvidence = 'actual Chrome profile with your login sessions';
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20, {
+				findings: [
+					{
+						id: 'PERM-1',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred credential access is not declared',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'DEP-1',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Persistent credential-state store dependency',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+				],
+			}),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Browser profile copy detected',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Full browser profile sync detected',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.badge).toBe('suspicious');
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toBe('Browser profile copy detected');
+		expect(report.findings[0]?.description).toContain('Full browser profile sync detected');
+	});
+
+	it('should merge repeated auth finding families even when evidence differs', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected',
+						description: 't',
+						evidence: 'browser stays open between commands',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected (inside code block)',
+						description: 't',
+						evidence: 'state auto-saved',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toContain('Persistent session reuse detected');
+		expect(report.findings[0]?.description).toContain('repeated finding family');
+	});
+
+	it('should merge generic dependency auth context into a stronger specific dependency finding', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'DEP-1',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Many external URLs referenced (8)',
+						description: 't',
+						evidence: 'URLs: https://site.com/login, https://site.com/dashboard',
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+					{
+						id: 'DEP-2',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Credential-bearing URL parameter',
+						description: 't',
+						evidence: 'https://site.com?session_token=<secret>',
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+				],
+			}),
+			behavioral: makeCategoryScore(95, 0.15),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toBe('Credential-bearing URL parameter');
+		expect(report.findings[0]?.description).toContain('Many external URLs referenced');
+	});
+
+	it('should merge specific auth dependencies into a stronger behavioral auth finding', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'DEP-1',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Reusable authenticated browser container dependency',
+						description: 't',
+						evidence: 'persistent but empty CLI profile',
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+				],
+			}),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Browser profile copy detected',
+						description: 't',
+						evidence: 'actual Chrome profile',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toBe('Browser profile copy detected');
+		expect(report.findings[0]?.description).toContain('Reusable authenticated browser container dependency');
+	});
+
+	it('should merge broader behavioral auth families after earlier report shaping', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected',
+						description: 't',
+						evidence: 'session saved',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Browser session attachment detected',
+						description: 't',
+						evidence: 'real Chrome with CDP',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.description).toContain('Related auth/profile context:');
+		expect((report.findings[0]?.description.match(/\n\nMerged /g) ?? []).length).toBe(0);
+	});
+
+	it('should fold auth_cookies persistence into cookie-browser-auth family', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'MCP-issued browser auth cookie detected',
+						description: 't',
+						evidence: 'agents get an auth cookie via MCP',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'medium',
+						title: 'Credential store persistence detected',
+						description: 't',
+						evidence: 'auth_cookies',
+						deduction: 10,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.description).toContain('Related auth/profile context:');
+	});
+
+	it('should merge multiple high behavioral auth findings into one summary', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected',
+						description: 't',
+						evidence: 'session saved',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Credential vault enrollment detected',
+						description: 't',
+						evidence: 'Auth vault',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toBe('Persistent session reuse detected');
+		expect(report.findings[0]?.description).toContain('Credential vault enrollment detected');
+	});
+
+	it('should merge auth-related permission contract mismatches into one behavioral summary when present', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20, {
+				findings: [
+					{
+						id: 'PERM-1',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred credential access is not declared',
+						description: 't',
+						evidence: 'actual Chrome profile',
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'PERM-2',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred credential handoff is not declared',
+						description: 't',
+						evidence: 'use that auth state',
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Browser profile copy detected',
+						description: 't',
+						evidence: 'actual Chrome profile',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toBe('Browser profile copy detected');
+		expect(report.findings[0]?.description).toContain('Related auth/profile context:');
+		expect(report.findings[0]?.description).toContain('credential access is not declared');
+	});
+
+	it('should merge auth findings that map to the same broader risk family', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20, {
+				findings: [
+					{
+						id: 'PERM-1',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred credential access is not declared',
+						description: 't',
+						evidence: 'actual Chrome profile',
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'PERM-2',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred auth state management is not declared',
+						description: 't',
+						evidence: 'actual Chrome profile (cookies, logins, extensions)',
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.description).toContain('same auth risk family');
+	});
+
 	// --- Config tampering badge cap ---
 
 	it("should cap badge to SUSPICIOUS for high config-tamper finding (BEH-CONFIG-TAMPER-*)", () => {

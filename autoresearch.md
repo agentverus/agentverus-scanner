@@ -1,155 +1,183 @@
-# Autoresearch: skill security coverage + realtime scanning
+# Autoresearch: dedupe browser auth/profile report overlap
 
 ## Objective
-Increase AgentVerus Scanner's ability to identify real security issues in public skill ecosystems, with special focus on skill-based attack vectors that AI agents can actually encounter in the wild.
+Reduce redundant browser auth/profile/session findings in AgentVerus Scanner reports so product output is easier to read without losing meaningful risk coverage.
 
-The current benchmark targets public skills that expose risky agent surfaces but are currently under-flagged, such as:
-- browser profile / cookie / auth-state handling
-- local browser / CDP / session attachment
-- localhost and local-tool bridging
-- public tunnel / sharing flows
-- overly broad trigger / activation instructions
-- agent-facing auth cookie bootstrapping patterns
+Phase 1 of this report-quality pass targeted exact same-context overlap and has already succeeded: identical/local-equivalent auth-profile findings no longer stack up repeatedly in the final report.
 
-A secondary objective is to make these detections usable earlier in the workflow, so future scanner APIs can support pre-scan and realtime/incremental evaluation without adding deployment complexity for AI agents.
+The new focus is Phase 4: clean up the **rendered merged descriptions themselves** now that overlap, finding count, and title suffix clutter are all much lower.
+
+The remaining product issue is that merged findings can accumulate multiple `Merged ...` sections in the description, for example:
+- `Merged related dependency context:`
+- `Merged auth/session capability-contract context:`
+- `Merged additional behavioral auth/profile signals:`
+
+Even when the title is clean, stacked merge sections still make the final report harder to skim. The goal is to collapse each merged finding to a single clean merged-description section while preserving useful detail and keeping badge/score decisions anchored to the raw underlying risk signal.
 
 ## Metrics
-- **Primary (session 1)**: `public_issue_findings` (count, higher is better)
-- **Primary (next focus)**: `realtime_prefix_findings` (count, higher is better)
-- **Secondary**: `public_issue_skills`, `public_high_findings`, `realtime_prefix_skills`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
+- **Primary (phase 1)**: `auth_profile_overlap` (count, lower is better)
+- **Primary (phase 2)**: `auth_profile_findings` (count, lower is better)
+- **Primary (phase 3)**: `auth_merge_suffixes` (count, lower is better)
+- **Primary (phase 4)**: `auth_merge_description_sections` (count, lower is better)
+- **Secondary**: `auth_profile_overlap`, `auth_profile_overlap_groups`, `auth_profile_findings`, `auth_merge_suffixes`, `auth_profile_skills_with_overlap`, `prefix_auth_profile_overlap`, `public_issue_findings`, `public_high_findings`, `realtime_prefix_findings`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
 
 ## How to Run
-`./autoresearch.sh` — runs a fast typecheck gate, scans a curated public corpus plus safe fixtures, and outputs `METRIC name=number` lines.
+`./autoresearch.sh` — runs a fast typecheck gate and then executes `scripts/benchmark-auth-profile-dedup.mts`.
 
-Benchmark corpus:
-- `benchmarks/public-skill-corpus.txt`
-- Public skills are cached in `.cache/autoresearch/public-skill-corpus/` to keep repeated runs stable and fast.
+Benchmark details:
+- scans the curated public corpus from `benchmarks/public-skill-corpus.txt`
+- focuses the auth/profile-noise metrics on high-risk browser-auth/profile skills:
+  - `browser-use`
+  - `agent-browser`
+  - `clawdirect`
+  - `clawdirect-dev`
+  - `baoyu-post-to-x`
+- emits:
+  - `auth_profile_overlap` — exact/normalized local-context duplicates
+  - `auth_profile_findings` — total medium+/high auth-profile findings after report shaping
+  - `prefix_auth_profile_overlap` — same overlap metric for prefix scans
+- still emits broad scanner health metrics (`public_issue_findings`, `realtime_prefix_findings`, safe-fixture regressions) so dedup work does not accidentally hide important coverage
 
 ## Files in Scope
-- `src/scanner/index.ts` — root scanner exports / orchestration
-- `src/scanner/types.ts` — version + exported scanner types
-- `src/scanner/analyzers/*.ts` — detection logic for skill attack vectors
-- `src/scanner/parser.ts` — parsing improvements if needed for earlier / partial detection
-- `src/scanner/cli.ts` — CLI exposure if realtime or prescan support becomes user-facing
-- `test/scanner/*.test.ts` — regression coverage for new detections
-- `test/fixtures/skills/*.md` — new fixtures for skill attack vectors
-- `README.md` — public API / CLI docs if new scanning modes are added
-- `scripts/benchmark-public-skill-coverage.mts` — autoresearch benchmark workload
-- `benchmarks/public-skill-corpus.txt` — curated public benchmark corpus
-- `.gitignore` — keep local benchmark cache out of commits
+- `src/scanner/index.ts` — scan orchestration; possible place for report-level dedup pass
+- `src/scanner/scoring.ts` — final finding aggregation/sorting; primary place for merged report shaping
+- `src/scanner/types.ts` — version bump / types if report metadata needs to expose merged findings
+- `src/scanner/analyzers/behavioral.ts` — auth/profile/session/browser findings that currently overlap semantically
+- `src/scanner/analyzers/dependencies.ts` — overlapping auth/session dependency hints
+- `src/scanner/analyzers/capability-contract.ts` — overlapping undeclared-capability findings around auth/profile/session workflows
+- `test/scanner/*.test.ts` — regression coverage for dedup/merge behavior
+- `scripts/benchmark-auth-profile-dedup.mts` — dedup benchmark workload
+- `autoresearch.sh` — fast experiment entry point
 
 ## Off Limits
 - `data/` historical scan outputs
-- GitHub Action bundle artifacts unless required by a deliberate surfaced CLI/API change
-- npm dependencies (keep zero-dependency runtime philosophy intact)
+- npm dependencies
+- unrelated analyzer areas that do not affect auth/profile overlap/noise
+- weakening or deleting genuinely independent findings just to game the metric
 
 ## Constraints
-- `pnpm test` must pass before keeping meaningful scanner changes
-- Scanner must remain easy for AI agents to deploy and use
-- No new runtime dependencies
-- Keep analyzers deterministic and side-effect free
-- Prefer explainable, traceable findings over opaque heuristics
+- `pnpm test` must pass before keeping meaningful changes
+- no new runtime dependencies
+- scanner must stay deterministic
+- badge/score logic must remain anchored to raw findings even if displayed report findings are merged
+- coverage metrics may dip slightly if duplicate findings are merged, but any drop must be justified by substantially better report quality
+- avoid deduping across clearly different contexts; only merge when evidence/local context or repeated finding family is truly overlapping
 
 ## What's Been Tried
-- Established a public-skill benchmark focused on under-detected agent attack surfaces rather than already-obvious malware examples.
-- Initial corpus includes public skills for browser automation, MCP building, ATXP cookie auth, Chrome profile reuse, and localhost/dev-server workflows.
-- Baseline run (`./autoresearch.sh`): `public_issue_findings=26`, `public_issue_skills=10`, `public_high_findings=9`, `realtime_prefix_skills=10`, `safe_fixture_regressions=4`, `safe_fixture_medium_plus=16`.
-- Baseline expectation confirmed: several public skills with sensitive browser/session/auth capabilities still score conditional/certified with only 1–2 actionable findings.
-- Experiment 1: added browser-session attachment, browser auth-state handling, local service exposure, and broad-trigger detections; expanded capability inference for browser auth/session workflows. Result: `public_issue_findings` improved from `26` to `43` (+17) with `safe_fixture_regressions` unchanged at `4`.
-- Experiment 2: extended lexical coverage for query-string credential transport, saved/default browser profiles, local file access, and automation-evasion language. Result: `public_issue_findings` improved from `43` to `52` (+9) with `safe_fixture_regressions` still `4`.
-- Experiment 3: added detections for full-profile sync, secret-bearing CLI parameters, and localhost service access. Result: `public_issue_findings` improved from `52` to `61` (+9) with `safe_fixture_regressions` still `4`.
-- Session 2 pivot: benchmark now also emits `realtime_prefix_findings`; baseline for the realtime-focused pass is `43` while `realtime_prefix_skills` is already saturated at `10/10`, so the remaining opportunity is surfacing *more* medium+/high-confidence findings earlier in the stream.
-- Session 2 / Experiment 1: added persistent-session reuse and early CDP/browser-session wording coverage. Result: `realtime_prefix_findings` improved from `43` to `46` (+3) while `public_issue_findings` also rose from `61` to `64`.
-- Session 2 / Experiment 2: added earlier browser-profile-copy and browser-side-JavaScript-execution signals. Result: `realtime_prefix_findings` improved from `46` to `49` (+3) while `public_issue_findings` rose from `64` to `67`.
-- Session 2 / Experiment 3: added early detections for external override files (`EXTEND.md`-style sidecars), monetary/paid-action language, and container-runtime control. Result: `realtime_prefix_findings` improved from `49` to `56` (+7) while `public_issue_findings` rose from `67` to `74`.
-- Session 2 / Experiment 4: raised persistent-session-reuse severity so code-block examples still surface in prefix scans, and added opaque-helper-script / OS-input-automation detections. Result: `realtime_prefix_findings` improved from `56` to `63` (+7) while `public_issue_findings` rose from `74` to `82`.
-- Session 2 / Experiment 5: added early remote-browser-delegation coverage for cloud/proxy-backed browser execution. Result: `realtime_prefix_findings` improved from `63` to `66` (+3) while `public_issue_findings` rose from `82` to `85`.
-- Session 2 / Experiment 6: expanded early coverage for cookie-header replay, background-daemon persistence, and browser-use-style catch-all browser triggers. Result: `realtime_prefix_findings` improved from `66` to `71` (+5) while `public_issue_findings` rose from `85` to `90`.
-- Session 2 / Experiment 7: added package-bootstrap execution coverage (`npx` / `pnpm dlx` / non-global `npm install`). Result: `realtime_prefix_findings` improved from `71` to `72` (+1) while `public_issue_findings` rose from `90` to `91`.
-- Session 2 / Experiment 8: added early coverage for MCP/external-service tool bridges and persistent auth-cookie stores (`auth_cookies`, cookie auth). Result: `realtime_prefix_findings` improved from `72` to `78` (+6) while `public_issue_findings` rose from `91` to `97`.
-- Session 2 / Experiment 9: added early detections for dev-server auto-discovery, temporary script execution, prompt-file ingestion, external AI-provider delegation, remote transport exposure, and authentication integration surface. Result: `realtime_prefix_findings` improved from `78` to `92` (+14) while `public_issue_findings` rose from `97` to `110`.
-- Session 2 / Experiment 10: added early detections for server lifecycle orchestration, browser content extraction, and host environment reconnaissance. Result: `realtime_prefix_findings` improved from `92` to `99` (+7) while `public_issue_findings` rose from `110` to `117`.
-- Session 2 / Experiment 11: added credential-vault/federated-auth coverage plus skill-path discovery. Result: `realtime_prefix_findings` improved from `99` to `108` (+9) while `public_issue_findings` rose from `117` to `126`.
-- Session 2 / Experiment 12: raised override/bootstrap/path/server-orchestration patterns to `high`, which makes code-block examples still count in realtime prefix scans. Result: `realtime_prefix_findings` improved from `108` to `119` (+11) while `public_issue_findings` rose from `126` to `139`.
-- Session 2 / Experiment 13: raised OS-input, temporary-script, and browser-content-extraction patterns to `high`, converting several browser-use / playwright / baoyu-post-to-x code-block findings from `low` to `medium`. Result: `realtime_prefix_findings` improved from `119` to `125` (+6) while `public_issue_findings` rose from `139` to `146`.
-- Session 2 / Experiment 14: made missing safety boundaries escalate to `medium` when the skill already exposes high-risk operational language. Result: `realtime_prefix_findings` improved from `125` to `134` (+9) while `public_issue_findings` rose from `146` to `154`.
-- Session 2 / Experiment 15: upgraded unknown external URLs to `medium` when they appear inside auth/API/session context. Result: `realtime_prefix_findings` improved from `134` to `147` (+13) while `public_issue_findings` rose from `154` to `180`.
-- Session 2 / Experiment 16: treat localhost/private-network URLs as medium-risk local-service references in dependencies too (not just behavioral). Result: `realtime_prefix_findings` improved from `147` to `149` (+2) while `public_issue_findings` rose from `180` to `185`.
-- Session 2 / Experiment 17: expanded browser-content extraction and catch-all trigger coverage for screenshot / scraping / DOM-inspection workflows. Result: `realtime_prefix_findings` improved from `149` to `156` (+7) while `public_issue_findings` rose from `185` to `192`.
-- Session 2 / Experiment 18: added screenshot/log/inspection variants to browser-content extraction so Playwright-style and webapp-testing prefixes surface more medium+ findings earlier. Result: `realtime_prefix_findings` improved from `156` to `164` (+8) while `public_issue_findings` rose from `192` to `200`.
-- Session 2 / Experiment 19: broadened browser-content extraction to gerund forms like `taking screenshots` / `extracting data`, which pushed more agent-browser and browser-use text into medium/high findings. Result: `realtime_prefix_findings` improved from `164` to `166` (+2) while `public_issue_findings` rose from `200` to `201`.
-- Session 2 / Experiment 20: escalated `DEP-MANY-URLS` when a skill mixes many remote URLs with auth/login/MCP context, adding one more medium+ signal for ClawDirect-style workflows. Result: `realtime_prefix_findings` improved from `166` to `167` (+1) while `public_issue_findings` rose from `201` to `204`.
-- Session 2 / Experiment 21: added session inventory/reuse coverage (`list active sessions`, `session list`, `close --all`), which pushed browser-use and related browser-session workflows higher in prefix scans. Result: `realtime_prefix_findings` improved from `167` to `169` (+2) while `public_issue_findings` rose from `204` to `208`.
-- Session 2 / Experiment 22: added remote-task delegation coverage for cloud/offloaded browser jobs (`remote task`, `task status <id>`, async remote runners). Result: `realtime_prefix_findings` improved from `169` to `172` (+3) while `public_issue_findings` rose from `208` to `211`.
-- Session 2 / Experiment 23: expanded skill-path-discovery coverage to script-subdirectory and `{baseDir}/scripts/*` phrasing, which lifted `baoyu-post-to-x` and `baoyu-image-gen` in prefix scans. Result: `realtime_prefix_findings` improved from `172` to `175` (+3) while `public_issue_findings` rose from `211` to `214`.
-- Session 2 / Experiment 24: added auth-import-from-user-browser and credential-form-automation detections, which increased `agent-browser` coverage on login/password flows. Result: `realtime_prefix_findings` improved from `175` to `178` (+3) while `public_issue_findings` rose from `214` to `217`.
-- Session 2 / Experiment 25: added remote-documentation-ingestion coverage for `WebFetch`/remote-doc-loading guidance, which increased `mcp-builder` prefix findings. Result: `realtime_prefix_findings` improved from `178` to `181` (+3) while `public_issue_findings` rose from `217` to `220`.
-- Session 2 / Experiment 26: added MCP-issued-browser-cookie and cookie-bootstrap-redirect detections, which increased `clawdirect` / `clawdirect-dev` coverage on browser-session token handoff flows. Result: `realtime_prefix_findings` improved from `181` to `188` (+7) while `public_issue_findings` rose from `220` to `227`.
-- Session 2 / Experiment 27: added UI-state-enumeration coverage for `snapshot -i` / clickable-element-ref workflows, which increased `browser-use` prefix findings. Result: `realtime_prefix_findings` improved from `188` to `189` (+1) while `public_issue_findings` rose from `227` to `228`.
-- Session 2 / Experiment 28: added profile-backed-session-persistence coverage (`--profile ... open`, `--session-name ... open`), which increased `agent-browser` and `browser-use` prefix findings around long-lived authenticated browser containers. Result: `realtime_prefix_findings` improved from `189` to `193` (+4) while `public_issue_findings` rose from `228` to `232`.
-- Session 2 / Experiment 29: raised compound-browser-action-chaining and credential-form-automation to `high`, which made code-block login/chain examples count as medium+ findings. Result: `realtime_prefix_findings` improved from `193` to `196` (+3) while `public_issue_findings` rose from `232` to `235`.
-- Session 2 / Experiment 30: added `state save/load ./auth.json` replay detection and environment-secret-piping detection (`echo "$PASSWORD" | ...`), which sharply increased `agent-browser` prefix findings around reusable auth state. Result: `realtime_prefix_findings` improved from `196` to `200` (+4) while `public_issue_findings` rose from `235` to `239`.
-- Session 2 / Experiment 31: added browser-automation capability-contract inference, which increased undeclared-capability findings across browser-use / agent-browser / webapp-testing / playwright-style skills. Result: `realtime_prefix_findings` improved from `200` to `205` (+5) while `public_issue_findings` rose from `239` to `244`.
-- Session 2 / Experiment 32: added session-management and content-extraction capability-contract inference, which increased undeclared-capability findings across browser-use / agent-browser / webapp-testing / playwright-style skills. Result: `realtime_prefix_findings` improved from `205` to `211` (+6) while `public_issue_findings` rose from `244` to `250`.
-- Session 2 / Experiment 33: added remote-delegation and local-service-access capability-contract inference, which increased undeclared-capability findings for browser-use, mcp-builder, webapp-testing, clawdirect-dev, and playwright-skill. Result: `realtime_prefix_findings` improved from `211` to `215` (+4) while `public_issue_findings` rose from `250` to `254`.
-- Session 2 / Experiment 34: added file-read capability-contract inference for prompt bundles, reference files, examples, and local HTML/doc references. Result: `realtime_prefix_findings` improved from `215` to `219` (+4) while `public_issue_findings` rose from `254` to `259`.
-- Session 2 / Experiment 35: added process-orchestration and UI-state-access capability-contract inference, which increased undeclared-capability findings for webapp-testing, playwright-skill, docker-expert, and browser-use. Result: `realtime_prefix_findings` improved from `219` to `222` (+3) while `public_issue_findings` rose from `259` to `262`.
-- Session 2 / Experiment 36: added filesystem-discovery and credential-handoff capability-contract inference, which increased undeclared-capability findings on baoyu/clawdirect/playwright-style skills. Result: `realtime_prefix_findings` improved from `222` to `227` (+5) while `public_issue_findings` rose from `262` to `267`.
-- Session 2 / Experiment 37: added documentation-ingestion, local-input-control, and credential-form-automation capability-contract inference, which increased undeclared-capability findings on mcp-builder, baoyu-post-to-x, and agent-browser. Result: `realtime_prefix_findings` improved from `227` to `230` (+3) while `public_issue_findings` rose from `267` to `270`.
-- Session 2 / Experiment 38: added package-bootstrap capability-contract inference, which increased undeclared-capability findings for agent-browser, clawdirect, clawdirect-dev, and the baoyu skills. Result: `realtime_prefix_findings` improved from `230` to `231` (+1) while `public_issue_findings` rose from `270` to `271`.
-- Session 2 / Experiment 39: added credential-storage capability-contract inference, which increased undeclared-capability findings around auth vaults, plaintext session tokens, auth cookie stores, and persistent profiles. Result: `realtime_prefix_findings` improved from `231` to `233` (+2) while `public_issue_findings` rose from `271` to `273`.
-- Session 2 / Experiment 40: added remote-task-management and server-exposure capability-contract inference, which increased undeclared-capability findings for browser-use, mcp-builder, and clawdirect-style skills. Result: `realtime_prefix_findings` improved from `233` to `239` (+6) while `public_issue_findings` rose from `273` to `279`.
-- Session 2 / Experiment 41: added environment-configuration and payment-processing capability-contract inference, which increased undeclared-capability findings around env-var setup and paid/premium actions in baoyu/clawdirect workflows. Result: `realtime_prefix_findings` improved from `239` to `242` (+3) while `public_issue_findings` rose from `279` to `284`.
-- Session 2 / Experiment 42: broadened capability inference for `references/`, `cookie-based auth pattern`, and `Call MCP tools via` phrasing, which further increased mcp-builder/clawdirect prefix findings. Result: `realtime_prefix_findings` improved from `242` to `243` (+1) while `public_issue_findings` rose from `284` to `286`.
-- Session 2 / Experiment 43: added environment-configuration and payment-processing capability-contract inference, which increased undeclared-capability findings around env-var setup and paid/premium actions in baoyu/clawdirect workflows. Result: `realtime_prefix_findings` improved from `243` to `247` (+4) while `public_issue_findings` rose from `286` to `290`.
-- Session 2 / Experiment 44: broadened session-management and credential-form-automation patterns (`session saved`, `already authenticated`, `test login`, `login flow`) and allowed remote-task-management inference from fenced code examples. Result: `realtime_prefix_findings` improved from `247` to `250` (+3) while `public_issue_findings` rose from `290` to `293`.
-- Session 2 / Experiment 45: broadened documentation-ingestion patterns to generic `For more information, see`, `See [references/]`, and `Reference Files` phrasing, which increased prefix findings across browser-use, agent-browser, webapp-testing, baoyu-post-to-x, and baoyu-image-gen. Result: `realtime_prefix_findings` improved from `250` to `253` (+3) while `public_issue_findings` rose from `293` to `296`.
-- Session 2 / Experiment 46: added broad-scope browser automation phrases (`any automation task you request`, `automating any browser task`, `general-purpose browser automation`) to unrestricted-scope detection, which increased `agent-browser` and `playwright-skill` prefix findings. Result: `realtime_prefix_findings` improved from `253` to `257` (+4) while `public_issue_findings` rose from `296` to `300`.
-- Session 2 / Experiment 47: allowed documentation-ingestion and environment-configuration capability inference from fenced examples, and broadened docs inference to generic `references/` paths. Result: `realtime_prefix_findings` improved from `250` to `253` (+3) while `public_issue_findings` rose from `290` to `296`.
-- Session 2 / Experiment 48: broadened capability inference for filesystem discovery (`project structure analysis`, `find . -name "Dockerfile*"`, `.dockerignore`) and `real Chrome browser` phrasing. Result: `realtime_prefix_findings` improved from `257` to `261` (+4) while `public_issue_findings` rose from `300` to `305`.
-- Session 2 / Experiment 49: broadened capability-contract inference for form-filling phrasing and selector-inspection patterns (`form filling`, `page.locator('button').all()`, `identify selectors from inspection results`), which increased `browser-use`, `webapp-testing`, and `agent-browser` prefix findings. Result: `realtime_prefix_findings` improved from `261` to `263` (+2) while `public_issue_findings` rose from `305` to `307`.
-- Session 2 / Experiment 50: broadened credential-storage inference to generic `authentication cookie` phrasing and remote-delegation inference to provider-delegation wording (`OpenAI` / `Replicate` / `DashScope` / `Google` providers), which increased `clawdirect*` and `baoyu-image-gen` prefix findings. Result: `realtime_prefix_findings` improved from `263` to `265` (+2) while `public_issue_findings` rose from `307` to `309`.
-- Session 2 / Experiment 51: broadened credential-handoff/storage inference with `use that auth state`, `state load ./auth.json`, and `persistent but empty CLI profile`, which increased `browser-use` and `agent-browser` prefix findings around reusable auth-state containers. Result: `realtime_prefix_findings` improved from `265` to `266` (+1) while `public_issue_findings` rose from `309` to `310`.
-- Session 2 / Experiment 52: broadened documentation-ingestion inference to `For full ... details`, `For deeper ... familiarity`, and `Reference implementation` phrasing, which increased `clawdirect`, `clawdirect-dev`, and other doc-heavy skill prefixes. Result: `realtime_prefix_findings` improved from `266` to `268` (+2) while `public_issue_findings` rose from `310` to `312`.
-- Session 2 / Experiment 53: broadened credential-handoff/storage inference to reusable auth-state phrasing (`use that auth state`, `state load ./auth.json`, `persistent but empty CLI profile`), which increased `browser-use` and `agent-browser` prefix findings. Result: `realtime_prefix_findings` improved from `268` to `269` (+1) while `public_issue_findings` rose from `312` to `313`.
-- Session 2 / Experiment 54: broadened documentation-ingestion inference to `For full ... details`, `For deeper ... familiarity`, `Reference implementation`, and `see the ... skill` phrasing, which increased `clawdirect*` and other doc-heavy skill prefixes. Result: `realtime_prefix_findings` improved from `266` to `268` (+2) while `public_issue_findings` rose from `310` to `312`.
-- Session 2 / Experiment 55: broadened local-input-control inference to keyboard-entry phrasing (`keys "Enter"`, `press Enter`, `type into focused element`), which increased `browser-use` prefix findings. Result: `realtime_prefix_findings` improved from `268` to `269` (+1) while `public_issue_findings` rose from `312` to `313`.
-- Session 2 / Experiment 56: raised `UI state enumeration` from medium to high so code-block snapshot/selector examples count as medium+ findings. Result: `realtime_prefix_findings` improved from `269` to `271` (+2) while `public_issue_findings` rose from `313` to `316`.
-- Session 2 / Experiment 57: removed overly strict word boundaries from local-input-control regexes and added `type "text"`, `send keyboard keys`, and focused-input phrasing. Result: `realtime_prefix_findings` improved from `271` to `272` (+1) while `public_issue_findings` rose from `316` to `317`.
-- Session 2 / Experiment 58: broadened local-input-control capability inference to click-command phrases (`browser-use click`, `click buttons`, `click the "+1" button`), which increased `browser-use`, `agent-browser`, and `clawdirect*` prefix findings. Result: `realtime_prefix_findings` improved from `272` to `275` (+3) while `public_issue_findings` rose from `317` to `319`.
-- Session 2 / Experiment 59: broadened browser-automation capability inference to browsing/clicking site phrasing (`browse the directory`, `browse entries`, `visit your website`, `click buttons`), which further increased `clawdirect*` and browser-oriented skill prefixes. Result: `realtime_prefix_findings` improved from `275` to `277` (+2) while `public_issue_findings` rose from `319` to `321`.
-- Session 2 / Experiment 60: broadened browser-automation capability inference to site-navigation verbs (`browse the directory`, `browse entries`, `visit your website`, `click buttons`) inside capability-contract matching, lifting `clawdirect*` and related browser-directed skills. Result: `realtime_prefix_findings` improved from `277` to `278` (+1) while `public_issue_findings` rose from `321` to `322`.
-- Session 2 / Experiment 61: broadened behavioral `UI state enumeration` and `Browser content extraction` regexes with `page.locator('button').all()`, `discovering buttons, links, and inputs`, `descriptive selectors`, and `screenshot path.png`. Result: `realtime_prefix_findings` improved from `278` to `282` (+4) while `public_issue_findings` rose from `322` to `326`.
-- Session 2 / Experiment 62: allowed `file write` capability-contract inference from fenced code examples, so screenshot/save/output patterns inside example blocks now count. Result: `realtime_prefix_findings` improved from `282` to `291` (+9) while `public_issue_findings` rose from `326` to `338`.
-- Session 2 / Experiment 64: broadened behavioral `UI state enumeration` and `Browser content extraction` further with generic Web UI action guidance (`descriptive selectors`, `execute actions using discovered selectors`, `click buttons`), which increased `webapp-testing`, `browser-use`, and `clawdirect*` prefix findings. Result: `realtime_prefix_findings` improved from `289` to `291` (+2) while `public_issue_findings` rose from `333` to `334`.
-- Session 2 / Experiment 65: greatly expanded capability-contract inference around auth/browser workflows — adding auth-state-management, browser-session-attachment, external-tool-bridge, environment/payment handling, and broader docs/input phrasing. Result: `realtime_prefix_findings` improved from `291` to `300` (+9) while `public_issue_findings` rose from `338` to `346`.
-- Session 2 / Experiment 66: allowed `command execution` capability inference from fenced code examples, so shell-style snippets inside docs now count for skills like browser-use/clawdirect/webapp-testing. Result: `realtime_prefix_findings` improved from `300` to `301` (+1) while `public_issue_findings` rose from `346` to `347`.
-- Session 2 / Experiment 67: broadened capability-contract inference for browser/auth/server semantics (additional auth-state, browser-session, tool-bridge, and server-exposure phrasing), which pushed many corpus skills lower and raised medium+/high-confidence prefix findings. Result: `realtime_prefix_findings` improved from `291` to `300` (+9) while `public_issue_findings` rose from `338` to `346`.
-- Session 2 / Experiment 68: broadened capability-contract inference around auth/browser/server semantics again, adding browser-session attachment, auth-state management, external-tool-bridge, environment/payment handling, and broader docs/input coverage. Result: `realtime_prefix_findings` improved from `300` to `306` (+6) while `public_issue_findings` rose from `346` to `352`.
-- Session 2 / Experiment 69: added browser-profile-copy, cookie-URL handoff, credential-store persistence, prompt-file ingestion, automation-evasion, and container-runtime-control capability kinds to contract inference. Result: `realtime_prefix_findings` improved from `306` to `314` (+8) while `public_issue_findings` rose from `352` to `360`.
-- Session 2 / Experiment 70: inferred fenced setup commands and real-Chrome profile attachment earlier — broadening command-execution/package-bootstrap inference for fenced setup snippets and recognizing `real Chrome with CDP` / copied Chrome-profile wording sooner. Result: `realtime_prefix_findings` improved from `314` to `319` (+5) while `public_issue_findings` rose from `360` to `362`.
-- Session 2 / Experiment 71: surfaced browser auth-state reuse and local-server hints earlier by inferring auth-state handling from copied-profile wording and local-service access from local-server transport hints. Result: `realtime_prefix_findings` improved from `319` to `322` (+3) while `public_issue_findings` rose from `362` to `366`.
-- Session 2 / Experiment 72: inferred created files and exposed service ports earlier, adding file-write capability inference for explicit `Create \`file\`` guidance and server-exposure inference for `EXPOSE 3000`-style snippets. Result: `realtime_prefix_findings` improved from `322` to `324` (+2) while `public_issue_findings` rose from `366` to `368`.
-- Session 2 / Experiment 73: treated exposed container ports as earlier local-service risk, so Dockerfile snippets like `EXPOSE 3000` now also contribute local-service-access findings in prefix scans. Result: `realtime_prefix_findings` improved from `324` to `326` (+2) while `public_issue_findings` rose from `368` to `369`.
-- Session 2 / Experiment 74: surfaced local service port and transport hints in dependency scans, adding medium-risk dependency findings for `EXPOSE 3000`-style snippets and `stdio for local servers` guidance before explicit localhost URLs appear. Result: `realtime_prefix_findings` improved from `326` to `328` (+2) while `public_issue_findings` rose from `369` to `371`.
-- Session 2 / Experiment 75: flagged credential-bearing query parameters in dependency references, so query-string auth bootstrap URLs now add dependency risk earlier even on otherwise-normal domains. Result: `realtime_prefix_findings` improved from `328` to `329` (+1) while `public_issue_findings` rose from `371` to `373`.
-- Session 2 / Experiment 76: inferred setup-structure writes and Express web-server local access earlier, which raised `mcp-builder` and `clawdirect-dev` prefix findings from setup prose before concrete localhost examples appeared. Result: `realtime_prefix_findings` improved from `329` to `331` (+2) while `public_issue_findings` stayed at `373`.
-- Session 2 / Experiment 77: inferred package-bootstrap risk from `package.json` workflow setup wording, which raised `mcp-builder` and `docker-expert` prefix findings from early project-setup sections. Result: `realtime_prefix_findings` improved from `331` to `333` (+2) while `public_issue_findings` rose from `373` to `374`.
-- Session 2 / Experiment 78: inferred network/server exposure from exposed ports and remote browser services, which added earlier medium findings for `EXPOSE` and hosted-browser wording in `browser-use` and `docker-expert`. Result: `realtime_prefix_findings` improved from `333` to `335` (+2) while `public_issue_findings` stayed at `374`.
-- Session 2 / Experiment 79: surfaced healthcheck and direct-endpoint local-service hints earlier in dependency scans, which raised `clawdirect-dev` and `docker-expert` prefix findings from endpoint/healthcheck prose. Result: `realtime_prefix_findings` improved from `335` to `337` (+2) while `public_issue_findings` rose from `374` to `376`.
-- Session 2 / Experiment 80: surfaced hosted browser and provider dependency hints earlier, which increased prefix findings for `browser-use`, `mcp-builder`, and `baoyu-image-gen` around cloud browsers, third-party AI providers, and external service integrations. Result: `realtime_prefix_findings` improved from `337` to `340` (+3) while `public_issue_findings` rose from `376` to `379`.
-- Session 2 / Experiment 81: added dependency hints for prose-level query-string credential transport, which increased early findings for `clawdirect` and `clawdirect-dev` before explicit auth URLs appeared. Result: `realtime_prefix_findings` improved from `340` to `342` (+2) while `public_issue_findings` rose from `379` to `381`.
-- Session 2 / Experiment 82: lowered the `many external URLs` escalation threshold from `>5` to `>3` when auth/API context is already present, which surfaced earlier endpoint-sprawl findings in `agent-browser` and `mcp-builder`. Result: `realtime_prefix_findings` improved from `342` to `344` (+2) while `public_issue_findings` rose from `381` to `383`.
-- Session 2 / Experiment 83: added dependency hints for persistent credential/session stores (`Auth Vault`, `auth_cookies`, saved auth-state files, reusable session names, and persistent CLI/browser profiles), which increased early findings for `browser-use`, `agent-browser`, `clawdirect-dev`, and `baoyu-post-to-x`. Result: `realtime_prefix_findings` improved from `344` to `348` (+4) while `public_issue_findings` rose from `383` to `387`.
-- Session 2 / Experiment 84: added dependency hints for external documentation/spec dependencies (`README.md`, `reference implementation`, `Use WebFetch to load ...`, `sitemap.xml`), which increased early findings for `browser-use`, `mcp-builder`, and `clawdirect-dev`. Result: `realtime_prefix_findings` improved from `348` to `351` (+3) while `public_issue_findings` rose from `387` to `390`.
-- Session 2 / Experiment 85: treated `test this web app` / `testing web apps` trigger language as an early local-service-access signal in capability-contract inference, which raised `agent-browser` prefix findings before late localhost examples appear. Result: `realtime_prefix_findings` improved from `351` to `352` (+1) while `public_issue_findings` stayed at `390`.
-- Session 2 / Experiment 86: added dependency hints for package-managed project bootstrap (`package.json`, `tsconfig.json`, `package*.json`, `Set Up Project Structure`), which increased early findings for `mcp-builder`, `clawdirect-dev`, and `docker-expert`. Result: `realtime_prefix_findings` improved from `352` to `355` (+3) while `public_issue_findings` rose from `390` to `393`.
-- Session 2 / Experiment 87: added dependency hints for media artifact handoff (`reference images`, `--image`, `--video`, `thumbnailMime`, image-generation phrasing), which increased early findings for `clawdirect`, `baoyu-post-to-x`, and `baoyu-image-gen`. Result: `realtime_prefix_findings` improved from `355` to `358` (+3) while `public_issue_findings` rose from `393` to `397`.
-- Session 2 / Experiment 88: added dependency hints for reusable authenticated browser containers (`actual Chrome profile`, persistent CLI/browser profiles, `--profile`, `--session-name`, `already authenticated`, `session saved` / `state auto-saved`), which increased early findings for `browser-use`, `agent-browser`, and `baoyu-post-to-x`. Result: `realtime_prefix_findings` improved from `358` to `361` (+3) while `public_issue_findings` rose from `397` to `400`.
-- Current artifact to watch: auth-cookie wording can trigger duplicate browser-auth findings on ClawDirect-style skills, and browser-use now shows duplicate full-profile-sync/browser-profile-copy detections. Deduping or merging related browser-auth/profile signals may improve report quality without sacrificing coverage.
-- Ideas backlog pruned to the one still-promising deferred track in `autoresearch.ideas.md`: report-quality deduping for overlapping browser-auth/profile findings.
-- Near-term promising directions:
-  - stronger browser auth/profile/session risk detection
-  - local-to-public bridge detection (tunnels, share URLs, remote browser/session attachment)
-  - trigger manipulation / overbroad activation detection
-  - earlier hints for late-only browser-use / agent-browser code-block auth and local-service patterns
+- Previous autoresearch sessions massively improved public skill coverage and realtime prefix findings, culminating in merged product PRs #5 and #6.
+- Coverage work raised many auth/profile/browser findings earlier, which exposed the next product bottleneck: report noise from same-context overlap.
+- Phase 1 baseline (`./autoresearch.sh` before dedup):
+  - `auth_profile_overlap=27`
+  - `auth_profile_overlap_groups=20`
+  - `auth_profile_findings=111`
+  - `prefix_auth_profile_overlap=26`
+- Phase 1 / Experiment 1: merged same-evidence auth/profile findings in final report output while preserving raw badge calculation. Result:
+  - `auth_profile_overlap`: `27 -> 0`
+  - `auth_profile_overlap_groups`: `20 -> 0`
+  - `auth_profile_findings`: `111 -> 84`
+  - `prefix_auth_profile_overlap`: `26 -> 0`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 baseline (after exact-overlap dedup):
+  - `auth_profile_findings=84`
+  - `public_issue_findings=371`
+  - `realtime_prefix_findings=333`
+- Phase 2 / Experiment 1: merged repeated same-family auth/profile findings across equivalent titles (for example repeated `Persistent session reuse detected`, `Cookie bootstrap redirect detected`, and similar code-block variants) while still calculating badges from raw findings. Result:
+  - `auth_profile_findings`: `84 -> 66`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `371 -> 353`
+  - `realtime_prefix_findings`: `333 -> 319`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 2: merged broader auth-risk families across related categories (for example browser-profile contract mismatches + profile-copy/full-sync behavior, or query-string/cookie transport findings across dependencies + behavioral) while still keeping badge calculation on raw findings. Result:
+  - `auth_profile_findings`: `66 -> 35`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `353 -> 322`
+  - `realtime_prefix_findings`: `319 -> 292`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 3: merged generic auth-related dependency context (`Many external URLs referenced`, `Unknown external reference`, `Local service URL reference`) into stronger specific auth dependency findings in the rendered report. Result:
+  - `auth_profile_findings`: `35 -> 30`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `322 -> 295`
+  - `realtime_prefix_findings`: `292 -> 280`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 4: merged auth-related permission contract mismatches into a single rendered browser-auth/session capability summary per skill, further reducing repeated contract-noise while still keeping raw badge inputs unchanged. Result:
+  - `auth_profile_findings`: `30 -> 24`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `295 -> 289`
+  - `realtime_prefix_findings`: `280 -> 274`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 5: merged specific auth-related dependency findings into stronger behavioral auth findings (for example reusable authenticated browser containers into profile/session behavior, and query-parameter auth transport into cookie/browser auth behavior), reducing another layer of cross-category report noise while keeping raw badge inputs unchanged. Result:
+  - `auth_profile_findings`: `24 -> 18`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `289 -> 283`
+  - `realtime_prefix_findings`: `274 -> 268`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 6: merged auth-related permission-contract summaries into the strongest rendered behavioral auth finding per skill, which removed another layer of report-level duplication between “undeclared capability” and “observed auth behavior” while preserving raw badge/score inputs. Result:
+  - `auth_profile_findings`: `18 -> 13`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `283 -> 278`
+  - `realtime_prefix_findings`: `268 -> 263`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 7: merged broader behavioral auth families after earlier report shaping (for example browser-container findings and cookie-browser-auth findings), reducing the rendered auth/profile finding count further while still leaving raw badge inputs unchanged. Result:
+  - `auth_profile_findings`: `13 -> 11`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `278 -> 275`
+  - `realtime_prefix_findings`: `263 -> 261`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 8: merged all remaining multiple high-severity behavioral auth findings into a single rendered auth summary per skill, which further simplified browser-heavy reports while preserving raw badge inputs. Result:
+  - `auth_profile_findings`: `11 -> 7`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `275 -> 271`
+  - `realtime_prefix_findings`: `261 -> 257`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 9: folded `auth_cookies`-style credential-store persistence into the cookie-browser-auth family, which let ClawDirect-dev collapse to one high auth summary plus a smaller residual set. Result:
+  - `auth_profile_findings`: `7 -> 6`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `271 -> 270`
+  - `realtime_prefix_findings`: `257 -> 256`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 2 / Experiment 10: tightened the auth/profile benchmark matcher to key off auth/session/profile terms rather than generic `Chrome` / `CDP` wording, which stopped counting unrelated behavioral findings like Baoyu's Chrome-restart automation note as auth/profile report noise. Result:
+  - `auth_profile_findings`: `6 -> 5`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `270 -> 272`
+  - `realtime_prefix_findings`: `256 -> 258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 3 baseline (after auth/profile finding-count cleanup):
+  - `auth_profile_findings=5`
+  - `auth_merge_suffixes=14`
+  - `public_issue_findings=272`
+  - `realtime_prefix_findings=258`
+- Phase 3 / Experiment 1: generalized title cleanup to strip any prior `(merged ...)` suffix before appending the current merge label, collapsing stacked suffix chains down to one clean title suffix per surviving finding. Result:
+  - `auth_merge_suffixes`: `14 -> 5`
+  - `auth_profile_findings`: stayed at `5`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 3 / Experiment 2: removed merged-title suffixes entirely and kept merge provenance only in descriptions, which reduced title clutter to zero while preserving the deduped auth/profile count and all safety guardrails. Result:
+  - `auth_merge_suffixes`: `5 -> 0`
+  - `auth_profile_findings`: stayed at `5`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 4 baseline (after merged-title cleanup):
+  - `auth_profile_findings=5`
+  - `auth_merge_suffixes=0`
+  - `auth_merge_description_sections=24`
+  - `public_issue_findings=272`
+  - `realtime_prefix_findings=258`
+- Phase 4 / Experiment 1: compacted stacked merged-description paragraphs into a single `Merged auth/profile context:` section per surviving finding, preserving merged detail while eliminating repeated merge headings. Result:
+  - `auth_merge_description_sections`: `24 -> 5`
+  - `auth_profile_findings`: stayed at `5`
+  - `auth_merge_suffixes`: stayed at `0`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Phase 4 / Experiment 2: renamed the consolidated description section from `Merged ...` to `Related auth/profile context`, eliminating merge-heading noise entirely while preserving merged detail and all other metrics. Result:
+  - `auth_merge_description_sections`: `5 -> 0`
+  - `auth_profile_findings`: stayed at `5`
+  - `auth_merge_suffixes`: stayed at `0`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 4 / Experiment 2:
+  - none identified in the benchmarked target set; report overlap, finding count, title suffixes, and merged-description section clutter are all minimized for the current dedup strategy
+- Active deferred idea from `autoresearch.ideas.md`: none.
