@@ -151,7 +151,12 @@ Benchmark details:
   - `public_issue_findings`: stayed at `272`
   - `realtime_prefix_findings`: stayed at `258`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 3 / Experiment 1:
-  - surviving merged titles still say `merged ...`, even though the suffix count is now minimal
-  - the remaining possible improvement is deciding whether even the single suffix should be replaced with a cleaner stable label or moved entirely into description-only text
-- Active deferred idea from `autoresearch.ideas.md`: none beyond the current merged-title cleanup focus.
+- Phase 3 / Experiment 2: removed merged-title suffixes entirely and kept merge provenance only in descriptions, which reduced title clutter to zero while preserving the deduped auth/profile count and all safety guardrails. Result:
+  - `auth_merge_suffixes`: `5 -> 0`
+  - `auth_profile_findings`: stayed at `5`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 3 / Experiment 2:
+  - none identified in the benchmarked target set; titles are now clean and overlap/count metrics are minimized for the chosen report-shaping approach
+- Active deferred idea from `autoresearch.ideas.md`: none.

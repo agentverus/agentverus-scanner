@@ -1,1 +1,1 @@
-- No deferred ideas currently. Active focus is browser auth/profile finding dedup for report quality.
+- No deferred ideas currently.

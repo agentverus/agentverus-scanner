@@ -112,3 +112,4 @@
 {"run":15,"commit":"bdb1705","metric":5,"metrics":{},"status":"keep","description":"feat: narrow auth-profile dedup matching to real auth and session terms","timestamp":1773458647202,"segment":1}
 {"type":"config","name":"Reduce merged auth/profile title suffix clutter","metricName":"auth_merge_suffixes","metricUnit":"","bestDirection":"lower"}
 {"run":1,"commit":"54d1f6a","metric":14,"metrics":{},"status":"keep","description":"chore: baseline merged-title suffix clutter after auth/profile dedup","timestamp":1773458830494,"segment":1}
+{"run":2,"commit":"a88f61e","metric":5,"metrics":{},"status":"keep","description":"feat: normalize merged title suffixes to a single clean annotation","timestamp":1773458876419,"segment":1}

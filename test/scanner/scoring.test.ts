@@ -251,7 +251,7 @@ describe("aggregateScores", () => {
 		const report = aggregateScores(categories, metadata);
 		expect(report.badge).toBe('suspicious');
 		expect(report.findings.length).toBe(1);
-		expect(report.findings[0]?.title).toContain('merged overlapping auth/profile signals');
+		expect(report.findings[0]?.title).toBe('Browser profile copy detected');
 		expect(report.findings[0]?.description).toContain('Full browser profile sync detected');
 	});
 
@@ -333,7 +333,7 @@ describe("aggregateScores", () => {
 
 		const report = aggregateScores(categories, metadata);
 		expect(report.findings.length).toBe(1);
-		expect(report.findings[0]?.title).toContain('merged auth-related dependency context');
+		expect(report.findings[0]?.title).toBe('Credential-bearing URL parameter');
 		expect(report.findings[0]?.description).toContain('Many external URLs referenced');
 	});
 
@@ -377,7 +377,8 @@ describe("aggregateScores", () => {
 
 		const report = aggregateScores(categories, metadata);
 		expect(report.findings.length).toBe(1);
-		expect(report.findings[0]?.title).toContain('merged auth/dependency context');
+		expect(report.findings[0]?.title).toBe('Browser profile copy detected');
+		expect(report.findings[0]?.description).toContain('Reusable authenticated browser container dependency');
 	});
 
 	it('should merge broader behavioral auth families after earlier report shaping', () => {
@@ -496,7 +497,8 @@ describe("aggregateScores", () => {
 
 		const report = aggregateScores(categories, metadata);
 		expect(report.findings.length).toBe(1);
-		expect(report.findings[0]?.title).toContain('merged behavioral auth summary');
+		expect(report.findings[0]?.title).toBe('Persistent session reuse detected');
+		expect(report.findings[0]?.description).toContain('Credential vault enrollment detected');
 	});
 
 	it('should merge auth-related permission contract mismatches into one behavioral summary when present', () => {
@@ -550,7 +552,8 @@ describe("aggregateScores", () => {
 
 		const report = aggregateScores(categories, metadata);
 		expect(report.findings.length).toBe(1);
-		expect(report.findings[0]?.title).toContain('merged auth contract context');
+		expect(report.findings[0]?.title).toBe('Browser profile copy detected');
+		expect(report.findings[0]?.description).toContain('Merged auth/session capability-contract context');
 	});
 
 	it('should merge auth findings that map to the same broader risk family', () => {

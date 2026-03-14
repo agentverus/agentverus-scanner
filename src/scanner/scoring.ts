@@ -91,7 +91,7 @@ function normalizeAuthTitle(title: string): string {
 	return title
 		.toLowerCase()
 		.replace(/\s*\(inside code block\)/g, "")
-		.replace(/\s*\(merged overlapping auth\/profile signals\)/g, "")
+		.replace(/\s*\(merged[^)]*\)/g, "")
 		.trim();
 }
 
@@ -156,7 +156,7 @@ function mergeFindingGroup(
 	const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => cleanMergedTitle(f.title)))].slice(0, 6);
 	return {
 		...primary,
-		title: `${cleanMergedTitle(primary.title)} (merged overlapping auth/profile signals)`,
+		title: cleanMergedTitle(primary.title),
 		description: `${primary.description}\n\nMerged overlapping signals from the ${reason}:${mergedSignals.length > 0 ? `\n- ${mergedSignals.join("\n- ")}` : ""}`,
 	};
 }
@@ -177,7 +177,7 @@ function mergeAuthPermissionContractFindings(findings: readonly Finding[]): Find
 	const mergedTitles = [...new Set(contractFindings.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
 	const mergedPrimary: Finding = {
 		...primary,
-		title: "Capability contract mismatch: inferred browser auth/session capabilities are not declared (merged auth/profile contract signals)",
+		title: "Capability contract mismatch: inferred browser auth/session capabilities are not declared",
 		description: `${primary.description}\n\nMerged related auth/profile capability-contract signals:${mergedTitles.length > 0 ? `\n- ${mergedTitles.join("\n- ")}` : ""}`,
 	};
 
@@ -220,7 +220,7 @@ function mergeGenericAuthDependencyFindings(findings: readonly Finding[]): Findi
 	const mergedDescription = `${primary.description}\n\nMerged related generic dependency context:\n- ${mergedGenericTitles.join("\n- ")}`;
 	const mergedPrimary: Finding = {
 		...primary,
-		title: `${cleanMergedTitle(primary.title)} (merged auth-related dependency context)`,
+		title: cleanMergedTitle(primary.title),
 		description: mergedDescription,
 	};
 
@@ -251,7 +251,7 @@ function mergeAuthPermissionIntoBehavior(findings: readonly Finding[]): Finding[
 	];
 	const mergedPrimary: Finding = {
 		...primary,
-		title: `${cleanMergedTitle(primary.title)} (merged auth contract context)`,
+		title: cleanMergedTitle(primary.title),
 		description: `${primary.description}\n\nMerged auth/session capability-contract context:\n- ${mergedPermissionTitles.join("\n- ")}`,
 	};
 
@@ -319,7 +319,7 @@ function mergeSpecificAuthDependenciesIntoBehavior(findings: readonly Finding[])
 		const existing = replacements.get(target) ?? target;
 		replacements.set(target, {
 			...existing,
-			title: `${cleanMergedTitle(existing.title)} (merged auth/dependency context)`,
+			title: cleanMergedTitle(existing.title),
 			description: `${existing.description}\n\nMerged related dependency context:\n- ${cleanMergedTitle(dependency.title)}`,
 		});
 	}
@@ -390,7 +390,7 @@ function mergeHighBehavioralAuthSummary(findings: readonly Finding[]): Finding[]
 	const mergedTitles = [...new Set(authBehaviorals.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
 	const mergedPrimary: Finding = {
 		...primary,
-		title: `${cleanMergedTitle(primary.title)} (merged behavioral auth summary)`,
+		title: cleanMergedTitle(primary.title),
 		description: `${primary.description}\n\nMerged additional behavioral auth/profile signals:\n- ${mergedTitles.join("\n- ")}`,
 	};
 
