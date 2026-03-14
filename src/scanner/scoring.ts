@@ -409,6 +409,40 @@ function mergeHighBehavioralAuthSummary(findings: readonly Finding[]): Finding[]
 	return output;
 }
 
+function compactMergedDescription(description: string): string {
+	const match = description.match(/^([\s\S]*?)(?:\n\nMerged [\s\S]*)?$/);
+	const baseDescription = (match?.[1] ?? description).trimEnd();
+	const sectionRegex = /\n\n(Merged [^:\n]+):\n((?:- .*\n?)*)/g;
+	const mergedItems: string[] = [];
+	let sectionMatch: RegExpExecArray | null;
+	while ((sectionMatch = sectionRegex.exec(description)) !== null) {
+		const heading = sectionMatch[1] ?? "Merged auth/profile context";
+		const bullets = (sectionMatch[2] ?? "")
+			.split("\n")
+			.map((line) => line.trim())
+			.filter((line) => line.startsWith("- "))
+			.map((line) => line.slice(2).trim())
+			.filter(Boolean);
+		for (const bullet of bullets) {
+			mergedItems.push(`${heading.replace(/^Merged\s+/i, "")} — ${bullet}`);
+		}
+	}
+
+	const uniqueItems = [...new Set(mergedItems)];
+	if (uniqueItems.length === 0) return description;
+	return `${baseDescription}\n\nMerged auth/profile context:\n- ${uniqueItems.join("\n- ")}`;
+}
+
+function compactMergedDescriptions(findings: readonly Finding[]): Finding[] {
+	return findings.map((finding) => {
+		if (!finding.description.includes("\n\nMerged ")) return finding;
+		return {
+			...finding,
+			description: compactMergedDescription(finding.description),
+		};
+	});
+}
+
 function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
 	const passthrough: Finding[] = [];
 	const overlapGroups = new Map<string, Finding[]>();
@@ -549,12 +583,14 @@ export function aggregateScores(
 	// Determine badge tier from raw findings so report dedup does not silently
 	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
-	const reportFindings = mergeHighBehavioralAuthSummary(
-		mergeBroadBehavioralAuthFamilies(
-			mergeAuthPermissionIntoBehavior(
-				mergeSpecificAuthDependenciesIntoBehavior(
-					mergeGenericAuthDependencyFindings(
-						mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+	const reportFindings = compactMergedDescriptions(
+		mergeHighBehavioralAuthSummary(
+			mergeBroadBehavioralAuthFamilies(
+				mergeAuthPermissionIntoBehavior(
+					mergeSpecificAuthDependenciesIntoBehavior(
+						mergeGenericAuthDependencyFindings(
+							mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+						),
 					),
 				),
 			),

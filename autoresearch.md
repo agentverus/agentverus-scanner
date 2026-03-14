@@ -164,7 +164,13 @@ Benchmark details:
   - `auth_merge_description_sections=24`
   - `public_issue_findings=272`
   - `realtime_prefix_findings=258`
-- Current remaining report-noise hotspots after Phase 4 baseline:
-  - stacked `Merged ...` sections in the surviving auth/profile finding descriptions
-  - the remaining likely optimization is consolidating multiple merge paragraphs into one merged-auth-context section per finding
+- Phase 4 / Experiment 1: compacted stacked merged-description paragraphs into a single `Merged auth/profile context:` section per surviving finding, preserving merged detail while eliminating repeated merge headings. Result:
+  - `auth_merge_description_sections`: `24 -> 5`
+  - `auth_profile_findings`: stayed at `5`
+  - `auth_merge_suffixes`: stayed at `0`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 4 / Experiment 1:
+  - none identified in the benchmarked target set; remaining auth/profile findings are already reduced to one clean rendered finding per target skill with one consolidated merge section where needed
 - Active deferred idea from `autoresearch.ideas.md`: none.

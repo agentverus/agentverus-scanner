@@ -418,7 +418,8 @@ describe("aggregateScores", () => {
 
 		const report = aggregateScores(categories, metadata);
 		expect(report.findings.length).toBe(1);
-		expect(report.findings[0]?.description).toContain('same auth risk family');
+		expect(report.findings[0]?.description).toContain('Merged auth/profile context:');
+		expect((report.findings[0]?.description.match(/\n\nMerged /g) ?? []).length).toBe(1);
 	});
 
 	it('should fold auth_cookies persistence into cookie-browser-auth family', () => {
@@ -457,7 +458,7 @@ describe("aggregateScores", () => {
 		};
 		const report = aggregateScores(categories, metadata);
 		expect(report.findings.length).toBe(1);
-		expect(report.findings[0]?.description).toContain('same auth risk family');
+		expect(report.findings[0]?.description).toContain('Merged auth/profile context:');
 	});
 
 	it('should merge multiple high behavioral auth findings into one summary', () => {
@@ -553,7 +554,8 @@ describe("aggregateScores", () => {
 		const report = aggregateScores(categories, metadata);
 		expect(report.findings.length).toBe(1);
 		expect(report.findings[0]?.title).toBe('Browser profile copy detected');
-		expect(report.findings[0]?.description).toContain('Merged auth/session capability-contract context');
+		expect(report.findings[0]?.description).toContain('Merged auth/profile context:');
+		expect(report.findings[0]?.description).toContain('credential access is not declared');
 	});
 
 	it('should merge auth findings that map to the same broader risk family', () => {
