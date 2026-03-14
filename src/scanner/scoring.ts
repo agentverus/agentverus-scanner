@@ -16,6 +16,16 @@ const SEVERITY_ORDER: Record<string, number> = {
 	info: 4,
 };
 
+const AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|chrome|cdp|token|vault|login)/i;
+const CATEGORY_PREFERENCE: Record<Category, number> = {
+	behavioral: 0,
+	injection: 1,
+	dependencies: 2,
+	permissions: 3,
+	content: 4,
+	"code-safety": 5,
+};
+
 /** Category weights for overall score calculation */
 const CATEGORY_WEIGHTS: Record<Category, number> = {
 	permissions: 0.20,
@@ -43,6 +53,77 @@ function hasConfigTamperFindings(findings: readonly Finding[]): boolean {
 	return findings.some((f) =>
 		CONFIG_TAMPER_PREFIXES.some((prefix) => f.id.startsWith(prefix)),
 	);
+}
+
+function isBrowserAuthOverlapCandidate(finding: Finding): boolean {
+	if (finding.severity !== "high" && finding.severity !== "medium") return false;
+	return AUTH_PROFILE_RELATED.test(`${finding.title}\n${finding.description}\n${finding.evidence}`);
+}
+
+function normalizeEvidence(evidence: string): string {
+	return evidence
+		.toLowerCase()
+		.replace(/https?:\/\/[^\s)\]]+/g, (url) =>
+			url.replace(/([?&][^=]+=)[^&#\s)\]]+/g, "$1<value>"),
+		)
+		.replace(/"[^"]+"|'[^']+'/g, '"<value>"')
+		.replace(/\b\d+\b/g, "#")
+		.replace(/<[^>]+>/g, "<value>")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function overlapPriority(finding: Finding): number {
+	let penalty = 0;
+	if (finding.title.startsWith("Capability contract mismatch")) penalty += 20;
+	if (finding.title.startsWith("Many external URLs")) penalty += 12;
+	if (finding.title.startsWith("Unknown external reference")) penalty += 10;
+	if (finding.title.startsWith("External reference")) penalty += 10;
+	return (
+		(SEVERITY_ORDER[finding.severity] ?? 4) * 100 +
+		(CATEGORY_PREFERENCE[finding.category] ?? 5) * 10 +
+		penalty -
+		Math.min(finding.deduction, 9)
+	);
+}
+
+function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
+	const passthrough: Finding[] = [];
+	const overlapGroups = new Map<string, Finding[]>();
+
+	for (const finding of findings) {
+		if (!isBrowserAuthOverlapCandidate(finding)) {
+			passthrough.push(finding);
+			continue;
+		}
+
+		const key = normalizeEvidence(finding.evidence);
+		const group = overlapGroups.get(key);
+		if (group) {
+			group.push(finding);
+		} else {
+			overlapGroups.set(key, [finding]);
+		}
+	}
+
+	const merged: Finding[] = [...passthrough];
+	for (const group of overlapGroups.values()) {
+		if (group.length === 1) {
+			merged.push(group[0]!);
+			continue;
+		}
+
+		const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
+		const primary = sortedGroup[0]!;
+		const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => f.title))].slice(0, 6);
+		merged.push({
+			...primary,
+			title: `${primary.title} (merged overlapping auth/profile signals)`,
+			description: `${primary.description}\n\nMerged overlapping signals from the same local context:${mergedSignals.length > 0 ? `\n- ${mergedSignals.join("\n- ")}` : ""}`,
+		});
+	}
+
+	return merged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
 }
 
 function determineBadge(score: number, findings: readonly Finding[]): BadgeTier {
@@ -91,14 +172,16 @@ export function aggregateScores(
 		.flatMap((cat) => [...cat.findings])
 		.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
 
-	// Determine badge tier
+	// Determine badge tier from raw findings so report dedup does not silently
+	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
+	const reportFindings = mergeOverlappingBrowserAuthFindings(allFindings);
 
 	return {
 		overall,
 		badge,
 		categories,
-		findings: allFindings,
+		findings: reportFindings,
 		metadata,
 	};
 }

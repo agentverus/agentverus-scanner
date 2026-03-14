@@ -184,6 +184,77 @@ describe("aggregateScores", () => {
 		expect(report.findings[2]?.severity).toBe("low");
 	});
 
+	it("should merge overlapping browser auth findings in report output without relaxing badge calculation", () => {
+		const sharedEvidence = 'actual Chrome profile with your login sessions';
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20, {
+				findings: [
+					{
+						id: 'PERM-1',
+						category: 'permissions',
+						severity: 'high',
+						title: 'Capability contract mismatch: inferred credential access is not declared',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 12,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'DEP-1',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Persistent credential-state store dependency',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+				],
+			}),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Browser profile copy detected',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Full browser profile sync detected',
+						description: 't',
+						evidence: sharedEvidence,
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.badge).toBe('suspicious');
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toContain('merged overlapping auth/profile signals');
+		expect(report.findings[0]?.description).toContain('Full browser profile sync detected');
+	});
+
 	// --- Config tampering badge cap ---
 
 	it("should cap badge to SUSPICIOUS for high config-tamper finding (BEH-CONFIG-TAMPER-*)", () => {

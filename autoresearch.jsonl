@@ -94,3 +94,4 @@
 {"run":92,"commit":"72867c5","metric":358,"metrics":{},"status":"keep","description":"feat: surface media artifact handoff dependencies earlier","timestamp":1773445229936,"segment":1}
 {"run":93,"commit":"ef2f8fc","metric":361,"metrics":{},"status":"keep","description":"feat: surface reusable authenticated browser containers earlier","timestamp":1773445407392,"segment":1}
 {"type":"config","name":"Reduce browser auth/profile finding overlap in reports","metricName":"auth_profile_overlap","metricUnit":"","bestDirection":"lower"}
+{"run":1,"commit":"4cd5a99","metric":27,"metrics":{},"status":"keep","description":"chore: initialize auth/profile dedup benchmark and baseline","timestamp":1773456109480,"segment":1}
