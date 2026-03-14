@@ -339,6 +339,9 @@ function broadBehavioralAuthFamily(finding: Finding): string | null {
 	if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling|authentication integration surface)/i.test(hay)) {
 		return "behavioral::cookie-browser-auth";
 	}
+	if (/credential store persistence/i.test(hay) && /(auth_cookies|cookie)/i.test(hay)) {
+		return "behavioral::cookie-browser-auth";
+	}
 	if (/(browser profile copy|browser session attachment|profile-backed session persistence|persistent session reuse|auth import from user browser|state file replay)/i.test(hay)) {
 		return "behavioral::browser-container";
 	}

@@ -125,7 +125,13 @@ Benchmark details:
   - `public_issue_findings`: `275 -> 271`
   - `realtime_prefix_findings`: `261 -> 257`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 2 / Experiment 8:
+- Phase 2 / Experiment 9: folded `auth_cookies`-style credential-store persistence into the cookie-browser-auth family, which let ClawDirect-dev collapse to one high auth summary plus a smaller residual set. Result:
+  - `auth_profile_findings`: `7 -> 6`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `271 -> 270`
+  - `realtime_prefix_findings`: `257 -> 256`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 2 / Experiment 9:
   - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
   - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
   - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings
