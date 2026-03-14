@@ -171,6 +171,13 @@ Benchmark details:
   - `public_issue_findings`: stayed at `272`
   - `realtime_prefix_findings`: stayed at `258`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 4 / Experiment 1:
-  - none identified in the benchmarked target set; remaining auth/profile findings are already reduced to one clean rendered finding per target skill with one consolidated merge section where needed
+- Phase 4 / Experiment 2: renamed the consolidated description section from `Merged ...` to `Related auth/profile context`, eliminating merge-heading noise entirely while preserving merged detail and all other metrics. Result:
+  - `auth_merge_description_sections`: `5 -> 0`
+  - `auth_profile_findings`: stayed at `5`
+  - `auth_merge_suffixes`: stayed at `0`
+  - `public_issue_findings`: stayed at `272`
+  - `realtime_prefix_findings`: stayed at `258`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 4 / Experiment 2:
+  - none identified in the benchmarked target set; report overlap, finding count, title suffixes, and merged-description section clutter are all minimized for the current dedup strategy
 - Active deferred idea from `autoresearch.ideas.md`: none.

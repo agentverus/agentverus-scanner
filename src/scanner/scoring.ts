@@ -430,7 +430,7 @@ function compactMergedDescription(description: string): string {
 
 	const uniqueItems = [...new Set(mergedItems)];
 	if (uniqueItems.length === 0) return description;
-	return `${baseDescription}\n\nMerged auth/profile context:\n- ${uniqueItems.join("\n- ")}`;
+	return `${baseDescription}\n\nRelated auth/profile context:\n- ${uniqueItems.join("\n- ")}`;
 }
 
 function compactMergedDescriptions(findings: readonly Finding[]): Finding[] {
