@@ -70,8 +70,15 @@ Benchmark details:
   - `public_issue_findings`: `272 -> 254`
   - `realtime_prefix_findings`: `258 -> 242`
   - `safe_fixture_regressions`: unchanged at `4`
+- Experiment 2: also merge repeated behavioral `UI state enumeration detected` findings, which cleaned up another major repeated family across `agent-browser` and `webapp-testing`. Result:
+  - `rendered_duplicate_findings`: `52 -> 44`
+  - `rendered_duplicate_groups`: `30 -> 28`
+  - `prefix_rendered_duplicate_findings`: `50 -> 42`
+  - `public_issue_findings`: `254 -> 246`
+  - `realtime_prefix_findings`: `242 -> 234`
+  - `safe_fixture_regressions`: unchanged at `4`
 - Likely next promising families if this direction continues:
-  - `behavioral::ui state enumeration detected`
-  - `behavioral::browser content extraction detected` follow-up tuning if output still noisy
+  - `behavioral::skill path discovery detected`
+  - `behavioral::external instruction override file detected`
   - `behavioral::server lifecycle orchestration detected`
   - `behavioral::remote documentation ingestion detected`
