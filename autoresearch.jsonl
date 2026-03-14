@@ -106,3 +106,4 @@
 {"run":7,"commit":"bd99b2c","metric":30,"metrics":{},"status":"keep","description":"feat: merge generic auth-related dependency context into stronger specific findings","timestamp":1773457347378,"segment":1}
 {"run":8,"commit":"ad105d6","metric":24,"metrics":{},"status":"keep","description":"feat: merge auth-related permission contract mismatches into one rendered summary","timestamp":1773457572578,"segment":1}
 {"run":9,"commit":"0a4a4ec","metric":18,"metrics":{},"status":"keep","description":"feat: merge specific auth-related dependency signals into behavioral findings","timestamp":1773457722052,"segment":1}
+{"run":10,"commit":"93fc283","metric":13,"metrics":{},"status":"keep","description":"feat: merge auth contract summaries into strongest behavioral auth findings","timestamp":1773457904366,"segment":1}

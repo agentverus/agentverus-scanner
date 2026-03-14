@@ -380,6 +380,46 @@ describe("aggregateScores", () => {
 		expect(report.findings[0]?.title).toContain('merged auth/dependency context');
 	});
 
+	it('should merge broader behavioral auth families after earlier report shaping', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Persistent session reuse detected',
+						description: 't',
+						evidence: 'session saved',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Browser session attachment detected',
+						description: 't',
+						evidence: 'real Chrome with CDP',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.description).toContain('same auth risk family');
+	});
+
 	it('should merge auth-related permission contract mismatches into one behavioral summary when present', () => {
 		const categories: Record<Category, CategoryScore> = {
 			permissions: makeCategoryScore(95, 0.20, {

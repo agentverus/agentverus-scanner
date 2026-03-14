@@ -333,6 +333,49 @@ function mergeSpecificAuthDependenciesIntoBehavior(findings: readonly Finding[])
 	return output;
 }
 
+function broadBehavioralAuthFamily(finding: Finding): string | null {
+	if (finding.category !== "behavioral") return null;
+	const hay = `${cleanMergedTitle(finding.title)}\n${finding.description}\n${finding.evidence}`.toLowerCase();
+	if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling|authentication integration surface)/i.test(hay)) {
+		return "behavioral::cookie-browser-auth";
+	}
+	if (/(browser profile copy|browser session attachment|profile-backed session persistence|persistent session reuse|auth import from user browser|state file replay)/i.test(hay)) {
+		return "behavioral::browser-container";
+	}
+	if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping)/i.test(hay)) {
+		return "behavioral::credential-store";
+	}
+	return null;
+}
+
+function mergeBroadBehavioralAuthFamilies(findings: readonly Finding[]): Finding[] {
+	const passThrough: Finding[] = [];
+	const groups = new Map<string, Finding[]>();
+	for (const finding of findings) {
+		const family = broadBehavioralAuthFamily(finding);
+		if (!family) {
+			passThrough.push(finding);
+			continue;
+		}
+		const group = groups.get(family);
+		if (group) {
+			group.push(finding);
+		} else {
+			groups.set(family, [finding]);
+		}
+	}
+
+	const merged = [...passThrough];
+	for (const group of groups.values()) {
+		if (group.length === 1) {
+			merged.push(group[0]!);
+			continue;
+		}
+		merged.push(mergeFindingGroup(group, "same auth risk family"));
+	}
+	return merged;
+}
+
 function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
 	const passthrough: Finding[] = [];
 	const overlapGroups = new Map<string, Finding[]>();
@@ -473,10 +516,12 @@ export function aggregateScores(
 	// Determine badge tier from raw findings so report dedup does not silently
 	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
-	const reportFindings = mergeAuthPermissionIntoBehavior(
-		mergeSpecificAuthDependenciesIntoBehavior(
-			mergeGenericAuthDependencyFindings(
-				mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+	const reportFindings = mergeBroadBehavioralAuthFamilies(
+		mergeAuthPermissionIntoBehavior(
+			mergeSpecificAuthDependenciesIntoBehavior(
+				mergeGenericAuthDependencyFindings(
+					mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+				),
 			),
 		),
 	);
