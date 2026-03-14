@@ -101,7 +101,13 @@ Benchmark details:
   - `public_issue_findings`: `295 -> 289`
   - `realtime_prefix_findings`: `280 -> 274`
   - `safe_fixture_regressions`: unchanged at `4`
-- Current remaining report-noise hotspots after Phase 2 / Experiment 4:
+- Phase 2 / Experiment 5: merged specific auth-related dependency findings into stronger behavioral auth findings (for example reusable authenticated browser containers into profile/session behavior, and query-parameter auth transport into cookie/browser auth behavior), reducing another layer of cross-category report noise while keeping raw badge inputs unchanged. Result:
+  - `auth_profile_findings`: `24 -> 18`
+  - `auth_profile_overlap`: remained `0`
+  - `public_issue_findings`: `289 -> 283`
+  - `realtime_prefix_findings`: `274 -> 268`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Current remaining report-noise hotspots after Phase 2 / Experiment 5:
   - `browser-use`: repeated persistent-session, full-profile-sync, session-inventory, and code-block browser-auth findings
   - `agent-browser`: repeated state-file replay / vault / persistent-session / federated-auth findings
   - `clawdirect` / `clawdirect-dev`: repeated auth-cookie, query-string, and cookie-bootstrap findings

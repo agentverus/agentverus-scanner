@@ -337,6 +337,49 @@ describe("aggregateScores", () => {
 		expect(report.findings[0]?.description).toContain('Many external URLs referenced');
 	});
 
+	it('should merge specific auth dependencies into a stronger behavioral auth finding', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'DEP-1',
+						category: 'dependencies',
+						severity: 'medium',
+						title: 'Reusable authenticated browser container dependency',
+						description: 't',
+						evidence: 'persistent but empty CLI profile',
+						deduction: 8,
+						recommendation: 'r',
+						owaspCategory: 'ASST-04',
+					},
+				],
+			}),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'high',
+						title: 'Browser profile copy detected',
+						description: 't',
+						evidence: 'actual Chrome profile',
+						deduction: 15,
+						recommendation: 'r',
+						owaspCategory: 'ASST-05',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toContain('merged auth/dependency context');
+	});
+
 	it('should merge auth-related permission contract mismatches into one summary finding', () => {
 		const categories: Record<Category, CategoryScore> = {
 			permissions: makeCategoryScore(95, 0.20, {

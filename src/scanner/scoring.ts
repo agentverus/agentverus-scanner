@@ -238,6 +238,70 @@ function mergeGenericAuthDependencyFindings(findings: readonly Finding[]): Findi
 	return output;
 }
 
+function behavioralDependencyFamily(finding: Finding): string | null {
+	const hay = `${cleanMergedTitle(finding.title)}\n${finding.description}\n${finding.evidence}`.toLowerCase();
+	if (/(credential-bearing url parameter|credential query-parameter transport)/i.test(hay)) {
+		return "cookie-handoff";
+	}
+	if (/reusable authenticated browser container/i.test(hay)) {
+		return "browser-container";
+	}
+	if (/persistent credential-state store/i.test(hay)) {
+		return "credential-store";
+	}
+	return null;
+}
+
+function behavioralAuthFamily(finding: Finding): string | null {
+	if (finding.category !== "behavioral") return null;
+	const hay = `${cleanMergedTitle(finding.title)}\n${finding.description}\n${finding.evidence}`.toLowerCase();
+	if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling)/i.test(hay)) {
+		return "cookie-handoff";
+	}
+	if (/(browser profile copy|full browser profile sync|browser session attachment|profile-backed session persistence|auth import from user browser|persistent session reuse|state file replay)/i.test(hay)) {
+		return "browser-container";
+	}
+	if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping|browser auth state handling)/i.test(hay)) {
+		return "credential-store";
+	}
+	return null;
+}
+
+function mergeSpecificAuthDependenciesIntoBehavior(findings: readonly Finding[]): Finding[] {
+	const behaviorals = findings.filter((finding) => behavioralAuthFamily(finding) !== null);
+	const specificDependencies = findings.filter(
+		(finding) => finding.category === "dependencies" && behavioralDependencyFamily(finding) !== null,
+	);
+	if (behaviorals.length === 0 || specificDependencies.length === 0) return [...findings];
+
+	const consumed = new Set<Finding>();
+	const replacements = new Map<Finding, Finding>();
+	for (const dependency of specificDependencies) {
+		const family = behavioralDependencyFamily(dependency);
+		if (!family) continue;
+		const target = [...behaviorals]
+			.filter((finding) => behavioralAuthFamily(finding) === family)
+			.sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+		if (!target) continue;
+
+		consumed.add(dependency);
+		const existing = replacements.get(target) ?? target;
+		replacements.set(target, {
+			...existing,
+			title: `${cleanMergedTitle(existing.title)} (merged auth/dependency context)`,
+			description: `${existing.description}\n\nMerged related dependency context:\n- ${cleanMergedTitle(dependency.title)}`,
+		});
+	}
+
+	const output: Finding[] = [];
+	for (const finding of findings) {
+		if (consumed.has(finding)) continue;
+		const replacement = replacements.get(finding);
+		output.push(replacement ?? finding);
+	}
+	return output;
+}
+
 function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
 	const passthrough: Finding[] = [];
 	const overlapGroups = new Map<string, Finding[]>();
@@ -378,8 +442,10 @@ export function aggregateScores(
 	// Determine badge tier from raw findings so report dedup does not silently
 	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
-	const reportFindings = mergeGenericAuthDependencyFindings(
-		mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+	const reportFindings = mergeSpecificAuthDependenciesIntoBehavior(
+		mergeGenericAuthDependencyFindings(
+			mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+		),
 	);
 
 	return {
