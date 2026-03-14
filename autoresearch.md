@@ -57,4 +57,21 @@ Benchmark details:
   - `webapp-testing`: repeated browser-content/UI-state/helper-script findings
   - `mcp-builder`: repeated remote-doc/tool-bridge/transport findings
   - `docker-expert`: repeated reconnaissance/container/local-service findings
-- Baseline for this new goal has not been logged in this file yet; run `./autoresearch.sh`, record `rendered_duplicate_findings`, then start experimenting.
+- Baseline for this new goal (`./autoresearch.sh` on this branch):
+  - `rendered_duplicate_findings=70`
+  - `rendered_duplicate_groups=34`
+  - `prefix_rendered_duplicate_findings=66`
+  - `public_issue_findings=272`
+  - `realtime_prefix_findings=258`
+- Experiment 1: merge the single noisiest repeated rendered family — behavioral `Browser content extraction detected` (including code-block variants) — while leaving other repeated families untouched. Result:
+  - `rendered_duplicate_findings`: `70 -> 52`
+  - `rendered_duplicate_groups`: `34 -> 30`
+  - `prefix_rendered_duplicate_findings`: `66 -> 50`
+  - `public_issue_findings`: `272 -> 254`
+  - `realtime_prefix_findings`: `258 -> 242`
+  - `safe_fixture_regressions`: unchanged at `4`
+- Likely next promising families if this direction continues:
+  - `behavioral::ui state enumeration detected`
+  - `behavioral::browser content extraction detected` follow-up tuning if output still noisy
+  - `behavioral::server lifecycle orchestration detected`
+  - `behavioral::remote documentation ingestion detected`
