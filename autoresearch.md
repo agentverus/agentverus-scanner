@@ -91,8 +91,15 @@ Benchmark details:
   - `public_issue_findings`: `237 -> 232`
   - `realtime_prefix_findings`: `225 -> 220`
   - `safe_fixture_regressions`: unchanged at `4`
+- Experiment 5: merge the next broad cluster of repeated families — `host environment reconnaissance`, `external tool bridge`, `remote transport exposure`, and `unrestricted scope` — which cleaned up repeated diagnostics in `agent-browser`, `mcp-builder`, and `docker-expert`. Result:
+  - `rendered_duplicate_findings`: `30 -> 23`
+  - `rendered_duplicate_groups`: `21 -> 16`
+  - `prefix_rendered_duplicate_findings`: `28 -> 22`
+  - `public_issue_findings`: `232 -> 225`
+  - `realtime_prefix_findings`: `220 -> 214`
+  - `safe_fixture_regressions`: unchanged at `4`
 - Likely next promising families if this direction continues:
-  - `behavioral::host environment reconnaissance detected`
-  - `behavioral::external tool bridge detected`
-  - `behavioral::remote transport exposure detected`
-  - `behavioral::unrestricted scope detected`
+  - `behavioral::remote browser delegation detected`
+  - `behavioral::remote task delegation detected`
+  - `behavioral::credential form automation detected`
+  - `behavioral::temporary script execution detected`

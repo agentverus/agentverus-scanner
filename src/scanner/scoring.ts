@@ -451,6 +451,10 @@ const TARGET_RENDERED_DUPLICATE_KEYS = new Set<string>([
 	"behavioral::external instruction override file detected",
 	"behavioral::server lifecycle orchestration detected",
 	"behavioral::remote documentation ingestion detected",
+	"behavioral::host environment reconnaissance detected",
+	"behavioral::external tool bridge detected",
+	"behavioral::remote transport exposure detected",
+	"behavioral::unrestricted scope detected",
 ]);
 
 function mergeSelectedRenderedDuplicates(findings: readonly Finding[]): Finding[] {
