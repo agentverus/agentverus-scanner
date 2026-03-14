@@ -92,3 +92,5 @@
 {"run":90,"commit":"32742b7","metric":352,"metrics":{},"status":"keep","description":"feat: infer local service access from webapp testing trigger language","timestamp":1773445042570,"segment":1}
 {"run":91,"commit":"de18481","metric":355,"metrics":{},"status":"keep","description":"feat: surface package-managed bootstrap dependencies earlier","timestamp":1773445131805,"segment":1}
 {"run":92,"commit":"72867c5","metric":358,"metrics":{},"status":"keep","description":"feat: surface media artifact handoff dependencies earlier","timestamp":1773445229936,"segment":1}
+{"run":93,"commit":"ef2f8fc","metric":361,"metrics":{},"status":"keep","description":"feat: surface reusable authenticated browser containers earlier","timestamp":1773445407392,"segment":1}
+{"type":"config","name":"Reduce browser auth/profile finding overlap in reports","metricName":"auth_profile_overlap","metricUnit":"","bestDirection":"lower"}
