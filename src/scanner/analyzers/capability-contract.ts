@@ -372,6 +372,7 @@ const LOCAL_SERVICE_ACCESS_PATTERNS: readonly RegExp[] = [
 	/\bstdio\s+for\s+local\s+servers?\b/i,
 	/\bPORT=\d{2,5}\b/i,
 	/\bEXPOSE\s+\d{2,5}\b/i,
+	/\btesting\s+web\s+apps?\b|\btest\s+this\s+web\s+app\b/i,
 	/\bweb\s+server\b.{0,80}\bexpress\b|\bexpress\b.{0,80}\bweb\s+server\b/i,
 	/\bMCP\s+endpoints?\s+directly\b/i,
 ] as const;

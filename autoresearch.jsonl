@@ -84,3 +84,11 @@
 {"run":82,"commit":"390df0b","metric":333,"metrics":{},"status":"keep","description":"feat: infer package-bootstrap risk from package.json workflow setup","timestamp":1773432038608,"segment":1}
 {"run":83,"commit":"13e1c7c","metric":335,"metrics":{},"status":"keep","description":"feat: infer network and server exposure from exposed ports and remote browser services","timestamp":1773432159514,"segment":1}
 {"run":84,"commit":"9ea030d","metric":337,"metrics":{},"status":"keep","description":"feat: surface healthcheck and direct endpoint local-service hints earlier","timestamp":1773432235164,"segment":1}
+{"run":85,"commit":"7113955","metric":340,"metrics":{},"status":"keep","description":"feat: surface hosted browser and provider dependency hints earlier","timestamp":1773432470589,"segment":1}
+{"run":86,"commit":"d2beb64","metric":342,"metrics":{},"status":"keep","description":"feat: surface prose-level query-string credential transport earlier","timestamp":1773444623435,"segment":1}
+{"run":87,"commit":"4976167","metric":344,"metrics":{},"status":"keep","description":"feat: escalate early endpoint sprawl when auth and api context is present","timestamp":1773444742940,"segment":1}
+{"run":88,"commit":"406704b","metric":348,"metrics":{},"status":"keep","description":"feat: surface persistent credential-store dependencies earlier","timestamp":1773444866861,"segment":1}
+{"run":89,"commit":"5dd0c39","metric":351,"metrics":{},"status":"keep","description":"feat: surface external documentation dependencies earlier","timestamp":1773444961740,"segment":1}
+{"run":90,"commit":"32742b7","metric":352,"metrics":{},"status":"keep","description":"feat: infer local service access from webapp testing trigger language","timestamp":1773445042570,"segment":1}
+{"run":91,"commit":"de18481","metric":355,"metrics":{},"status":"keep","description":"feat: surface package-managed bootstrap dependencies earlier","timestamp":1773445131805,"segment":1}
+{"run":92,"commit":"72867c5","metric":358,"metrics":{},"status":"keep","description":"feat: surface media artifact handoff dependencies earlier","timestamp":1773445229936,"segment":1}

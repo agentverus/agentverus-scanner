@@ -274,6 +274,20 @@ Your Web Server (Express) exposes MCP endpoints directly for programmatic agent 
 		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
 	});
 
+	it("should infer local service access from webapp-testing trigger language", async () => {
+		const skill = parseSkill(`---
+name: browser-helper
+description: Use when the user asks to test this web app or needs help testing web apps
+---
+This skill automates browser checks.`);
+		const result = await analyzePermissions(skill);
+
+		const contractFindings = result.findings.filter((f) =>
+			f.id.startsWith("PERM-CONTRACT-MISSING-"),
+		);
+		expect(contractFindings.some((f) => f.title.includes("local service access"))).toBe(true);
+	});
+
 	it("should infer package bootstrap from package.json workflow guidance", async () => {
 		const skill = parseSkill(`---
 name: package-helper
