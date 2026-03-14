@@ -1,1 +1,1 @@
-- No deferred ideas currently.
+- No deferred ideas currently. Active focus is broad rendered finding-family dedup beyond auth/profile.

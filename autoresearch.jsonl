@@ -118,3 +118,5 @@
 {"run":1,"commit":"5949c8d","metric":24,"metrics":{},"status":"keep","description":"chore: baseline merged auth/profile description section clutter","timestamp":1773459311498,"segment":1}
 {"run":2,"commit":"5949c8d","metric":0,"metrics":{},"status":"crash","description":"feat: collapse merged auth context descriptions into one unified section","timestamp":1773459426056,"segment":1}
 {"run":3,"commit":"4ccd196","metric":5,"metrics":{},"status":"keep","description":"feat: collapse stacked merged auth description sections into one block","timestamp":1773459509640,"segment":1}
+{"run":4,"commit":"f90537e","metric":0,"metrics":{},"status":"keep","description":"feat: rename merged auth description sections to cleaner related-context text","timestamp":1773459676873,"segment":1}
+{"type":"config","name":"Reduce repeated rendered finding families in reports","metricName":"rendered_duplicate_findings","metricUnit":"","bestDirection":"lower"}
