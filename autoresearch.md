@@ -77,8 +77,15 @@ Benchmark details:
   - `public_issue_findings`: `254 -> 246`
   - `realtime_prefix_findings`: `242 -> 234`
   - `safe_fixture_regressions`: unchanged at `4`
+- Experiment 3: merge repeated behavioral `skill path discovery` and `external instruction override file` findings, which cleaned up Baoyu-style path/config duplication across `baoyu-post-to-x`, `baoyu-image-gen`, and `playwright-skill`. Result:
+  - `rendered_duplicate_findings`: `44 -> 35`
+  - `rendered_duplicate_groups`: `28 -> 23`
+  - `prefix_rendered_duplicate_findings`: `42 -> 33`
+  - `public_issue_findings`: `246 -> 237`
+  - `realtime_prefix_findings`: `234 -> 225`
+  - `safe_fixture_regressions`: unchanged at `4`
 - Likely next promising families if this direction continues:
-  - `behavioral::skill path discovery detected`
-  - `behavioral::external instruction override file detected`
   - `behavioral::server lifecycle orchestration detected`
   - `behavioral::remote documentation ingestion detected`
+  - `behavioral::external tool bridge detected`
+  - `behavioral::host environment reconnaissance detected`

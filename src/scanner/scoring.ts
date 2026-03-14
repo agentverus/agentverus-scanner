@@ -448,6 +448,7 @@ const TARGET_RENDERED_DUPLICATE_KEYS = new Set<string>([
 	"behavioral::browser content extraction detected",
 	"behavioral::ui state enumeration detected",
 	"behavioral::skill path discovery detected",
+	"behavioral::external instruction override file detected",
 ]);
 
 function mergeSelectedRenderedDuplicates(findings: readonly Finding[]): Finding[] {
