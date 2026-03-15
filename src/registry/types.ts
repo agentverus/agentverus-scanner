@@ -6,6 +6,10 @@ export interface RegistryScanResult {
 	readonly version: string;
 	/** Download URL used */
 	readonly url: string;
+	/** Canonicalized URL used for cross-source deduplication */
+	readonly normalizedUrl: string;
+	/** sha256 hash of the fetched SKILL.md content */
+	readonly contentHash: string;
 	/** Overall trust score 0-100 */
 	readonly score: number;
 	/** Badge tier */

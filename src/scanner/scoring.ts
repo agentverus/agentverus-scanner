@@ -25,6 +25,7 @@ const CATEGORY_PREFERENCE: Record<Category, number> = {
 	content: 4,
 	"code-safety": 5,
 };
+const MEDIUM_PLUS = new Set(["medium", "high", "critical"]);
 
 /** Category weights for overall score calculation */
 const CATEGORY_WEIGHTS: Record<Category, number> = {
@@ -443,6 +444,51 @@ function compactMergedDescriptions(findings: readonly Finding[]): Finding[] {
 	});
 }
 
+const TARGET_RENDERED_DUPLICATE_KEYS = new Set<string>([
+	"behavioral::browser content extraction detected",
+	"behavioral::ui state enumeration detected",
+	"behavioral::skill path discovery detected",
+	"behavioral::external instruction override file detected",
+	"behavioral::server lifecycle orchestration detected",
+	"behavioral::remote documentation ingestion detected",
+	"behavioral::host environment reconnaissance detected",
+	"behavioral::external tool bridge detected",
+	"behavioral::remote transport exposure detected",
+	"behavioral::unrestricted scope detected",
+]);
+
+function mergeSelectedRenderedDuplicates(findings: readonly Finding[]): Finding[] {
+	const passThrough: Finding[] = [];
+	const groups = new Map<string, Finding[]>();
+	for (const finding of findings) {
+		if (!MEDIUM_PLUS.has(finding.severity)) {
+			passThrough.push(finding);
+			continue;
+		}
+		const key = `${finding.category}::${normalizeAuthTitle(finding.title)}`;
+		if (!TARGET_RENDERED_DUPLICATE_KEYS.has(key)) {
+			passThrough.push(finding);
+			continue;
+		}
+		const group = groups.get(key);
+		if (group) {
+			group.push(finding);
+		} else {
+			groups.set(key, [finding]);
+		}
+	}
+
+	const merged = [...passThrough];
+	for (const group of groups.values()) {
+		if (group.length === 1) {
+			merged.push(group[0]!);
+			continue;
+		}
+		merged.push(mergeFindingGroup(group, "repeated finding family"));
+	}
+	return merged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+}
+
 function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Finding[] {
 	const passthrough: Finding[] = [];
 	const overlapGroups = new Map<string, Finding[]>();
@@ -583,13 +629,15 @@ export function aggregateScores(
 	// Determine badge tier from raw findings so report dedup does not silently
 	// relax certification outcomes.
 	const badge = determineBadge(overall, allFindings);
-	const reportFindings = compactMergedDescriptions(
-		mergeHighBehavioralAuthSummary(
-			mergeBroadBehavioralAuthFamilies(
-				mergeAuthPermissionIntoBehavior(
-					mergeSpecificAuthDependenciesIntoBehavior(
-						mergeGenericAuthDependencyFindings(
-							mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+	const reportFindings = mergeSelectedRenderedDuplicates(
+		compactMergedDescriptions(
+			mergeHighBehavioralAuthSummary(
+				mergeBroadBehavioralAuthFamilies(
+					mergeAuthPermissionIntoBehavior(
+						mergeSpecificAuthDependenciesIntoBehavior(
+							mergeGenericAuthDependencyFindings(
+								mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)),
+							),
 						),
 					),
 				),
