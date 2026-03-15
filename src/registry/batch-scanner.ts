@@ -3,9 +3,10 @@
  * Downloads and scans all skills from the registry with configurable concurrency.
  */
 
+import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { scanSkill } from "../scanner/index.js";
-import { fetchSkillContentFromUrl } from "../scanner/source.js";
+import { fetchSkillContentFromUrl, normalizeSkillUrl } from "../scanner/source.js";
 import type { TrustReport } from "../scanner/types.js";
 import { SCANNER_VERSION } from "../scanner/types.js";
 import type {
@@ -91,7 +92,12 @@ function parseSkillUrls(content: string): ParsedUrl[] {
 	return results;
 }
 
-function reportToResult(parsed: ParsedUrl, report: TrustReport): RegistryScanResult {
+function reportToResult(
+	parsed: ParsedUrl,
+	report: TrustReport,
+	normalizedUrl: string,
+	contentHash: string,
+): RegistryScanResult {
 	const categories: RegistryScanResult["categories"] = {};
 	for (const [name, cat] of Object.entries(report.categories)) {
 		categories[name] = {
@@ -101,8 +107,7 @@ function reportToResult(parsed: ParsedUrl, report: TrustReport): RegistryScanRes
 		};
 	}
 
-	// Keep top 10 findings to keep dataset manageable
-	const findings: RegistryFinding[] = report.findings.slice(0, 10).map((f) => ({
+	const findings: RegistryFinding[] = report.findings.map((f) => ({
 		id: f.id,
 		severity: f.severity,
 		title: f.title,
@@ -115,6 +120,8 @@ function reportToResult(parsed: ParsedUrl, report: TrustReport): RegistryScanRes
 		slug: parsed.slug,
 		version: parsed.version,
 		url: parsed.url,
+		normalizedUrl,
+		contentHash,
 		score: report.overall,
 		badge: report.badge,
 		format: report.metadata.skillFormat,
@@ -264,7 +271,9 @@ export async function batchScanRegistry(
 						});
 
 						const report = await scanSkill(content);
-						const result = reportToResult(item, report);
+						const contentHash = createHash("sha256").update(content).digest("hex");
+						const normalizedUrl = normalizeSkillUrl(item.url);
+						const result = reportToResult(item, report, normalizedUrl, contentHash);
 						results.push(result);
 
 						completed++;

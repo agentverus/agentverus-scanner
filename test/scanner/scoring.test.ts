@@ -337,6 +337,47 @@ describe("aggregateScores", () => {
 		expect(report.findings[0]?.description).toContain('Many external URLs referenced');
 	});
 
+	it('should merge selected repeated rendered finding titles outside auth workflows', () => {
+		const categories: Record<Category, CategoryScore> = {
+			permissions: makeCategoryScore(95, 0.20),
+			injection: makeCategoryScore(95, 0.25),
+			dependencies: makeCategoryScore(95, 0.15),
+			behavioral: makeCategoryScore(95, 0.15, {
+				findings: [
+					{
+						id: 'BEH-1',
+						category: 'behavioral',
+						severity: 'medium',
+						title: 'Browser content extraction detected',
+						description: 't',
+						evidence: 'extract information from web pages',
+						deduction: 10,
+						recommendation: 'r',
+						owaspCategory: 'ASST-02',
+					},
+					{
+						id: 'BEH-2',
+						category: 'behavioral',
+						severity: 'medium',
+						title: 'Browser content extraction detected (inside code block)',
+						description: 't',
+						evidence: 'browser-use get text <index>',
+						deduction: 10,
+						recommendation: 'r',
+						owaspCategory: 'ASST-02',
+					},
+				],
+			}),
+			content: makeCategoryScore(95, 0.10),
+			"code-safety": makeCategoryScore(100, 0.15),
+		};
+
+		const report = aggregateScores(categories, metadata);
+		expect(report.findings.length).toBe(1);
+		expect(report.findings[0]?.title).toBe('Browser content extraction detected');
+		expect(report.findings[0]?.description).toContain('repeated finding family');
+	});
+
 	it('should merge specific auth dependencies into a stronger behavioral auth finding', () => {
 		const categories: Record<Category, CategoryScore> = {
 			permissions: makeCategoryScore(95, 0.20),
