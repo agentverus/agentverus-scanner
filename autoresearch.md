@@ -1,105 +1,46 @@
-# Autoresearch: dedupe repeated rendered finding families
+# Autoresearch: reduce false positives on safe skill fixtures
 
 ## Objective
-Reduce repeated rendered finding families across AgentVerus Scanner reports so public-skill reports are shorter and easier to scan without hiding independent risks.
+Reduce medium+ findings on safe/benign skill fixtures without weakening detection on genuinely malicious skills. The scanner currently flags educational code examples, safety-section negations, and documentation references as threats, penalizing skills that are clearly safe.
 
-The prior auth/profile dedup pass already collapsed a large amount of browser-auth report noise. The next logical report-quality step is broader dedup of repeated medium+/high finding families that still appear multiple times per report, such as:
-- repeated `Browser content extraction detected`
-- repeated `UI state enumeration detected`
-- repeated `Remote documentation ingestion detected`
-- repeated `Host environment reconnaissance detected`
-- repeated `Local service exposure/access` variants in the same rendered report
-
-The goal is to reduce duplicated rendered findings while preserving raw badge/score inputs, safe-fixture behavior, and genuinely distinct risk signals.
+Key false positive sources observed in the current baseline:
+- **`evasion-context-safe.md`** (Security Educator): scores 83 with 9 medium+ findings. Attack patterns inside a fenced code block under "Common Attack Patterns (Educational Examples)" heading are still flagged heavily despite being clearly educational.
+- **`legit-security-skill.md`** (skill-scanner): gets 2 high findings from "access credentials" and "execute" appearing in a threat-detection documentation table.
+- **`legit-curl-install.md`** (deno-deploy): gets 3 medium+ findings for a standard `curl | sh` installer under a Prerequisites heading.
+- **`evasion-negation-safe.md`** (Secure File Manager): gets 4 medium+ findings including false triggers on negated safety rules like "Must not automatically delete".
+- **`config-tampering-safe.md`**: gets 3 medium+ findings from listing config files (like `~/.ssh/config`) as *targets of adversarial tampering*, not as things the skill accesses.
 
 ## Metrics
-- **Primary**: `rendered_duplicate_findings` (count, lower is better)
-- **Secondary**: `rendered_duplicate_groups`, `prefix_rendered_duplicate_findings`, `public_issue_findings`, `public_high_findings`, `realtime_prefix_findings`, `safe_fixture_regressions`, `safe_fixture_medium_plus`
+- **Primary**: `safe_fixture_medium_plus` (count of medium+high+critical findings across all safe fixtures, lower is better)
+- **Secondary**: `safe_fixture_score_min` (minimum score across safe fixtures — higher is better), `malicious_score_max` (maximum score across malicious fixtures — lower is better to preserve separation), `safe_fixture_regressions` (count of safe fixtures scoring below 90), `test_pass` (1 if tests pass, 0 if not)
 
 ## How to Run
-`./autoresearch.sh` — runs a fast typecheck gate and then executes `scripts/benchmark-report-family-dedup.mts`.
-
-Benchmark details:
-- scans the curated public corpus from `benchmarks/public-skill-corpus.txt`
-- counts repeated rendered medium+/high findings by normalized title and category
-- normalization strips report-shaping annotations such as `(inside code block)`, `(declared: ...)`, and `(merged ...)`
-- still emits overall coverage and safe-fixture metrics so report cleanup does not accidentally hide too much signal
+`./autoresearch.sh` — outputs `METRIC name=number` lines.
 
 ## Files in Scope
-- `src/scanner/scoring.ts` — likely place for rendered-report dedup shaping
-- `src/scanner/index.ts` — orchestration if report-level transforms need to move
-- `src/scanner/types.ts` — version bump or metadata if needed
-- `src/scanner/analyzers/*.ts` — only if a repeated finding should instead be fixed at the analyzer source
-- `test/scanner/*.test.ts` — regression coverage for rendered dedup behavior
-- `scripts/benchmark-report-family-dedup.mts` — benchmark workload
-- `autoresearch.sh` — fast experiment entry point
+- `src/scanner/analyzers/context.ts` — context detection (code blocks, safety sections, negation, threat-listing). **Primary optimization target.**
+- `src/scanner/analyzers/injection.ts` — injection pattern analyzer. Uses context.ts for adjustments.
+- `src/scanner/analyzers/behavioral.ts` — behavioral pattern analyzer. Uses context.ts for adjustments.
+- `src/scanner/analyzers/permissions.ts` — permission analysis.
+- `src/scanner/analyzers/capability-contract.ts` — capability contract mismatch detection. Uses `firstPositiveMatch` which respects context.
+- `src/scanner/analyzers/code-safety.ts` — code safety patterns (curl pipe to sh etc).
+- `src/scanner/analyzers/content.ts` — content analysis.
+- `src/scanner/scoring.ts` — score aggregation and report shaping.
+- `test/fixtures/skills/*.md` — safe and malicious fixture files (read-only for analysis, do not modify).
+- `test/scanner/*.test.ts` — test files (must continue passing).
 
 ## Off Limits
-- `data/` historical scan outputs
+- Do NOT modify test fixture files to game the metric
+- Do NOT weaken detection on genuinely malicious skills (monitor `malicious_score_max`)
+- Do NOT remove ASST categories or finding types entirely
 - npm dependencies
-- deleting genuinely distinct findings solely to win the metric
-- changing raw badge/score inputs in ways that weaken safety guarantees
 
 ## Constraints
-- `pnpm test` must pass before keeping meaningful changes
-- no new runtime dependencies
-- scanner must remain deterministic
-- badge/score logic should remain anchored to raw findings even if rendered report findings are deduped
-- any drop in `public_issue_findings` or `realtime_prefix_findings` must be justified by materially better report readability
+- `pnpm test` must pass before keeping any change
+- No new runtime dependencies
+- Scanner must remain deterministic
+- `malicious_score_max` must stay at or below baseline — malicious skills must not get higher scores
+- Badge logic must remain intact
 
 ## What's Been Tried
-- Previous public-skill coverage work shipped in merged PRs #5 and #6.
-- The follow-on auth/profile report-quality pass aggressively reduced auth/profile overlap, count, title clutter, and merged-description clutter.
-- That leaves a broader class of repeated rendered findings outside the auth/profile niche.
-- Current duplicate hotspots observed in rendered reports include:
-  - `browser-use`: repeated browser-content/local-service/remote-task findings
-  - `agent-browser`: repeated UI-state/content-extraction/unrestricted-scope findings
-  - `webapp-testing`: repeated browser-content/UI-state/helper-script findings
-  - `mcp-builder`: repeated remote-doc/tool-bridge/transport findings
-  - `docker-expert`: repeated reconnaissance/container/local-service findings
-- Baseline for this new goal (`./autoresearch.sh` on this branch):
-  - `rendered_duplicate_findings=70`
-  - `rendered_duplicate_groups=34`
-  - `prefix_rendered_duplicate_findings=66`
-  - `public_issue_findings=272`
-  - `realtime_prefix_findings=258`
-- Experiment 1: merge the single noisiest repeated rendered family — behavioral `Browser content extraction detected` (including code-block variants) — while leaving other repeated families untouched. Result:
-  - `rendered_duplicate_findings`: `70 -> 52`
-  - `rendered_duplicate_groups`: `34 -> 30`
-  - `prefix_rendered_duplicate_findings`: `66 -> 50`
-  - `public_issue_findings`: `272 -> 254`
-  - `realtime_prefix_findings`: `258 -> 242`
-  - `safe_fixture_regressions`: unchanged at `4`
-- Experiment 2: also merge repeated behavioral `UI state enumeration detected` findings, which cleaned up another major repeated family across `agent-browser` and `webapp-testing`. Result:
-  - `rendered_duplicate_findings`: `52 -> 44`
-  - `rendered_duplicate_groups`: `30 -> 28`
-  - `prefix_rendered_duplicate_findings`: `50 -> 42`
-  - `public_issue_findings`: `254 -> 246`
-  - `realtime_prefix_findings`: `242 -> 234`
-  - `safe_fixture_regressions`: unchanged at `4`
-- Experiment 3: merge repeated behavioral `skill path discovery` and `external instruction override file` findings, which cleaned up Baoyu-style path/config duplication across `baoyu-post-to-x`, `baoyu-image-gen`, and `playwright-skill`. Result:
-  - `rendered_duplicate_findings`: `44 -> 35`
-  - `rendered_duplicate_groups`: `28 -> 23`
-  - `prefix_rendered_duplicate_findings`: `42 -> 33`
-  - `public_issue_findings`: `246 -> 237`
-  - `realtime_prefix_findings`: `234 -> 225`
-  - `safe_fixture_regressions`: unchanged at `4`
-- Experiment 4: merge repeated behavioral `server lifecycle orchestration` and `remote documentation ingestion` findings, which reduced repeated rendered setup/orchestration guidance in `webapp-testing` and `mcp-builder`. Result:
-  - `rendered_duplicate_findings`: `35 -> 30`
-  - `rendered_duplicate_groups`: `23 -> 21`
-  - `prefix_rendered_duplicate_findings`: `33 -> 28`
-  - `public_issue_findings`: `237 -> 232`
-  - `realtime_prefix_findings`: `225 -> 220`
-  - `safe_fixture_regressions`: unchanged at `4`
-- Experiment 5: merge the next broad cluster of repeated families — `host environment reconnaissance`, `external tool bridge`, `remote transport exposure`, and `unrestricted scope` — which cleaned up repeated diagnostics in `agent-browser`, `mcp-builder`, and `docker-expert`. Result:
-  - `rendered_duplicate_findings`: `30 -> 23`
-  - `rendered_duplicate_groups`: `21 -> 16`
-  - `prefix_rendered_duplicate_findings`: `28 -> 22`
-  - `public_issue_findings`: `232 -> 225`
-  - `realtime_prefix_findings`: `220 -> 214`
-  - `safe_fixture_regressions`: unchanged at `4`
-- Likely next promising families if this direction continues:
-  - `behavioral::remote browser delegation detected`
-  - `behavioral::remote task delegation detected`
-  - `behavioral::credential form automation detected`
-  - `behavioral::temporary script execution detected`
+(Will be updated as experiments accumulate)

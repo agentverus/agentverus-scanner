@@ -125,3 +125,5 @@
 {"run":5,"commit":"21fc439","metric":44,"metrics":{},"status":"keep","description":"feat: merge repeated ui state enumeration findings in rendered reports","timestamp":1773464126813,"segment":1}
 {"run":6,"commit":"83dee66","metric":35,"metrics":{},"status":"keep","description":"feat: merge repeated skill path and external override finding families","timestamp":1773464194516,"segment":1}
 {"run":7,"commit":"c11e4a0","metric":30,"metrics":{},"status":"keep","description":"feat: merge repeated orchestration and remote-doc finding families","timestamp":1773464248890,"segment":1}
+{"run":8,"commit":"88df2a5","metric":23,"metrics":{},"status":"keep","description":"feat: merge repeated reconnaissance and integration finding families","timestamp":1773464325150,"segment":1}
+{"type":"config","name":"Reduce false positives on safe skill fixtures","metricName":"safe_fixture_medium_plus","metricUnit":"","bestDirection":"lower"}
