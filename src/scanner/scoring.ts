@@ -619,6 +619,17 @@ export function aggregateScores(
 		const weight = CATEGORY_WEIGHTS[category as Category] ?? 0;
 		overall += score.score * weight;
 	}
+
+	// Cross-category severity penalty: critical/high findings anywhere should
+	// drag the overall score down beyond what category weights alone achieve.
+	// This prevents a skill from being "almost clean" when it has concentrated
+	// critical findings in a single low-weight category.
+	const allCategoryFindings = Object.values(categories).flatMap((cat) => cat.findings);
+	const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
+	const highCount = allCategoryFindings.filter((f) => f.severity === "high").length;
+	const severityPenalty = Math.min(criticalCount * 8 + highCount * 2, 50);
+	overall -= severityPenalty;
+
 	overall = Math.round(Math.max(0, Math.min(100, overall)));
 
 	// Collect all findings and sort by severity
