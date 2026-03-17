@@ -81,6 +81,18 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			"Skills should not instruct collection of all tokens, keys, or credentials. Access only the specific credentials needed and declare them.",
 	},
 	{
+		name: "Suspicious download-and-execute",
+		patterns: [
+			/\b(?:curl|wget)\b[^\n]*(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
+			/\b(?:curl|wget)\b[^\n]*https?:\/\/[^\s]+\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu)\b[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
+		],
+		severity: "critical",
+		deduction: 35,
+		owaspCategory: "ASST-04",
+		recommendation:
+			"Remove download-and-execute patterns targeting suspicious domains or IP addresses. These are strong indicators of supply chain attacks.",
+	},
+	{
 		name: "Credential access",
 		patterns: [
 			/(?:read|access|get|cat|echo)\s+.*?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
@@ -455,12 +467,26 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				const lineNumber = content.slice(0, match.index).split("\n").length;
 				const line = lines[lineNumber - 1] ?? "";
 
+				// High-confidence patterns that should never have their severity reduced
+				// by code-block or threat-listing context — they're inherently dangerous.
+				const NEVER_REDUCE_PATTERNS = new Set([
+					"URL-parameter data exfiltration",
+					"Comprehensive secret collection",
+					"Suspicious download-and-execute",
+				]);
+
 				// Context-aware adjustment
 				let { severityMultiplier, reason } = adjustForContext(
 					match.index,
 					content,
 					ctx,
 				);
+
+				// For never-reduce patterns, override code-block reduction back to full
+				if (NEVER_REDUCE_PATTERNS.has(pattern.name) && severityMultiplier > 0 && severityMultiplier < 1.0) {
+					severityMultiplier = 1.0;
+					reason = null;
+				}
 
 				// Skip findings fully neutralized by context (safety sections, negation)
 				// Use continue, not break — a later match of the same pattern may be real
@@ -474,12 +500,7 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 
 				// Also suppress if NOT a defense skill but the match is in a threat-listing context
 				// with clear "detect/block/flag" language.
-				// Exception: high-confidence exfiltration patterns should NOT be reduced —
-				// they represent actionable data theft, not educational examples.
-				const NEVER_REDUCE_PATTERNS = new Set([
-					"URL-parameter data exfiltration",
-					"Comprehensive secret collection",
-				]);
+				// Exception: high-confidence patterns should NOT be reduced.
 				if (severityMultiplier > 0 && !isDefenseSkill && !NEVER_REDUCE_PATTERNS.has(pattern.name) && isInThreatListingContext(content, match.index)) {
 					severityMultiplier = 0.2;
 					reason = "inside threat-listing context";
