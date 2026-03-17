@@ -433,10 +433,19 @@ export async function analyzeCodeSafety(skill: ParsedSkill): Promise<CategorySco
 		allFindings.push(...findings);
 	}
 
-	// Deduplicate: one finding per rule ID across all blocks
+	// Deduplicate: one finding per rule ID across all blocks.
+	// Exception: curl|sh findings to different suspicious targets are distinct threats.
 	const seen = new Set<string>();
 	const deduped: Finding[] = [];
 	for (const f of allFindings) {
+		if (f.id === "CS-CURL-PIPE-1" && f.severity === "critical") {
+			// Different suspicious curl|sh targets = distinct threats
+			const targetKey = `${f.id}@${f.evidence}`;
+			if (seen.has(targetKey)) continue;
+			seen.add(targetKey);
+			deduped.push(f);
+			continue;
+		}
 		if (seen.has(f.id)) continue;
 		seen.add(f.id);
 		deduped.push(f);
