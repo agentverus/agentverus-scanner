@@ -3,6 +3,7 @@ import {
 	buildContentContext,
 	isInThreatListingContext,
 	isInsideCodeBlock,
+	isInsideSafetySection,
 	isPrecededByNegation,
 	isSecurityDefenseSkill,
 } from "./context.js";
@@ -631,7 +632,7 @@ function isInsideInlineCode(content: string, matchIndex: number): boolean {
 function firstPositiveMatch(
 	content: string,
 	patterns: readonly RegExp[],
-	isDefenseSkill: boolean,
+	_isDefenseSkill: boolean,
 	allowCodeBlocks = false,
 ): string | null {
 	const ctx = buildContentContext(content);
@@ -648,7 +649,12 @@ function firstPositiveMatch(
 			) {
 				continue;
 			}
-			if (isDefenseSkill && isInThreatListingContext(content, match.index)) continue;
+			// Skip matches in threat-listing contexts for defense/educational skills —
+			// these describe patterns being detected/blocked, not patterns the skill uses.
+			if (_isDefenseSkill && isInThreatListingContext(content, match.index)) continue;
+			// Skip matches inside safety boundary sections — these describe what the
+			// skill must NOT do, not capabilities it has.
+			if (isInsideSafetySection(match.index, ctx)) continue;
 			return (match[0] ?? "").trim().slice(0, 180);
 		}
 	}

@@ -107,8 +107,9 @@ export function isPrecededByNegation(content: string, matchIndex: number): boole
 	if (lineStart < 0) lineStart = 0;
 	const linePrefix = content.slice(lineStart, matchIndex);
 
-	// Direct negation on same line preceding the match
-	if (/(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never|is\s+not|isn['']?t|are\s+not|aren['']?t|has\s+not|hasn['']?t|have\s+not|haven['']?t|need\s+not|no\s+)\s*$/i.test(linePrefix)) {
+	// Direct negation on same line preceding the match (immediately before or with a few words gap)
+	// Matches: "do not <match>", "should not execute <match>", "never access <match>", etc.
+	if (/(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never|is\s+not|isn['']?t|are\s+not|aren['']?t|has\s+not|hasn['']?t|have\s+not|haven['']?t|need\s+not|no\s+)(?:\s+\w+){0,3}\s*$/i.test(linePrefix)) {
 		return true;
 	}
 

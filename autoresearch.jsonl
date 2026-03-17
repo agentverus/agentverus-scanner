@@ -128,3 +128,4 @@
 {"run":8,"commit":"88df2a5","metric":23,"metrics":{},"status":"keep","description":"feat: merge repeated reconnaissance and integration finding families","timestamp":1773464325150,"segment":1}
 {"type":"config","name":"Reduce false positives on safe skill fixtures","metricName":"safe_fixture_medium_plus","metricUnit":"","bestDirection":"lower"}
 {"run":1,"commit":"918501c","metric":22,"metrics":{"safe_fixture_score_min":83,"malicious_score_max":78,"safe_fixture_regressions":1,"test_pass":1},"status":"keep","description":"chore: baseline false positive benchmark — 22 safe_fixture_medium_plus","timestamp":1773718440693,"segment":6}
+{"run":2,"commit":"dbd6ef0","metric":13,"metrics":{"safe_fixture_score_min":92,"malicious_score_max":78,"safe_fixture_regressions":0,"test_pass":1},"status":"keep","description":"feat: expand negation detection and security-education skill classification","timestamp":1773718565995,"segment":6}
