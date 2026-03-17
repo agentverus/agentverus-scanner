@@ -79,7 +79,7 @@ All 5 remaining findings are TRUE POSITIVES:
 - legit-curl-install: curl|sh installer genuinely uses exec/network + code-safety (3)
 - evasion-negation-safe: `file_write` permission declared in frontmatter (1)
 
-### Score summary
+### Score summary (false positive reduction)
 | Fixture | Before | After |
 |---------|--------|-------|
 | safe-basic | 98 | 98 |
@@ -89,3 +89,34 @@ All 5 remaining findings are TRUE POSITIVES:
 | evasion-negation-safe | 92 | 98 |
 | evasion-context-safe | 83 | 99 |
 | config-tampering-safe | 92 | 99 |
+
+## Score Separation (Goal 2)
+
+### Experiment 7: Cross-category severity penalty (gap 16→45)
+- Added penalty of 8 per critical + 3 per high finding (capped at 50)
+- This prevents concentrated attacks in one category from being diluted by clean scores in other categories
+- `excessive-permissions` went 78→28, `malicious-injection` went 69→19
+
+### Experiment 8: Worst-category drag (gap 45→71)
+- When any category scores below 60, apply additional penalty proportional to how far below
+- Scale: (60 - min_score) / 2 points penalty
+- This prevents a skill from being "almost clean" when it spectacularly fails in one area
+- `obfuscated-skill` (content=15) went from 43 to 20
+- Threshold=60 chosen as sweet spot — threshold=70 crushes too many to 0
+
+### Score summary (after both goals)
+| Fixture | Original | After FP reduction | After scoring |
+|---------|----------|-------------------|---------------|
+| safe-basic | 98 | 98 | 98 |
+| safe-complex | 99 | 99 | 99 |
+| legit-security-skill | 94 | 99 | 99 |
+| legit-curl-install | 92 | 94 | 91 |
+| evasion-negation-safe | 92 | 98 | 98 |
+| evasion-context-safe | 83 | 99 | 99 |
+| config-tampering-safe | 92 | 99 | 99 |
+| malicious-injection | 69 | 69 | 0 |
+| malicious-exfiltration | 55 | 55 | 0 |
+| concealment-skill | 62 | 62 | 14 |
+| obfuscated-skill | 71 | 71 | 20 |
+| excessive-permissions | 78 | 78 | 0 |
+| **Gap** | **16** | **16** | **71** |
