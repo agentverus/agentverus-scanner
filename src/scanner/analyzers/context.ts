@@ -64,7 +64,7 @@ export function buildContentContext(content: string): ContentContext {
 	// Find safety boundary sections — must be subsection headings (##+), not the title
 	// Match only headings that are clearly about safety constraints/limitations
 	const safetyHeadingRegex =
-		/^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not|refusal\s+pattern|when\s+not\s+to\s+use|do\s+not\s+use\s+when)/gim;
+		/^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not|refusal\s+pattern|when\s+not\s+to\s+use|do\s+not\s+use\s+when|safe\s+operating|operating\s+rules|read[\s-]only\s+rules?)/gim;
 	while ((match = safetyHeadingRegex.exec(content)) !== null) {
 		const sectionStart = match.index;
 		// Find the end of this section (next heading of same or higher level, or EOF)
@@ -189,7 +189,7 @@ export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
 	}
 
 	// Defensive guidance about tampering, adversarial attacks, or safe configuration
-	if (/\b(?:defensive|defense|benign)\b.{0,80}\b(?:guidance|documentation|notes?)\b.{0,80}\b(?:tamper|attack|adversar|security)\b/i.test(contentHead)) {
+	if (/\b(?:defensive|defense|benign)\b.{0,80}\b(?:guidance|documentation|notes?)\b.{0,80}\b(?:tamper|attack|adversar|security)/i.test(contentHead)) {
 		return true;
 	}
 

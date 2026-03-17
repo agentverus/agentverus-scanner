@@ -1,6 +1,8 @@
 import { parseSkill } from "../src/scanner/parser.js";
 import { readFileSync } from "fs";
 import { isSecurityDefenseSkill, isInThreatListingContext, buildContentContext, isInsideSafetySection } from "../src/scanner/analyzers/context.js";
+import { analyzePermissions } from "../src/scanner/analyzers/permissions.js";
+import { analyzeInjection } from "../src/scanner/analyzers/injection.js";
 
 const content = readFileSync("test/fixtures/skills/config-tampering-safe.md", "utf-8");
 const skill = parseSkill(content);
@@ -22,5 +24,18 @@ for (const pattern of ["~/.ssh/config", "edit", "overwrite", "delete", "disable"
 	}
 }
 
-// Check what headings the safety section regex finds
 console.log("\nSafety ranges:", ctx.safetyRanges);
+
+// Check permission findings
+const permResult = await analyzePermissions(skill);
+for (const f of permResult.findings.filter(f => f.id.startsWith("PERM-CONTRACT"))) {
+	console.log(`\n${f.title}`);
+	console.log(`  evidence: ${f.evidence}`);
+}
+
+// Check injection findings
+const injResult = await analyzeInjection(skill);
+for (const f of injResult.findings.filter(f => f.severity !== "info" && f.severity !== "low")) {
+	console.log(`\n[${f.severity}] ${f.title}`);
+	console.log(`  evidence: ${f.evidence}`);
+}
