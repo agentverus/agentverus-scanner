@@ -3,7 +3,7 @@
 ## Completed ✅
 - **False positive reduction**: 22 → 5 medium+ findings on safe fixtures (remaining 5 are true positives)
 - **Score separation**: Gap widened from 16 to 71 points between safe and malicious fixtures
-- **Evasion detection**: Max evasion score dropped from 92 (certified!) to 40 (rejected). All 8 evasion fixtures now correctly rejected.
+- **Evasion detection**: Max evasion score dropped from 92 (certified!) to 24 (rejected). Evasion gap: -1 → 67. All 8 evasion fixtures correctly rejected.
 
 ## Future Optimization Targets
 
