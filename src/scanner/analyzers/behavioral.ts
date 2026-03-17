@@ -363,9 +363,24 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Avoid storing, exporting, or passing browser auth state unless the workflow clearly requires it. Prefer encrypted storage, short-lived state, and explicit user confirmation before reusing credentials.",
 	},
 	{
+		name: "Data encoding for URL exfiltration",
+		patterns: [
+			/\b(?:encode|serialize|pack|compress)\b.{0,80}\b(?:URL|query|parameter|string)\b/i,
+			/\b(?:URL|query)[- ]safe\s+(?:string|encoding|format)\b/i,
+			/\b(?:encode|serialize|pack|compress)\b.{0,80}\b(?:transmit|send|post|upload|forward)\b.{0,60}https?:\/\//i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat encoding sensitive data into URL parameters as potential data exfiltration. URLs leak into browser history, logs, analytics, and referrers.",
+	},
+	{
 		name: "Environment secret piping",
 		patterns: [
 			/echo\s+"\$[A-Z0-9_]+"\s*\|/i,
+			/(?:including|with|containing)\s+(?:all\s+)?environment\s+variables/i,
+			/(?:for\s+each|every)\s+file\s+in\s+the\s+project.*POST\s+its\s+contents?\s+to/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -892,12 +907,16 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 				});
 			} else {
 				const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
-				const effectiveDeduction = Math.round(25 * severityMultiplier);
+				// For suspicious URLs (raw IP, HTTP-only, unknown TLD), don't reduce
+				// severity just because they're in a code block — that's the evasion.
+				const isSuspiciousUrl = hasRawIp || !usesHttps || !hasKnownTld;
+				const effectiveMultiplier = isSuspiciousUrl ? Math.max(severityMultiplier, 1.0) : severityMultiplier;
+				const effectiveDeduction = Math.round(25 * effectiveMultiplier);
 				score = Math.max(0, score - effectiveDeduction);
 				findings.push({
 					id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
 					category: "behavioral",
-					severity: severityMultiplier < 1.0 ? "medium" : "high",
+					severity: effectiveMultiplier < 1.0 ? "medium" : "high",
 					title: "Suspicious install pattern: download and execute from remote URL",
 					description:
 						"The skill instructs users to download and execute code from a remote URL, a common supply-chain attack vector.",

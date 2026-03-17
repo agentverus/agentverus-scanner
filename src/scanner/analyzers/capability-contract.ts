@@ -3,6 +3,7 @@ import {
 	buildContentContext,
 	isInThreatListingContext,
 	isInsideCodeBlock,
+	isInsideSafetySection,
 	isPrecededByNegation,
 	isSecurityDefenseSkill,
 } from "./context.js";
@@ -628,10 +629,28 @@ function isInsideInlineCode(content: string, matchIndex: number): boolean {
 	return close >= rel;
 }
 
+/** Well-known installer domains where curl|sh is expected and lower risk */
+const KNOWN_INSTALLER_DOMAINS =
+	/(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
+
+/** Check if a match is a known-installer curl|sh in a setup/prerequisites section */
+function isKnownInstallerInSetupSection(content: string, matchIndex: number, matchText: string): boolean {
+	// Must be a curl|sh pattern with a known installer domain
+	if (!/\b(?:curl|wget)\b/i.test(matchText)) return false;
+	if (!KNOWN_INSTALLER_DOMAINS.test(matchText)) return false;
+
+	// Must be under a setup/prerequisites heading
+	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
+	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
+	if (!headings || headings.length === 0) return false;
+	const lastHeading = headings[headings.length - 1]!.toLowerCase();
+	return /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading);
+}
+
 function firstPositiveMatch(
 	content: string,
 	patterns: readonly RegExp[],
-	isDefenseSkill: boolean,
+	_isDefenseSkill: boolean,
 	allowCodeBlocks = false,
 ): string | null {
 	const ctx = buildContentContext(content);
@@ -648,7 +667,17 @@ function firstPositiveMatch(
 			) {
 				continue;
 			}
-			if (isDefenseSkill && isInThreatListingContext(content, match.index)) continue;
+			// Skip matches in threat-listing contexts for defense/educational skills —
+			// these describe patterns being detected/blocked, not patterns the skill uses.
+			if (_isDefenseSkill && isInThreatListingContext(content, match.index)) continue;
+			// Skip matches inside safety boundary sections — these describe what the
+			// skill must NOT do, not capabilities it has.
+			if (isInsideSafetySection(match.index, ctx)) continue;
+			// Skip known-installer curl|sh in setup/prerequisites sections — these
+			// are legitimate installation instructions, not arbitrary exec.
+			if (isInsideCodeBlock(match.index, ctx) && isKnownInstallerInSetupSection(content, match.index, match[0])) {
+				continue;
+			}
 			return (match[0] ?? "").trim().slice(0, 180);
 		}
 	}
@@ -1021,7 +1050,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("ui_state_access", `Content pattern: ${uiStateAccessMatch}`);
 	}
 
-	if (!inferred.has("network")) {
+	if (!inferred.has("network") && !isDefenseSkill) {
 		const firstUrl = skill.urls[0];
 		if (firstUrl) add("network", `URL reference: ${firstUrl}`);
 	}

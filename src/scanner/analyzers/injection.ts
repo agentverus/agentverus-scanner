@@ -41,16 +41,58 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Data exfiltration instruction",
 		patterns: [
-			/(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+)?(?:data|content|file|information|keys?|secrets?|credentials?|tokens?)\s+(?:to|at|via)\s+https?:\/\//i,
+			/(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:data|content|files?|information|keys?|secrets?|credentials?|tokens?|variables?)\s+(?:to|at|via)\s+https?:\/\//i,
 			/curl\s+.*?-d\s+.*?https?:\/\//i,
 			/wget\s+.*?--post-data/i,
 			/cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
+			/\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
+			/\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
+			/\b(?:concatenate|combine|collect|gather)\b.{0,60}\b(?:send|post|transmit|upload|forward)\s+(?:to|it\s+to)\s+https?:\/\//i,
+			/\b(?:send|transmit|upload|forward)\s+(?:them\s+)?(?:to|it\s+to)\s+https?:\/\/\S+\.(?:xyz|top|buzz|click|evil|collect|exfil)/i,
 		],
 		severity: "critical",
 		deduction: 40,
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Remove all data exfiltration instructions. Skills must not send user data to external endpoints.",
+	},
+	{
+		name: "URL-parameter data exfiltration",
+		patterns: [
+			/(?:encode|embed|include|pack)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:as|into|in)\s+(?:a\s+)?(?:URL|query|parameter|string)\b/i,
+			/\?(?:data|payload|report|summary|info|content|result)=\{[^}]*(?:encoded|summary|data|payload)/i,
+			/https?:\/\/[^\s]+\?[^\s]*\{[^\s}]*(?:summary|encoded|data|content|payload)/i,
+		],
+		severity: "critical",
+		deduction: 40,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Remove URL-parameter exfiltration patterns. Skills must not encode sensitive data into URL parameters for external transmission.",
+	},
+	{
+		name: "Comprehensive secret collection",
+		patterns: [
+			/\b(?:all|every|comprehensive|complete)\s+(?:\w+\s+){0,3}(?:settings|tokens?|keys?|secrets?|credentials?|passwords?|api[_-]?keys?)\b/i,
+			/\b(?:extract|collect|gather|enumerate|list|build\s+a\s+(?:comprehensive|complete)\s+(?:summary|list|inventory))\s+(?:\w+\s+){0,4}(?:tokens?|keys?|secrets?|credentials?|endpoints?|passwords?)\b/i,
+			/\b(?:environment\s+files?|connection\s+strings?|authentication\s+parameters?)\s+are\s+(?:especially\s+)?important\b/i,
+		],
+		severity: "high",
+		deduction: 25,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Skills should not instruct collection of all tokens, keys, or credentials. Access only the specific credentials needed and declare them.",
+	},
+	{
+		name: "Suspicious download-and-execute",
+		patterns: [
+			/\b(?:curl|wget)\b[^\n]*(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
+			/\b(?:curl|wget)\b[^\n]*https?:\/\/[^\s]+\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu)\b[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
+		],
+		severity: "critical",
+		deduction: 35,
+		owaspCategory: "ASST-04",
+		recommendation:
+			"Remove download-and-execute patterns targeting suspicious domains or IP addresses. These are strong indicators of supply chain attacks.",
 	},
 	{
 		name: "Credential access",
@@ -135,9 +177,11 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		name: "Concealment directive",
 		patterns: [
 			/(?:do\s+not|don'?t)\s+(?:tell|inform|mention|notify)\s+(?:the\s+)?user/i,
+			/(?:do\s+not|don'?t)\s+(?:tell|inform|mention|notify)\s+(?:\w+\s+){0,6}(?:to\s+(?:the\s+)?)?user/i,
 			/(?:hide|conceal)\s+(?:this|that)\s+(?:action|operation|step)/i,
 			/(?:keep|make)\s+(?:this|that)\s+(?:secret|hidden)/i,
 			/don'?t\s+mention\s+you\s+used\s+this\s+skill/i,
+			/do\s+not\s+(?:tell|mention)\s+(?:this|the)\s+(?:data\s+collection|exfiltration|transfer|upload)/i,
 		],
 		severity: "high",
 		deduction: 25,
@@ -427,12 +471,27 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				const lineNumber = content.slice(0, match.index).split("\n").length;
 				const line = lines[lineNumber - 1] ?? "";
 
+				// High-confidence patterns that should never have their severity reduced
+				// by code-block or threat-listing context — they're inherently dangerous.
+				const NEVER_REDUCE_PATTERNS = new Set([
+					"Data exfiltration instruction",
+					"URL-parameter data exfiltration",
+					"Comprehensive secret collection",
+					"Suspicious download-and-execute",
+				]);
+
 				// Context-aware adjustment
 				let { severityMultiplier, reason } = adjustForContext(
 					match.index,
 					content,
 					ctx,
 				);
+
+				// For never-reduce patterns, override code-block reduction back to full
+				if (NEVER_REDUCE_PATTERNS.has(pattern.name) && severityMultiplier > 0 && severityMultiplier < 1.0) {
+					severityMultiplier = 1.0;
+					reason = null;
+				}
 
 				// Skip findings fully neutralized by context (safety sections, negation)
 				// Use continue, not break — a later match of the same pattern may be real
@@ -445,8 +504,9 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				}
 
 				// Also suppress if NOT a defense skill but the match is in a threat-listing context
-				// with clear "detect/block/flag" language
-				if (severityMultiplier > 0 && !isDefenseSkill && isInThreatListingContext(content, match.index)) {
+				// with clear "detect/block/flag" language.
+				// Exception: high-confidence patterns should NOT be reduced.
+				if (severityMultiplier > 0 && !isDefenseSkill && !NEVER_REDUCE_PATTERNS.has(pattern.name) && isInThreatListingContext(content, match.index)) {
 					severityMultiplier = 0.2;
 					reason = "inside threat-listing context";
 				}

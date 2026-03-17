@@ -64,7 +64,7 @@ export function buildContentContext(content: string): ContentContext {
 	// Find safety boundary sections — must be subsection headings (##+), not the title
 	// Match only headings that are clearly about safety constraints/limitations
 	const safetyHeadingRegex =
-		/^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not)/gim;
+		/^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not|refusal\s+pattern|when\s+not\s+to\s+use|do\s+not\s+use\s+when|safe\s+operating|operating\s+rules|read[\s-]only\s+rules?)/gim;
 	while ((match = safetyHeadingRegex.exec(content)) !== null) {
 		const sectionStart = match.index;
 		// Find the end of this section (next heading of same or higher level, or EOF)
@@ -107,8 +107,9 @@ export function isPrecededByNegation(content: string, matchIndex: number): boole
 	if (lineStart < 0) lineStart = 0;
 	const linePrefix = content.slice(lineStart, matchIndex);
 
-	// Direct negation on same line preceding the match
-	if (/(?:do\s+not|don['']?t|should\s+not|must\s+not|will\s+not|cannot|never|no\s+)\s*$/i.test(linePrefix)) {
+	// Direct negation on same line preceding the match (immediately before or with a few words gap)
+	// Matches: "do not <match>", "should not execute <match>", "never access <match>", etc.
+	if (/(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never|is\s+not|isn['']?t|are\s+not|aren['']?t|has\s+not|hasn['']?t|have\s+not|haven['']?t|need\s+not|no\s+)(?:\s+\w+){0,3}\s*$/i.test(linePrefix)) {
 		return true;
 	}
 
@@ -135,10 +136,18 @@ export function adjustForContext(
 		return { severityMultiplier: 0.3, reason: "inside code block" };
 	}
 
-	// Do NOT suppress findings just because they're under a "Safety Boundaries"/"Limitations" heading.
-	// Authors control headings; malicious instructions can be hidden there. We keep full weight but
-	// annotate the context in finding titles via the returned reason.
+	// Safety boundary sections: if the full line also contains negation language,
+	// suppress the finding — the author is describing a restriction, not an instruction.
+	// Without line-level negation, keep full weight but annotate.
 	if (isInsideSafetySection(matchIndex, ctx)) {
+		let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+		if (lineStart < 0) lineStart = 0;
+		let lineEnd = content.indexOf("\n", matchIndex);
+		if (lineEnd < 0) lineEnd = content.length;
+		const fullLine = content.slice(lineStart, lineEnd);
+		if (/\b(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never)\b/i.test(fullLine)) {
+			return { severityMultiplier: 0, reason: "negated in safety boundary section" };
+		}
 		return { severityMultiplier: 1.0, reason: "inside safety boundary section" };
 	}
 
@@ -150,9 +159,51 @@ export function adjustForContext(
  * as examples of what to detect/block (not as actual attacks).
  */
 export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
+	// Anti-abuse: reject skills that claim to be security tools but contain
+	// actual credential access + external URL exfiltration patterns OUTSIDE
+	// code blocks and threat-listing documentation.
+	// A real security scanner reads skill files; it doesn't read ~/.ssh/id_rsa
+	// or send data to external APIs in its instructions.
+	const abuseCtx = buildContentContext(skill.rawContent);
+	const credAbusePatterns = [
+		/\b(?:read|cat|dump)\b.{0,80}(?:~\/\.ssh|\.aws\/credentials|\.env\b|id_rsa|id_ed25519)/gi,
+		/\b(?:all\s+environment\s+variables|all\s+settings.*tokens.*keys)\b/gi,
+	];
+	const exfilAbusePatterns = [
+		/\b(?:send|post|upload|forward)\b.{0,120}https?:\/\//gi,
+		/\bpost\s+its\s+contents?\s+to\b/gi,
+	];
+	let hasRealCredentialAccess = false;
+	for (const pat of credAbusePatterns) {
+		let m: RegExpExecArray | null;
+		while ((m = pat.exec(skill.rawContent)) !== null) {
+			if (!isInsideCodeBlock(m.index, abuseCtx) && !isInThreatListingContext(skill.rawContent, m.index)) {
+				hasRealCredentialAccess = true;
+				break;
+			}
+		}
+		if (hasRealCredentialAccess) break;
+	}
+	if (hasRealCredentialAccess) {
+		let hasExternalExfiltration = false;
+		for (const pat of exfilAbusePatterns) {
+			let m: RegExpExecArray | null;
+			while ((m = pat.exec(skill.rawContent)) !== null) {
+				if (!isInsideCodeBlock(m.index, abuseCtx) && !isInThreatListingContext(skill.rawContent, m.index)) {
+					hasExternalExfiltration = true;
+					break;
+				}
+			}
+			if (hasExternalExfiltration) break;
+		}
+		if (hasExternalExfiltration) {
+			return false;
+		}
+	}
+
 	// Check name and description first
 	const desc = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
-	if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz|validat|suite)|prompt\s+(?:guard|inject|defense|detect)|threat\s+(?:detect|monitor)|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|pattern\s+detect|command\s+sanitiz|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
+	if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz|validat|suite|educator|teach|train)|prompt\s+(?:guard|inject|defense|detect)|threat\s+(?:detect|monitor)|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|pattern\s+detect|command\s+sanitiz|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
 		return true;
 	}
 
@@ -162,10 +213,25 @@ export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
 		return true;
 	}
 
+	// Educational skills that teach about security vulnerabilities or attack patterns
+	if (/\b(?:teach|educat|learn|understand)\b.{0,80}\b(?:security|vulnerabilit|attack|threat|injection|malicious)\b/i.test(desc)) {
+		return true;
+	}
+
 	// Also check the first ~500 chars of content for security analysis descriptions
 	// (some skills have no frontmatter but describe their security purpose in prose)
 	const contentHead = skill.rawContent.slice(0, 500).toLowerCase();
 	if (/\b(?:security\s+(?:analy|scan|audit)|detect\s+(?:malicious|injection|exfiltration)|adversarial\s+(?:security|analysis)|prompt\s+injection\s+(?:defense|detect|prevent))\b/i.test(contentHead)) {
+		return true;
+	}
+
+	// Educational content about security threats in content head
+	if (/\b(?:teach|educat|learn|understand)\b.{0,120}\b(?:security|vulnerabilit|attack|threat|injection)\b/i.test(contentHead)) {
+		return true;
+	}
+
+	// Defensive guidance about tampering, adversarial attacks, or safe configuration
+	if (/\b(?:defensive|defense|benign)\b.{0,80}\b(?:guidance|documentation|notes?)\b.{0,80}\b(?:tamper|attack|adversar|security)/i.test(contentHead)) {
 		return true;
 	}
 

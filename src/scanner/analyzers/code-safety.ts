@@ -16,6 +16,7 @@
  */
 
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { isSecurityDefenseSkill } from "./context.js";
 
 // ---------------------------------------------------------------------------
 // Line-level detection rules (patterns checked per line of code)
@@ -258,7 +259,11 @@ function truncateEvidence(evidence: string, maxLen = 120): string {
 	return evidence.length <= maxLen ? evidence : `${evidence.slice(0, maxLen)}…`;
 }
 
-function scanCodeBlock(block: CodeBlock): Finding[] {
+/** Well-known installer domains where curl|sh is expected and lower risk */
+const KNOWN_INSTALLER_DOMAINS =
+	/(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
+
+function scanCodeBlock(block: CodeBlock, isDefenseSkill: boolean): Finding[] {
 	const findings: Finding[] = [];
 	const source = block.content;
 	const lines = source.split("\n");
@@ -282,29 +287,56 @@ function scanCodeBlock(block: CodeBlock): Finding[] {
 				if (STANDARD_PORTS.has(port)) continue;
 			}
 
-			// Reduce severity for example/documentation code blocks
-			const effectiveSeverity = block.isExample
-				? downgrade(rule.severity)
-				: rule.severity;
-			const effectiveDeduction = block.isExample
-				? Math.ceil(rule.deduction / 3)
-				: rule.deduction;
+			// Known installer domains in curl|sh patterns — downgrade severity
+			const isKnownInstaller =
+				rule.id === "CS-CURL-PIPE-1" && KNOWN_INSTALLER_DOMAINS.test(line);
+			// Suspicious URL indicators: raw IP, HTTP-only, or high-abuse TLD
+			const isSuspiciousTarget = rule.id === "CS-CURL-PIPE-1" && (
+				/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(line) ||
+				(/http:\/\//.test(line) && !/https:\/\//.test(line)) ||
+				/\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)\//i.test(line)
+			);
+			const isReducedContext = (block.isExample || isKnownInstaller) && !isSuspiciousTarget;
 
+			// Defense/educational skills with example code blocks: fully suppress
+			if (isDefenseSkill && block.isExample) continue;
+
+			// Suspicious targets in curl|sh: elevate to critical
+			let effectiveSeverity: Finding["severity"];
+			let effectiveDeduction: number;
+			if (isSuspiciousTarget) {
+				effectiveSeverity = "critical";
+				effectiveDeduction = Math.max(rule.deduction, 30);
+			} else if (isReducedContext) {
+				effectiveSeverity = downgrade(rule.severity);
+				effectiveDeduction = Math.ceil(rule.deduction / 3);
+			} else {
+				effectiveSeverity = rule.severity;
+				effectiveDeduction = rule.deduction;
+			}
+
+			const contextNote = isKnownInstaller
+				? "(Well-known installer domain — reduced severity.)"
+				: block.isExample
+					? "(Found in example/documentation code block — reduced severity.)"
+					: "";
 			findings.push({
 				id: rule.id,
 				category: "code-safety",
 				severity: effectiveSeverity,
 				title: rule.title,
-				description: block.isExample
-					? `${rule.description} (Found in example/documentation code block — reduced severity.)`
+				description: contextNote
+					? `${rule.description} ${contextNote}`
 					: rule.description,
 				evidence: truncateEvidence(line.trim()),
 				lineNumber: block.startLine + i,
 				deduction: effectiveDeduction,
 				recommendation: `Review the code block starting at line ${block.startLine}. ${
-					block.isExample
-						? "This appears in an example section — verify it is documentation, not executed code."
-						: "Ensure this pattern is necessary and does not pose a security risk."
+					isKnownInstaller
+						? "This uses a well-known installer — consider pinning to a specific version or hash."
+						: block.isExample
+							? "This appears in an example section — verify it is documentation, not executed code."
+							: "Ensure this pattern is necessary and does not pose a security risk."
 				}`,
 				owaspCategory: rule.owaspCategory,
 			});
@@ -384,6 +416,7 @@ const WEIGHT = 0.15;
 export async function analyzeCodeSafety(skill: ParsedSkill): Promise<CategoryScore> {
 	const blocks = extractCodeBlocks(skill.rawContent);
 	const scannableBlocks = blocks.filter((b) => isScannableLanguage(b.language));
+	const isDefenseSkill = isSecurityDefenseSkill(skill);
 
 	if (scannableBlocks.length === 0) {
 		return {
@@ -396,14 +429,23 @@ export async function analyzeCodeSafety(skill: ParsedSkill): Promise<CategorySco
 
 	const allFindings: Finding[] = [];
 	for (const block of scannableBlocks) {
-		const findings = scanCodeBlock(block);
+		const findings = scanCodeBlock(block, isDefenseSkill);
 		allFindings.push(...findings);
 	}
 
-	// Deduplicate: one finding per rule ID across all blocks
+	// Deduplicate: one finding per rule ID across all blocks.
+	// Exception: curl|sh findings to different suspicious targets are distinct threats.
 	const seen = new Set<string>();
 	const deduped: Finding[] = [];
 	for (const f of allFindings) {
+		if (f.id === "CS-CURL-PIPE-1" && f.severity === "critical") {
+			// Different suspicious curl|sh targets = distinct threats
+			const targetKey = `${f.id}@${f.evidence}`;
+			if (seen.has(targetKey)) continue;
+			seen.add(targetKey);
+			deduped.push(f);
+			continue;
+		}
 		if (seen.has(f.id)) continue;
 		seen.add(f.id);
 		deduped.push(f);

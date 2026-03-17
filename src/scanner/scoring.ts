@@ -455,6 +455,23 @@ const TARGET_RENDERED_DUPLICATE_KEYS = new Set<string>([
 	"behavioral::external tool bridge detected",
 	"behavioral::remote transport exposure detected",
 	"behavioral::unrestricted scope detected",
+	// Added in dedup pass 2
+	"behavioral::remote browser delegation detected",
+	"behavioral::remote task delegation detected",
+	"behavioral::secret parameter handling detected",
+	"behavioral::compound browser action chaining detected",
+	"behavioral::credential form automation detected",
+	"behavioral::opaque helper script execution detected",
+	"behavioral::os input automation detected",
+	"behavioral::external ai provider delegation detected",
+	"behavioral::temporary script execution detected",
+	"behavioral::dev server auto-detection detected",
+	"behavioral::container runtime control detected",
+	"behavioral::local service access detected",
+	"behavioral::package bootstrap execution detected",
+	"dependencies::unknown external reference",
+	"dependencies::local service url reference",
+	"dependencies::raw content url reference",
 ]);
 
 function mergeSelectedRenderedDuplicates(findings: readonly Finding[]): Finding[] {
@@ -614,11 +631,61 @@ export function aggregateScores(
 	metadata: ScanMetadata,
 ): TrustReport {
 	// Calculate weighted overall score
+	// Pre-scan for criticals to determine if category score flooring applies
+	const preScanFindings = Object.values(categories).flatMap((cat) => cat.findings);
+	const hasCriticals = preScanFindings.some((f) => f.severity === "critical");
+
 	let overall = 0;
-	for (const [category, score] of Object.entries(categories)) {
+	for (const [category, catScore] of Object.entries(categories)) {
 		const weight = CATEGORY_WEIGHTS[category as Category] ?? 0;
-		overall += score.score * weight;
+		// When there are no critical findings, apply a floor to category scores.
+		// This prevents skills with many legitimate capability detections (e.g., 48
+		// behavioral findings for a browser automation tool) from bottoming out.
+		// The floor ensures the weighted average stays above the "rejected" threshold
+		// for genuinely capable but non-malicious skills.
+		const catCriticals = catScore.findings.some((f) => f.severity === "critical");
+		const effectiveScore = !hasCriticals && !catCriticals
+			? Math.max(catScore.score, 30)
+			: catScore.score;
+		overall += effectiveScore * weight;
 	}
+
+	// Cross-category severity penalty: critical/high findings anywhere should
+	// drag the overall score down beyond what category weights alone achieve.
+	// This prevents a skill from being "almost clean" when it has concentrated
+	// critical findings in a single low-weight category.
+	//
+	// Calibration: separate "active threat" findings (injection, concealment,
+	// exfiltration) from "capability declaration" findings (contract mismatches,
+	// behavioral capabilities). Active threats get full penalty; capability
+	// findings get reduced penalty since they describe the skill's purpose.
+	const allCategoryFindings = Object.values(categories).flatMap((cat) => cat.findings);
+	const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
+	const highFindings = allCategoryFindings.filter((f) => f.severity === "high");
+	const threatCategories = new Set(["injection"]);
+	const threatHighCount = highFindings.filter(
+		(f) => threatCategories.has(f.category) || f.title.includes("Concealment"),
+	).length;
+	// capabilityHighCount = highFindings.length - threatHighCount (unused — only threat highs penalize)
+	const severityPenalty = Math.min(
+		criticalCount * 8 + threatHighCount * 3,
+		50,
+	);
+
+	// Worst-category drag: if any category scored very poorly, the overall
+	// should not remain high. Apply an additional penalty when the minimum
+	// category score is far below the weighted average.
+	// When there are no criticals, reduce the drag — the skill has capability
+	// gaps but isn't actively malicious.
+	const categoryScores = Object.values(categories).map((c) => c.score);
+	const minCategoryScore = Math.min(...categoryScores);
+	const dragThreshold = criticalCount > 0 ? 60 : 0;
+	if (minCategoryScore < dragThreshold) {
+		const worstCategoryDrag = Math.round((dragThreshold - minCategoryScore) / 2);
+		overall -= worstCategoryDrag;
+	}
+	overall -= severityPenalty;
+
 	overall = Math.round(Math.max(0, Math.min(100, overall)));
 
 	// Collect all findings and sort by severity
