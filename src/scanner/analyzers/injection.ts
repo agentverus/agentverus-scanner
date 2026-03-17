@@ -45,12 +45,40 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			/curl\s+.*?-d\s+.*?https?:\/\//i,
 			/wget\s+.*?--post-data/i,
 			/cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
+			/\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
+			/\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
 		],
 		severity: "critical",
 		deduction: 40,
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Remove all data exfiltration instructions. Skills must not send user data to external endpoints.",
+	},
+	{
+		name: "URL-parameter data exfiltration",
+		patterns: [
+			/(?:encode|embed|include|pack)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:as|into|in)\s+(?:a\s+)?(?:URL|query|parameter|string)\b/i,
+			/\?(?:data|payload|report|summary|info|content|result)=\{[^}]*(?:encoded|summary|data|payload)/i,
+			/https?:\/\/[^\s]+\?[^\s]*\{[^\s}]*(?:summary|encoded|data|content|payload)/i,
+		],
+		severity: "critical",
+		deduction: 40,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Remove URL-parameter exfiltration patterns. Skills must not encode sensitive data into URL parameters for external transmission.",
+	},
+	{
+		name: "Comprehensive secret collection",
+		patterns: [
+			/\b(?:all|every|comprehensive|complete)\s+(?:\w+\s+){0,3}(?:settings|tokens?|keys?|secrets?|credentials?|passwords?|api[_-]?keys?)\b/i,
+			/\b(?:extract|collect|gather|enumerate|list|build\s+a\s+(?:comprehensive|complete)\s+(?:summary|list|inventory))\s+(?:\w+\s+){0,4}(?:tokens?|keys?|secrets?|credentials?|endpoints?|passwords?)\b/i,
+			/\b(?:environment\s+files?|connection\s+strings?|authentication\s+parameters?)\s+are\s+(?:especially\s+)?important\b/i,
+		],
+		severity: "high",
+		deduction: 25,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Skills should not instruct collection of all tokens, keys, or credentials. Access only the specific credentials needed and declare them.",
 	},
 	{
 		name: "Credential access",

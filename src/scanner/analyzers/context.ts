@@ -159,6 +159,48 @@ export function adjustForContext(
  * as examples of what to detect/block (not as actual attacks).
  */
 export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
+	// Anti-abuse: reject skills that claim to be security tools but contain
+	// actual credential access + external URL exfiltration patterns OUTSIDE
+	// code blocks and threat-listing documentation.
+	// A real security scanner reads skill files; it doesn't read ~/.ssh/id_rsa
+	// or send data to external APIs in its instructions.
+	const abuseCtx = buildContentContext(skill.rawContent);
+	const credAbusePatterns = [
+		/\b(?:read|cat|dump)\b.{0,80}(?:~\/\.ssh|\.aws\/credentials|\.env\b|id_rsa|id_ed25519)/gi,
+		/\b(?:all\s+environment\s+variables|all\s+settings.*tokens.*keys)\b/gi,
+	];
+	const exfilAbusePatterns = [
+		/\b(?:send|post|upload|forward)\b.{0,120}https?:\/\//gi,
+		/\bpost\s+its\s+contents?\s+to\b/gi,
+	];
+	let hasRealCredentialAccess = false;
+	for (const pat of credAbusePatterns) {
+		let m: RegExpExecArray | null;
+		while ((m = pat.exec(skill.rawContent)) !== null) {
+			if (!isInsideCodeBlock(m.index, abuseCtx) && !isInThreatListingContext(skill.rawContent, m.index)) {
+				hasRealCredentialAccess = true;
+				break;
+			}
+		}
+		if (hasRealCredentialAccess) break;
+	}
+	if (hasRealCredentialAccess) {
+		let hasExternalExfiltration = false;
+		for (const pat of exfilAbusePatterns) {
+			let m: RegExpExecArray | null;
+			while ((m = pat.exec(skill.rawContent)) !== null) {
+				if (!isInsideCodeBlock(m.index, abuseCtx) && !isInThreatListingContext(skill.rawContent, m.index)) {
+					hasExternalExfiltration = true;
+					break;
+				}
+			}
+			if (hasExternalExfiltration) break;
+		}
+		if (hasExternalExfiltration) {
+			return false;
+		}
+	}
+
 	// Check name and description first
 	const desc = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
 	if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz|validat|suite|educator|teach|train)|prompt\s+(?:guard|inject|defense|detect)|threat\s+(?:detect|monitor)|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|pattern\s+detect|command\s+sanitiz|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
