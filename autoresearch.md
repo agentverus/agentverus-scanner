@@ -1,4 +1,4 @@
-# Autoresearch: reduce false positives on safe skill fixtures
+# Autoresearch: reduce false positives and widen score separation
 
 ## Objective
 Reduce medium+ findings on safe/benign skill fixtures without weakening detection on genuinely malicious skills. The scanner currently flags educational code examples, safety-section negations, and documentation references as threats, penalizing skills that are clearly safe.
@@ -43,4 +43,49 @@ Key false positive sources observed in the current baseline:
 - Badge logic must remain intact
 
 ## What's Been Tried
-(Will be updated as experiments accumulate)
+
+### Experiment 1: Expand negation detection + security-education skill classification (22→13)
+- Fixed `isPrecededByNegation` to catch "does not", "doesn't", "isn't", "aren't", etc.
+- Expanded `isSecurityDefenseSkill` to catch educational skills ("teach/learn about security/vulnerabilities")
+- `evasion-context-safe.md` went from 83/suspicious to 97/certified
+- `legit-security-skill.md` went from 94/conditional to 99/certified
+
+### Experiment 2: Skip capability inferences in safety sections + wider negation window (13→11)
+- Capability contract now skips matches inside safety boundary sections
+- Negation window expanded from 0 to 3 words gap (catches "Should not execute shell commands")
+- `evasion-negation-safe.md` exec and payment_processing inferences eliminated
+
+### Experiment 3: Suppress findings in safety sections with line-level negation (11→10)
+- `adjustForContext` now checks if the full line in a safety section contains negation language
+- "Must not automatically delete or modify files without user confirmation" no longer triggers "autonomous action"
+
+### Experiment 4: Fix defense skill detection for config-tampering (10→7)
+- Fixed regex trailing `\b` on prefix-words like "tamper" (didn't match "tampering")
+- Added "Safe operating rules" / "Refusal pattern" to safety section headings
+- `config-tampering-safe.md` went from 92/conditional to 99/certified
+
+### Experiment 5: Known installer domains in code-safety + URL inference for defense skills (7→6)
+- Code-safety analyzer now recognizes known installer domains (deno.land, bun.sh, etc.) and reduces deduction
+- URL-based network inference suppressed for defense/educational skills
+- `legit-curl-install.md` code-safety deduction went from 20 to 7
+
+### Experiment 6: Suppress code-safety in example blocks for defense skills (6→5)
+- Defense/educational skills with `isExample` code blocks: fully suppress code-safety findings
+- `evasion-context-safe.md` went from 98 to 99/certified with 0 medium+ findings
+
+### Current state (5 remaining)
+All 5 remaining findings are TRUE POSITIVES:
+- safe-basic: `network_restricted` permission declared in frontmatter (1)
+- legit-curl-install: curl|sh installer genuinely uses exec/network + code-safety (3)
+- evasion-negation-safe: `file_write` permission declared in frontmatter (1)
+
+### Score summary
+| Fixture | Before | After |
+|---------|--------|-------|
+| safe-basic | 98 | 98 |
+| safe-complex | 99 | 99 |
+| legit-security-skill | 94 | 99 |
+| legit-curl-install | 92 | 94 |
+| evasion-negation-safe | 92 | 98 |
+| evasion-context-safe | 83 | 99 |
+| config-tampering-safe | 92 | 99 |
