@@ -627,7 +627,7 @@ export function aggregateScores(
 	const allCategoryFindings = Object.values(categories).flatMap((cat) => cat.findings);
 	const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
 	const highCount = allCategoryFindings.filter((f) => f.severity === "high").length;
-	const severityPenalty = Math.min(criticalCount * 8 + highCount * 2, 50);
+	const severityPenalty = Math.min(criticalCount * 8 + highCount * 3, 50);
 	overall -= severityPenalty;
 
 	overall = Math.round(Math.max(0, Math.min(100, overall)));
