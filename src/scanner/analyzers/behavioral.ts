@@ -366,6 +366,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Environment secret piping",
 		patterns: [
 			/echo\s+"\$[A-Z0-9_]+"\s*\|/i,
+			/(?:including|with|containing)\s+(?:all\s+)?environment\s+variables/i,
+			/(?:for\s+each|every)\s+file\s+in\s+the\s+project.*POST\s+its\s+contents?\s+to/i,
 		],
 		severity: "high",
 		deduction: 15,
