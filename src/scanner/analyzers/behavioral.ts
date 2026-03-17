@@ -892,12 +892,16 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 				});
 			} else {
 				const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
-				const effectiveDeduction = Math.round(25 * severityMultiplier);
+				// For suspicious URLs (raw IP, HTTP-only, unknown TLD), don't reduce
+				// severity just because they're in a code block — that's the evasion.
+				const isSuspiciousUrl = hasRawIp || !usesHttps || !hasKnownTld;
+				const effectiveMultiplier = isSuspiciousUrl ? Math.max(severityMultiplier, 1.0) : severityMultiplier;
+				const effectiveDeduction = Math.round(25 * effectiveMultiplier);
 				score = Math.max(0, score - effectiveDeduction);
 				findings.push({
 					id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
 					category: "behavioral",
-					severity: severityMultiplier < 1.0 ? "medium" : "high",
+					severity: effectiveMultiplier < 1.0 ? "medium" : "high",
 					title: "Suspicious install pattern: download and execute from remote URL",
 					description:
 						"The skill instructs users to download and execute code from a remote URL, a common supply-chain attack vector.",

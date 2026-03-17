@@ -473,8 +473,14 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				}
 
 				// Also suppress if NOT a defense skill but the match is in a threat-listing context
-				// with clear "detect/block/flag" language
-				if (severityMultiplier > 0 && !isDefenseSkill && isInThreatListingContext(content, match.index)) {
+				// with clear "detect/block/flag" language.
+				// Exception: high-confidence exfiltration patterns should NOT be reduced —
+				// they represent actionable data theft, not educational examples.
+				const NEVER_REDUCE_PATTERNS = new Set([
+					"URL-parameter data exfiltration",
+					"Comprehensive secret collection",
+				]);
+				if (severityMultiplier > 0 && !isDefenseSkill && !NEVER_REDUCE_PATTERNS.has(pattern.name) && isInThreatListingContext(content, match.index)) {
 					severityMultiplier = 0.2;
 					reason = "inside threat-listing context";
 				}
