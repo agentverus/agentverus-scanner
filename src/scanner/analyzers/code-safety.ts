@@ -258,6 +258,10 @@ function truncateEvidence(evidence: string, maxLen = 120): string {
 	return evidence.length <= maxLen ? evidence : `${evidence.slice(0, maxLen)}…`;
 }
 
+/** Well-known installer domains where curl|sh is expected and lower risk */
+const KNOWN_INSTALLER_DOMAINS =
+	/(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
+
 function scanCodeBlock(block: CodeBlock): Finding[] {
 	const findings: Finding[] = [];
 	const source = block.content;
@@ -282,29 +286,41 @@ function scanCodeBlock(block: CodeBlock): Finding[] {
 				if (STANDARD_PORTS.has(port)) continue;
 			}
 
-			// Reduce severity for example/documentation code blocks
-			const effectiveSeverity = block.isExample
+			// Known installer domains in curl|sh patterns — downgrade severity
+			const isKnownInstaller =
+				rule.id === "CS-CURL-PIPE-1" && KNOWN_INSTALLER_DOMAINS.test(line);
+			const isReducedContext = block.isExample || isKnownInstaller;
+
+			// Reduce severity for example/documentation code blocks or known installers
+			const effectiveSeverity = isReducedContext
 				? downgrade(rule.severity)
 				: rule.severity;
-			const effectiveDeduction = block.isExample
+			const effectiveDeduction = isReducedContext
 				? Math.ceil(rule.deduction / 3)
 				: rule.deduction;
 
+			const contextNote = isKnownInstaller
+				? "(Well-known installer domain — reduced severity.)"
+				: block.isExample
+					? "(Found in example/documentation code block — reduced severity.)"
+					: "";
 			findings.push({
 				id: rule.id,
 				category: "code-safety",
 				severity: effectiveSeverity,
 				title: rule.title,
-				description: block.isExample
-					? `${rule.description} (Found in example/documentation code block — reduced severity.)`
+				description: contextNote
+					? `${rule.description} ${contextNote}`
 					: rule.description,
 				evidence: truncateEvidence(line.trim()),
 				lineNumber: block.startLine + i,
 				deduction: effectiveDeduction,
 				recommendation: `Review the code block starting at line ${block.startLine}. ${
-					block.isExample
-						? "This appears in an example section — verify it is documentation, not executed code."
-						: "Ensure this pattern is necessary and does not pose a security risk."
+					isKnownInstaller
+						? "This uses a well-known installer — consider pinning to a specific version or hash."
+						: block.isExample
+							? "This appears in an example section — verify it is documentation, not executed code."
+							: "Ensure this pattern is necessary and does not pose a security risk."
 				}`,
 				owaspCategory: rule.owaspCategory,
 			});

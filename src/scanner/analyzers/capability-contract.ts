@@ -1027,7 +1027,7 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		add("ui_state_access", `Content pattern: ${uiStateAccessMatch}`);
 	}
 
-	if (!inferred.has("network")) {
+	if (!inferred.has("network") && !isDefenseSkill) {
 		const firstUrl = skill.urls[0];
 		if (firstUrl) add("network", `URL reference: ${firstUrl}`);
 	}
