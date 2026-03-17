@@ -455,6 +455,23 @@ const TARGET_RENDERED_DUPLICATE_KEYS = new Set<string>([
 	"behavioral::external tool bridge detected",
 	"behavioral::remote transport exposure detected",
 	"behavioral::unrestricted scope detected",
+	// Added in dedup pass 2
+	"behavioral::remote browser delegation detected",
+	"behavioral::remote task delegation detected",
+	"behavioral::secret parameter handling detected",
+	"behavioral::compound browser action chaining detected",
+	"behavioral::credential form automation detected",
+	"behavioral::opaque helper script execution detected",
+	"behavioral::os input automation detected",
+	"behavioral::external ai provider delegation detected",
+	"behavioral::temporary script execution detected",
+	"behavioral::dev server auto-detection detected",
+	"behavioral::container runtime control detected",
+	"behavioral::local service access detected",
+	"behavioral::package bootstrap execution detected",
+	"dependencies::unknown external reference",
+	"dependencies::local service url reference",
+	"dependencies::raw content url reference",
 ]);
 
 function mergeSelectedRenderedDuplicates(findings: readonly Finding[]): Finding[] {
