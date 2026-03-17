@@ -363,6 +363,18 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			"Avoid storing, exporting, or passing browser auth state unless the workflow clearly requires it. Prefer encrypted storage, short-lived state, and explicit user confirmation before reusing credentials.",
 	},
 	{
+		name: "Data encoding for URL exfiltration",
+		patterns: [
+			/\b(?:encode|serialize|pack|compress)\b.{0,80}\b(?:URL|query|parameter|string)\b/i,
+			/\b(?:URL|query)[- ]safe\s+(?:string|encoding|format)\b/i,
+		],
+		severity: "high",
+		deduction: 15,
+		owaspCategory: "ASST-02",
+		recommendation:
+			"Treat encoding sensitive data into URL parameters as potential data exfiltration. URLs leak into browser history, logs, analytics, and referrers.",
+	},
+	{
 		name: "Environment secret piping",
 		patterns: [
 			/echo\s+"\$[A-Z0-9_]+"\s*\|/i,
