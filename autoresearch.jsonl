@@ -127,3 +127,4 @@
 {"run":7,"commit":"c11e4a0","metric":30,"metrics":{},"status":"keep","description":"feat: merge repeated orchestration and remote-doc finding families","timestamp":1773464248890,"segment":1}
 {"run":8,"commit":"88df2a5","metric":23,"metrics":{},"status":"keep","description":"feat: merge repeated reconnaissance and integration finding families","timestamp":1773464325150,"segment":1}
 {"type":"config","name":"Reduce false positives on safe skill fixtures","metricName":"safe_fixture_medium_plus","metricUnit":"","bestDirection":"lower"}
+{"run":1,"commit":"918501c","metric":22,"metrics":{"safe_fixture_score_min":83,"malicious_score_max":78,"safe_fixture_regressions":1,"test_pass":1},"status":"keep","description":"chore: baseline false positive benchmark — 22 safe_fixture_medium_plus","timestamp":1773718440693,"segment":6}

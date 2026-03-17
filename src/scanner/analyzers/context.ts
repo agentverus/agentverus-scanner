@@ -108,7 +108,7 @@ export function isPrecededByNegation(content: string, matchIndex: number): boole
 	const linePrefix = content.slice(lineStart, matchIndex);
 
 	// Direct negation on same line preceding the match
-	if (/(?:do\s+not|don['']?t|should\s+not|must\s+not|will\s+not|cannot|never|no\s+)\s*$/i.test(linePrefix)) {
+	if (/(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never|is\s+not|isn['']?t|are\s+not|aren['']?t|has\s+not|hasn['']?t|have\s+not|haven['']?t|need\s+not|no\s+)\s*$/i.test(linePrefix)) {
 		return true;
 	}
 
@@ -152,7 +152,7 @@ export function adjustForContext(
 export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
 	// Check name and description first
 	const desc = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
-	if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz|validat|suite)|prompt\s+(?:guard|inject|defense|detect)|threat\s+(?:detect|monitor)|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|pattern\s+detect|command\s+sanitiz|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
+	if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz|validat|suite|educator|teach|train)|prompt\s+(?:guard|inject|defense|detect)|threat\s+(?:detect|monitor)|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|pattern\s+detect|command\s+sanitiz|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
 		return true;
 	}
 
@@ -162,10 +162,20 @@ export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
 		return true;
 	}
 
+	// Educational skills that teach about security vulnerabilities or attack patterns
+	if (/\b(?:teach|educat|learn|understand)\b.{0,80}\b(?:security|vulnerabilit|attack|threat|injection|malicious)\b/i.test(desc)) {
+		return true;
+	}
+
 	// Also check the first ~500 chars of content for security analysis descriptions
 	// (some skills have no frontmatter but describe their security purpose in prose)
 	const contentHead = skill.rawContent.slice(0, 500).toLowerCase();
 	if (/\b(?:security\s+(?:analy|scan|audit)|detect\s+(?:malicious|injection|exfiltration)|adversarial\s+(?:security|analysis)|prompt\s+injection\s+(?:defense|detect|prevent))\b/i.test(contentHead)) {
+		return true;
+	}
+
+	// Educational content about security threats in content head
+	if (/\b(?:teach|educat|learn|understand)\b.{0,120}\b(?:security|vulnerabilit|attack|threat|injection)\b/i.test(contentHead)) {
 		return true;
 	}
 
