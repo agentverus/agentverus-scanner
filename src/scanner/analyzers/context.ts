@@ -64,7 +64,7 @@ export function buildContentContext(content: string): ContentContext {
 	// Find safety boundary sections — must be subsection headings (##+), not the title
 	// Match only headings that are clearly about safety constraints/limitations
 	const safetyHeadingRegex =
-		/^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not)/gim;
+		/^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not|refusal\s+pattern|when\s+not\s+to\s+use|do\s+not\s+use\s+when)/gim;
 	while ((match = safetyHeadingRegex.exec(content)) !== null) {
 		const sectionStart = match.index;
 		// Find the end of this section (next heading of same or higher level, or EOF)
@@ -136,10 +136,18 @@ export function adjustForContext(
 		return { severityMultiplier: 0.3, reason: "inside code block" };
 	}
 
-	// Do NOT suppress findings just because they're under a "Safety Boundaries"/"Limitations" heading.
-	// Authors control headings; malicious instructions can be hidden there. We keep full weight but
-	// annotate the context in finding titles via the returned reason.
+	// Safety boundary sections: if the full line also contains negation language,
+	// suppress the finding — the author is describing a restriction, not an instruction.
+	// Without line-level negation, keep full weight but annotate.
 	if (isInsideSafetySection(matchIndex, ctx)) {
+		let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+		if (lineStart < 0) lineStart = 0;
+		let lineEnd = content.indexOf("\n", matchIndex);
+		if (lineEnd < 0) lineEnd = content.length;
+		const fullLine = content.slice(lineStart, lineEnd);
+		if (/\b(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never)\b/i.test(fullLine)) {
+			return { severityMultiplier: 0, reason: "negated in safety boundary section" };
+		}
 		return { severityMultiplier: 1.0, reason: "inside safety boundary section" };
 	}
 
@@ -177,6 +185,11 @@ export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
 
 	// Educational content about security threats in content head
 	if (/\b(?:teach|educat|learn|understand)\b.{0,120}\b(?:security|vulnerabilit|attack|threat|injection)\b/i.test(contentHead)) {
+		return true;
+	}
+
+	// Defensive guidance about tampering, adversarial attacks, or safe configuration
+	if (/\b(?:defensive|defense|benign)\b.{0,80}\b(?:guidance|documentation|notes?)\b.{0,80}\b(?:tamper|attack|adversar|security)\b/i.test(contentHead)) {
 		return true;
 	}
 
