@@ -451,6 +451,11 @@ function classifyUrl(url: string): {
 		}
 	}
 
+	// High-abuse TLDs get elevated deduction — commonly used for phishing/malware
+	if (/\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)$/i.test(hostname)) {
+		return { risk: "unknown", deduction: 10 };
+	}
+
 	return { risk: "unknown", deduction: 5 };
 }
 
