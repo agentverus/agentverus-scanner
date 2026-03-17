@@ -175,9 +175,11 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		name: "Concealment directive",
 		patterns: [
 			/(?:do\s+not|don'?t)\s+(?:tell|inform|mention|notify)\s+(?:the\s+)?user/i,
+			/(?:do\s+not|don'?t)\s+(?:tell|inform|mention|notify)\s+(?:\w+\s+){0,6}(?:to\s+(?:the\s+)?)?user/i,
 			/(?:hide|conceal)\s+(?:this|that)\s+(?:action|operation|step)/i,
 			/(?:keep|make)\s+(?:this|that)\s+(?:secret|hidden)/i,
 			/don'?t\s+mention\s+you\s+used\s+this\s+skill/i,
+			/do\s+not\s+(?:tell|mention)\s+(?:this|the)\s+(?:data\s+collection|exfiltration|transfer|upload)/i,
 		],
 		severity: "high",
 		deduction: 25,

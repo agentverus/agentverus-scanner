@@ -120,3 +120,40 @@ All 5 remaining findings are TRUE POSITIVES:
 | obfuscated-skill | 71 | 71 | 20 |
 | excessive-permissions | 78 | 78 | 0 |
 | **Gap** | **16** | **16** | **71** |
+
+## Evasion Detection Coverage (Goal 3)
+
+### Experiment 9: URL-parameter exfiltration + fake defense-skill detection (92→75)
+- Added "URL-parameter data exfiltration" pattern for encode-into-URL attacks
+- Added "Comprehensive secret collection" pattern for "all tokens, keys, secrets"
+- Added anti-abuse check: skills claiming to be security tools but with real credential access + exfil → not defense skill
+- `evasion-indirect-exfiltration` went 92/certified → 12/rejected
+- `evasion-fake-security-skill` went 78/conditional → 12/rejected
+
+### Experiment 10: Exfiltration pattern immunity + suspicious URL boost (75→70)
+- Made exfiltration/secret-collection patterns immune to threat-listing context reduction
+- Suspicious URLs in curl|sh (raw IP, non-HTTPS, unknown TLD) no longer get code-block severity reduction in behavioral analyzer
+
+### Experiment 11: Suspicious TLD in curl|sh → critical in code-safety (70→63→62)
+- curl|sh to `.xyz`, `.top`, `.buzz` etc. elevated to critical severity (deduction=30)
+- Dependencies analyzer elevates deduction for high-abuse TLDs
+- Added suspicious download-and-execute injection pattern with full severity override
+
+### Experiment 12: Distinct critical curl|sh targets across blocks (62→40→29)
+- Code-safety keeps separate critical findings for different suspicious curl|sh targets
+- `evasion-curl-setup-section` (2 curl|sh to evil domain + raw IP) went 62 → 1
+- Added injection pattern for curl/wget to raw IPs or suspicious TLDs with code-block override
+
+### Final evasion scores
+| Fixture | Before | After |
+|---------|--------|-------|
+| evasion-indirect-exfiltration | 92 (certified!) | 12 (rejected) |
+| evasion-fake-security-skill | 78 (conditional) | 12 (rejected) |
+| evasion-curl-setup-section | 75 (suspicious) | 1 (rejected) |
+| evasion-hidden-in-codeblock | 29 (rejected) | 29 (rejected) |
+| evasion-negation-disguise | 43 (rejected) | 22 (rejected) |
+| evasion-threat-table-injection | 24 (rejected) | 24 (rejected) |
+| evasion-rephrased-jailbreak | 2 (rejected) | 2 (rejected) |
+| concealment-skill | 14 (rejected) | 0 (rejected) |
+| **Max evasion score** | **92** | **29** |
+| **Gap (safe_min - evasion_max)** | **-1** | **62** |
