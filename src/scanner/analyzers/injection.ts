@@ -41,7 +41,7 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Data exfiltration instruction",
 		patterns: [
-			/(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+)?(?:data|content|file|information|keys?|secrets?|credentials?|tokens?)\s+(?:to|at|via)\s+https?:\/\//i,
+			/(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:data|content|files?|information|keys?|secrets?|credentials?|tokens?|variables?)\s+(?:to|at|via)\s+https?:\/\//i,
 			/curl\s+.*?-d\s+.*?https?:\/\//i,
 			/wget\s+.*?--post-data/i,
 			/cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
@@ -474,6 +474,7 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 				// High-confidence patterns that should never have their severity reduced
 				// by code-block or threat-listing context — they're inherently dangerous.
 				const NEVER_REDUCE_PATTERNS = new Set([
+					"Data exfiltration instruction",
 					"URL-parameter data exfiltration",
 					"Comprehensive secret collection",
 					"Suspicious download-and-execute",
