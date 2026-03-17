@@ -47,6 +47,8 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			/cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
 			/\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
 			/\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
+			/\b(?:concatenate|combine|collect|gather)\b.{0,60}\b(?:send|post|transmit|upload|forward)\s+(?:to|it\s+to)\s+https?:\/\//i,
+			/\b(?:send|transmit|upload|forward)\s+(?:them\s+)?(?:to|it\s+to)\s+https?:\/\/\S+\.(?:xyz|top|buzz|click|evil|collect|exfil)/i,
 		],
 		severity: "critical",
 		deduction: 40,
