@@ -165,3 +165,50 @@ All 5 remaining findings are TRUE POSITIVES:
 - Added flexible concealment patterns and concatenate+send exfil detection
 - `evasion-threat-table-injection` dropped from 24 to 4
 - `evasion-negation-disguise` dropped from 19 to 3
+
+## Public Corpus Calibration (Goal 4)
+
+### Problem
+All 10 public corpus skills were "rejected" (scores 0-31) despite being legitimate tools.
+The cross-category severity penalty and worst-category drag treated capability-rich skills
+the same as malicious skills. None had critical findings — they were over-penalized for
+having many high behavioral/capability findings.
+
+### Experiment 14: Separate threat vs capability highs (10→9)
+- Split high findings into threat highs (injection, concealment) and capability highs
+- Reduced penalty rate for capability highs when no criticals present
+- `docker-expert` escaped rejection (31→51/suspicious)
+
+### Experiment 15: Remove worst-category drag for no-critical skills (9→7)
+- Removed worst-category drag entirely when no criticals present
+- `webapp-testing` (52/suspicious), `playwright-skill` (54/suspicious) escaped
+
+### Experiment 16: Zero penalty for non-threat highs (7→5)
+- Only injection/concealment highs contribute to severity penalty
+- Behavioral/permissions highs are already reflected in category scores
+- `baoyu-post-to-x`, `baoyu-image-gen` escaped rejection
+
+### Experiment 17: Category score floor for no-critical skills (5→0)
+- Category scores floored at 30 when skill has 0 criticals and category has 0 criticals
+- Prevents browser automation tools with 48 behavioral findings from bottoming out
+- ALL 10 public corpus skills now "suspicious" (51-71) — correct tier
+
+### Final state
+| Public skill | Before | After | Badge |
+|-------------|--------|-------|-------|
+| browser-use | 0 | 57 | suspicious |
+| agent-browser | 0 | 51 | suspicious |
+| webapp-testing | 0 | 71 | suspicious |
+| mcp-builder | 13 | 53 | suspicious |
+| clawdirect | 0 | 62 | suspicious |
+| clawdirect-dev | 0 | 64 | suspicious |
+| baoyu-post-to-x | 0 | 68 | suspicious |
+| baoyu-image-gen | 18 | 62 | suspicious |
+| playwright-skill | 8 | 69 | suspicious |
+| docker-expert | 31 | 66 | suspicious |
+
+Constraints preserved:
+- Safe fixtures: all 94-99, 6/7 certified
+- Malicious fixtures: all 0-16, all rejected
+- Evasion fixtures: all 2-12, all rejected
+- All 229 tests pass
