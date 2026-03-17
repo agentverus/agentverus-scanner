@@ -636,9 +636,9 @@ export function aggregateScores(
 	const threatHighCount = highFindings.filter(
 		(f) => threatCategories.has(f.category) || f.title.includes("Concealment"),
 	).length;
-	const capabilityHighCount = highFindings.length - threatHighCount;
+	// capabilityHighCount = highFindings.length - threatHighCount (unused — only threat highs penalize)
 	const severityPenalty = Math.min(
-		criticalCount * 8 + threatHighCount * 3 + capabilityHighCount * 1,
+		criticalCount * 8 + threatHighCount * 3,
 		50,
 	);
 
