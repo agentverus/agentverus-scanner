@@ -614,10 +614,23 @@ export function aggregateScores(
 	metadata: ScanMetadata,
 ): TrustReport {
 	// Calculate weighted overall score
+	// Pre-scan for criticals to determine if category score flooring applies
+	const preScanFindings = Object.values(categories).flatMap((cat) => cat.findings);
+	const hasCriticals = preScanFindings.some((f) => f.severity === "critical");
+
 	let overall = 0;
-	for (const [category, score] of Object.entries(categories)) {
+	for (const [category, catScore] of Object.entries(categories)) {
 		const weight = CATEGORY_WEIGHTS[category as Category] ?? 0;
-		overall += score.score * weight;
+		// When there are no critical findings, apply a floor to category scores.
+		// This prevents skills with many legitimate capability detections (e.g., 48
+		// behavioral findings for a browser automation tool) from bottoming out.
+		// The floor ensures the weighted average stays above the "rejected" threshold
+		// for genuinely capable but non-malicious skills.
+		const catCriticals = catScore.findings.some((f) => f.severity === "critical");
+		const effectiveScore = !hasCriticals && !catCriticals
+			? Math.max(catScore.score, 30)
+			: catScore.score;
+		overall += effectiveScore * weight;
 	}
 
 	// Cross-category severity penalty: critical/high findings anywhere should
