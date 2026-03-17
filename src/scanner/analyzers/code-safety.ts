@@ -290,18 +290,30 @@ function scanCodeBlock(block: CodeBlock, isDefenseSkill: boolean): Finding[] {
 			// Known installer domains in curl|sh patterns — downgrade severity
 			const isKnownInstaller =
 				rule.id === "CS-CURL-PIPE-1" && KNOWN_INSTALLER_DOMAINS.test(line);
-			const isReducedContext = block.isExample || isKnownInstaller;
+			// Suspicious URL indicators: raw IP, HTTP-only, or high-abuse TLD
+			const isSuspiciousTarget = rule.id === "CS-CURL-PIPE-1" && (
+				/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(line) ||
+				(/http:\/\//.test(line) && !/https:\/\//.test(line)) ||
+				/\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)\//i.test(line)
+			);
+			const isReducedContext = (block.isExample || isKnownInstaller) && !isSuspiciousTarget;
 
 			// Defense/educational skills with example code blocks: fully suppress
 			if (isDefenseSkill && block.isExample) continue;
 
-			// Reduce severity for example/documentation code blocks or known installers
-			const effectiveSeverity = isReducedContext
-				? downgrade(rule.severity)
-				: rule.severity;
-			const effectiveDeduction = isReducedContext
-				? Math.ceil(rule.deduction / 3)
-				: rule.deduction;
+			// Suspicious targets in curl|sh: elevate to critical
+			let effectiveSeverity: Finding["severity"];
+			let effectiveDeduction: number;
+			if (isSuspiciousTarget) {
+				effectiveSeverity = "critical";
+				effectiveDeduction = Math.max(rule.deduction, 30);
+			} else if (isReducedContext) {
+				effectiveSeverity = downgrade(rule.severity);
+				effectiveDeduction = Math.ceil(rule.deduction / 3);
+			} else {
+				effectiveSeverity = rule.severity;
+				effectiveDeduction = rule.deduction;
+			}
 
 			const contextNote = isKnownInstaller
 				? "(Well-known installer domain — reduced severity.)"
