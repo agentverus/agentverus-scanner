@@ -634,9 +634,9 @@ export function aggregateScores(
 	// category score is far below the weighted average.
 	const categoryScores = Object.values(categories).map((c) => c.score);
 	const minCategoryScore = Math.min(...categoryScores);
-	if (minCategoryScore < 50) {
-		// Scale the drag: 0 at min=50, up to 25 at min=0
-		const worstCategoryDrag = Math.round((50 - minCategoryScore) / 2);
+	if (minCategoryScore < 60) {
+		// Scale the drag: 0 at min=60, up to 30 at min=0
+		const worstCategoryDrag = Math.round((60 - minCategoryScore) / 2);
 		overall -= worstCategoryDrag;
 	}
 	overall -= severityPenalty;
