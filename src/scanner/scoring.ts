@@ -625,15 +625,22 @@ export function aggregateScores(
 	// This prevents a skill from being "almost clean" when it has concentrated
 	// critical findings in a single low-weight category.
 	//
-	// Calibration: when there are NO critical findings, the skill is likely a
-	// legitimate tool with many undeclared capabilities rather than a malicious
-	// skill. Reduce the per-high penalty so these get "suspicious" rather than
-	// "rejected". With criticals, keep the full penalty.
+	// Calibration: separate "active threat" findings (injection, concealment,
+	// exfiltration) from "capability declaration" findings (contract mismatches,
+	// behavioral capabilities). Active threats get full penalty; capability
+	// findings get reduced penalty since they describe the skill's purpose.
 	const allCategoryFindings = Object.values(categories).flatMap((cat) => cat.findings);
 	const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
-	const highCount = allCategoryFindings.filter((f) => f.severity === "high").length;
-	const highPenaltyRate = criticalCount > 0 ? 3 : 1;
-	const severityPenalty = Math.min(criticalCount * 8 + highCount * highPenaltyRate, 50);
+	const highFindings = allCategoryFindings.filter((f) => f.severity === "high");
+	const threatCategories = new Set(["injection"]);
+	const threatHighCount = highFindings.filter(
+		(f) => threatCategories.has(f.category) || f.title.includes("Concealment"),
+	).length;
+	const capabilityHighCount = highFindings.length - threatHighCount;
+	const severityPenalty = Math.min(
+		criticalCount * 8 + threatHighCount * 3 + capabilityHighCount * 1,
+		50,
+	);
 
 	// Worst-category drag: if any category scored very poorly, the overall
 	// should not remain high. Apply an additional penalty when the minimum
@@ -642,7 +649,7 @@ export function aggregateScores(
 	// gaps but isn't actively malicious.
 	const categoryScores = Object.values(categories).map((c) => c.score);
 	const minCategoryScore = Math.min(...categoryScores);
-	const dragThreshold = criticalCount > 0 ? 60 : 40;
+	const dragThreshold = criticalCount > 0 ? 60 : 0;
 	if (minCategoryScore < dragThreshold) {
 		const worstCategoryDrag = Math.round((dragThreshold - minCategoryScore) / 2);
 		overall -= worstCategoryDrag;
