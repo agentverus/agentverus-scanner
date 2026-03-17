@@ -624,19 +624,27 @@ export function aggregateScores(
 	// drag the overall score down beyond what category weights alone achieve.
 	// This prevents a skill from being "almost clean" when it has concentrated
 	// critical findings in a single low-weight category.
+	//
+	// Calibration: when there are NO critical findings, the skill is likely a
+	// legitimate tool with many undeclared capabilities rather than a malicious
+	// skill. Reduce the per-high penalty so these get "suspicious" rather than
+	// "rejected". With criticals, keep the full penalty.
 	const allCategoryFindings = Object.values(categories).flatMap((cat) => cat.findings);
 	const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
 	const highCount = allCategoryFindings.filter((f) => f.severity === "high").length;
-	const severityPenalty = Math.min(criticalCount * 8 + highCount * 3, 50);
+	const highPenaltyRate = criticalCount > 0 ? 3 : 1;
+	const severityPenalty = Math.min(criticalCount * 8 + highCount * highPenaltyRate, 50);
 
 	// Worst-category drag: if any category scored very poorly, the overall
 	// should not remain high. Apply an additional penalty when the minimum
 	// category score is far below the weighted average.
+	// When there are no criticals, reduce the drag — the skill has capability
+	// gaps but isn't actively malicious.
 	const categoryScores = Object.values(categories).map((c) => c.score);
 	const minCategoryScore = Math.min(...categoryScores);
-	if (minCategoryScore < 60) {
-		// Scale the drag: 0 at min=60, up to 30 at min=0
-		const worstCategoryDrag = Math.round((60 - minCategoryScore) / 2);
+	const dragThreshold = criticalCount > 0 ? 60 : 40;
+	if (minCategoryScore < dragThreshold) {
+		const worstCategoryDrag = Math.round((dragThreshold - minCategoryScore) / 2);
 		overall -= worstCategoryDrag;
 	}
 	overall -= severityPenalty;
