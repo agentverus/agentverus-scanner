@@ -628,6 +628,17 @@ export function aggregateScores(
 	const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
 	const highCount = allCategoryFindings.filter((f) => f.severity === "high").length;
 	const severityPenalty = Math.min(criticalCount * 8 + highCount * 3, 50);
+
+	// Worst-category drag: if any category scored very poorly, the overall
+	// should not remain high. Apply an additional penalty when the minimum
+	// category score is far below the weighted average.
+	const categoryScores = Object.values(categories).map((c) => c.score);
+	const minCategoryScore = Math.min(...categoryScores);
+	if (minCategoryScore < 30) {
+		// Scale the drag: 0 at min=30, up to 15 at min=0
+		const worstCategoryDrag = Math.round((30 - minCategoryScore) / 2);
+		overall -= worstCategoryDrag;
+	}
 	overall -= severityPenalty;
 
 	overall = Math.round(Math.max(0, Math.min(100, overall)));
