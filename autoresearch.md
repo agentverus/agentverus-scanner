@@ -155,5 +155,13 @@ All 5 remaining findings are TRUE POSITIVES:
 | evasion-threat-table-injection | 24 (rejected) | 24 (rejected) |
 | evasion-rephrased-jailbreak | 2 (rejected) | 2 (rejected) |
 | concealment-skill | 14 (rejected) | 0 (rejected) |
-| **Max evasion score** | **92** | **29** |
-| **Gap (safe_min - evasion_max)** | **-1** | **62** |
+| **Max evasion score** | **92** | **12** |
+| **Gap (safe_min - evasion_max)** | **-1** | **79** |
+
+### Experiment 13: Wider data exfil pattern + exfil in NEVER_REDUCE (29→24→12)
+- Added "variables" to data exfiltration word list (catches "send all environment variables to URL")
+- Added "Data exfiltration instruction" to NEVER_REDUCE set (no threat-listing context discount)
+- Widened word gap in exfil pattern from 1 to 4 words (catches "send the user's API keys to URL")
+- Added flexible concealment patterns and concatenate+send exfil detection
+- `evasion-threat-table-injection` dropped from 24 to 4
+- `evasion-negation-disguise` dropped from 19 to 3
