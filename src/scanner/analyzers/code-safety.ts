@@ -16,6 +16,7 @@
  */
 
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { isSecurityDefenseSkill } from "./context.js";
 
 // ---------------------------------------------------------------------------
 // Line-level detection rules (patterns checked per line of code)
@@ -262,7 +263,7 @@ function truncateEvidence(evidence: string, maxLen = 120): string {
 const KNOWN_INSTALLER_DOMAINS =
 	/(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
 
-function scanCodeBlock(block: CodeBlock): Finding[] {
+function scanCodeBlock(block: CodeBlock, isDefenseSkill: boolean): Finding[] {
 	const findings: Finding[] = [];
 	const source = block.content;
 	const lines = source.split("\n");
@@ -290,6 +291,9 @@ function scanCodeBlock(block: CodeBlock): Finding[] {
 			const isKnownInstaller =
 				rule.id === "CS-CURL-PIPE-1" && KNOWN_INSTALLER_DOMAINS.test(line);
 			const isReducedContext = block.isExample || isKnownInstaller;
+
+			// Defense/educational skills with example code blocks: fully suppress
+			if (isDefenseSkill && block.isExample) continue;
 
 			// Reduce severity for example/documentation code blocks or known installers
 			const effectiveSeverity = isReducedContext
@@ -400,6 +404,7 @@ const WEIGHT = 0.15;
 export async function analyzeCodeSafety(skill: ParsedSkill): Promise<CategoryScore> {
 	const blocks = extractCodeBlocks(skill.rawContent);
 	const scannableBlocks = blocks.filter((b) => isScannableLanguage(b.language));
+	const isDefenseSkill = isSecurityDefenseSkill(skill);
 
 	if (scannableBlocks.length === 0) {
 		return {
@@ -412,7 +417,7 @@ export async function analyzeCodeSafety(skill: ParsedSkill): Promise<CategorySco
 
 	const allFindings: Finding[] = [];
 	for (const block of scannableBlocks) {
-		const findings = scanCodeBlock(block);
+		const findings = scanCodeBlock(block, isDefenseSkill);
 		allFindings.push(...findings);
 	}
 
