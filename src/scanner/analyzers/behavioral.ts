@@ -367,6 +367,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		patterns: [
 			/\b(?:encode|serialize|pack|compress)\b.{0,80}\b(?:URL|query|parameter|string)\b/i,
 			/\b(?:URL|query)[- ]safe\s+(?:string|encoding|format)\b/i,
+			/\b(?:encode|serialize|pack|compress)\b.{0,80}\b(?:transmit|send|post|upload|forward)\b.{0,60}https?:\/\//i,
 		],
 		severity: "high",
 		deduction: 15,
