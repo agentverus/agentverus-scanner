@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-03-19
+
+### Added
+
+- **Broader high-risk workflow coverage**: the scanner now surfaces more browser/session reuse, local file input, remote documentation ingestion, local-service exposure, package bootstrap, media handoff, payment, and environment/config control signals across public skill corpora.
+- **Earlier prefix-scan detection**: realtime prefix scans now catch more risky local references (auth-state files, reference bundles, script paths, browser profiles, media inputs, config indirection, and local-service hints) before later sections of long skills are read.
+
+### Changed
+
+- **Capability-contract severity calibration**: undeclared high-risk capabilities are scored more aggressively, with stronger handling for browser automation, network, content extraction, server exposure, local service access, file read, session management, and related privileged behaviors.
+- **Content and dependency severity calibration**: broad activation triggers, missing safety boundaries on high-risk workflows, raw/unknown documentation references, local transports, exposed ports, and service healthchecks now better reflect real trust-boundary risk.
+- **Version metadata sync**: package metadata and `SCANNER_VERSION` are now aligned for the 0.7.1 release.
+
+### Tests
+
+- Updated severity/behavior coverage in scanner tests to match the refined capability, dependency, and content calibration logic.
+
 ## [0.6.2] - 2026-03-14
 
 ### Added
@@ -249,7 +266,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/agentverus/agentverus-scanner/compare/v0.7.0...v0.7.1
 [0.6.2]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.5.0...v0.6.0
