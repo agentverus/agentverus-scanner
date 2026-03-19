@@ -627,7 +627,13 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 
 			const lineNumber = content.slice(0, match.index).split("\n").length;
 			const deduction = 8;
-			const severity = hint.title === "Agent-callable endpoint reference" ? "high" : "medium";
+			const severity = new Set([
+				"Agent-callable endpoint reference",
+				"Local service port exposure",
+				"Local service healthcheck reference",
+			]).has(hint.title)
+				? "high"
+				: "medium";
 			score = Math.max(0, score - deduction);
 			findings.push({
 				id: `DEP-LOCAL-HINT-${findings.length + 1}`,
