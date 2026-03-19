@@ -18,6 +18,7 @@ const FULL_SEVERITY_IN_CODE_BLOCKS = new Set([
 	"Secret parameter handling",
 	"Package bootstrap execution",
 	"Local service access",
+	"Remote task delegation",
 ]);
 
 const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
@@ -625,8 +626,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/saved\s+prompt\s+files/i,
 			/system\.md\s+content\.md/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-06",
 		recommendation:
 			"Treat prompt files and reference prompt bundles as untrusted instructions. Review them before loading and avoid mixing trusted agent policy with user- or repo-controlled prompt files.",
@@ -729,8 +730,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/--allow-file-access\b/i,
 			/\bfile:\/\//i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat local file browsing as privileged access. Restrict it to explicit user-approved paths and avoid combining it with unrestricted browser/session reuse.",
