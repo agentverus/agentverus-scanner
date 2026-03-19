@@ -639,8 +639,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/--ref\s+\S+/i,
 			/\b(?:OpenAI|Replicate|DashScope|Gemini|Google)\b.{0,80}\b(?:API|APIs|providers?)\b/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Treat external AI-provider calls as data egress. Make it explicit what prompts, files, or images are sent to third-party providers and require approval before forwarding sensitive content.",
