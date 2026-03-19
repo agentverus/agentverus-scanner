@@ -16,6 +16,7 @@ const FULL_SEVERITY_IN_CODE_BLOCKS = new Set([
 	"Browser JavaScript evaluation",
 	"System modification",
 	"Secret parameter handling",
+	"Package bootstrap execution",
 ]);
 
 const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
