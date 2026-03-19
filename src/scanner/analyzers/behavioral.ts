@@ -782,8 +782,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/(?:cost|price)\s*:\s*\$\d/i,
 			/charge\s+for\s+(?:premium|paid)\s+actions?/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-09",
 		recommendation:
 			"Financial actions should always require explicit user confirmation and should be clearly documented.",
