@@ -19,5 +19,5 @@ if [ "$TEST_EXIT" -ne 0 ]; then
 fi
 echo "METRIC test_pass=1"
 
-# Run the dedup benchmark
-npx tsx scripts/benchmark-report-family-dedup.mts
+# Run the public coverage benchmark
+npx tsx scripts/benchmark-public-skill-coverage.mts
