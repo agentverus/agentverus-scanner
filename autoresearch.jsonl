@@ -192,3 +192,4 @@
 {"type":"config","name":"Raise clearly risky public-corpus findings to high severity","metricName":"public_high_findings","metricUnit":"","bestDirection":"higher"}
 {"run":178,"commit":"fa77438","metric":45,"metrics":{},"status":"keep","description":"chore: pivot to public high-severity benchmark — baseline public_high_findings=45 with realtime_prefix_findings holding at 198","timestamp":1773926878713,"segment":14,"confidence":null}
 {"run":179,"commit":"2f22f31","metric":46,"metrics":{},"status":"keep","description":"feat: elevate explicit anti-automation bypass guidance to a high-severity behavioral finding","timestamp":1773926925963,"segment":14,"confidence":null}
+{"run":180,"commit":"f3a1482","metric":48,"metrics":{},"status":"keep","description":"feat: keep browser JavaScript eval at full severity inside executable code blocks so browser-use and agent-browser surface it as high risk","timestamp":1773927007817,"segment":14,"confidence":3}

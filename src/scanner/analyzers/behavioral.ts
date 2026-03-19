@@ -12,7 +12,11 @@ interface BehavioralPattern {
 	readonly recommendation: string;
 }
 
-const FULL_SEVERITY_IN_CODE_BLOCKS = new Set(["Browser JavaScript evaluation"]);
+const FULL_SEVERITY_IN_CODE_BLOCKS = new Set([
+	"Browser JavaScript evaluation",
+	"System modification",
+	"Secret parameter handling",
+]);
 
 const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
