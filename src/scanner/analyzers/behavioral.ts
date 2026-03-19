@@ -482,6 +482,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		patterns: [
 			/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
 			/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
+			/\bset\s+up\s+project\s+structure\b/i,
+			/\bproject\s+structure,\s*package\.json,\s*tsconfig\.json\b/i,
 		],
 		severity: "high",
 		deduction: 15,
