@@ -670,6 +670,23 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 		}
 	}
 
+	if (/\bEXPOSE\s+\d{2,5}\b/i.test(content) && /\bHEALTHCHECK\b/i.test(content)) {
+		score = Math.max(0, score - 8);
+		findings.push({
+			id: `DEP-LOCAL-IMPLIED-${findings.length + 1}`,
+			category: "dependencies",
+			severity: "high",
+			title: "Implied local service endpoint",
+			description:
+				"The skill combines exposed local service ports with container healthchecks, implying a local HTTP/service endpoint even before an explicit localhost URL appears.",
+			evidence: "EXPOSE + HEALTHCHECK",
+			deduction: 8,
+			recommendation:
+				"Review exposed local service endpoints carefully. Port exposure plus service healthchecks often implies internal HTTP/admin surfaces that agent-driven workflows can reach.",
+			owaspCategory: "ASST-04",
+		});
+	}
+
 	for (const hint of REMOTE_SERVICE_HINT_PATTERNS) {
 		const globalHint = new RegExp(hint.regex.source, `${hint.regex.flags.replace("g", "")}g`);
 		let match: RegExpExecArray | null;
