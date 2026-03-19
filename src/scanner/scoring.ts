@@ -464,6 +464,7 @@ const TARGET_RENDERED_DUPLICATE_KEYS = new Set<string>([
 	"behavioral::opaque helper script execution detected",
 	"behavioral::os input automation detected",
 	"behavioral::external ai provider delegation detected",
+	"behavioral::prompt file ingestion detected",
 	"behavioral::temporary script execution detected",
 	"behavioral::dev server auto-detection detected",
 	"behavioral::container runtime control detected",
