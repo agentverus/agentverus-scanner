@@ -763,6 +763,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/\btext\s*\+\s*video\b/i,
 			/--ref\s+\S+/i,
 			/--video\s+\S+/i,
+			/`[A-Za-z0-9._-]+\.(?:ts|js|py|sh)`/i,
 			/\bscripts?\/[A-Za-z0-9._-]+\.(?:ts|js|py|sh)\b/i,
 			/\bscript\s+path\s*=\s*`?\{baseDir\}\/scripts\//i,
 		],
