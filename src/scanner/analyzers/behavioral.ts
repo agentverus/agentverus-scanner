@@ -732,6 +732,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/--allow-file-access\b/i,
 			/\bfile:\/\//i,
 			/\bstate\s+(?:save|load)\s+\.\/auth\.json\b/i,
+			/\bauth\.json\b/i,
+			/\bEXTEND\.md\b/i,
 			/\bReference\s+Files\b/i,
 			/\breferences?\//i,
 		],
