@@ -655,7 +655,14 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 
 			const lineNumber = content.slice(0, match.index).split("\n").length;
 			const deduction = 8;
-			const severity = hint.title === "Package-managed project bootstrap dependency" ? "high" : "medium";
+			const severity = new Set([
+				"Package-managed project bootstrap dependency",
+				"Hosted browser service dependency",
+				"Third-party AI provider dependency",
+				"External service integration dependency",
+			]).has(hint.title)
+				? "high"
+				: "medium";
 			score = Math.max(0, score - deduction);
 			findings.push({
 				id: `DEP-REMOTE-HINT-${findings.length + 1}`,
