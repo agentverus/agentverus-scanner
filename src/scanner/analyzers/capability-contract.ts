@@ -170,7 +170,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	ui_state_access: { severity: "medium", deduction: 8 },
 	documentation_ingestion: { severity: "medium", deduction: 8 },
 	local_input_control: { severity: "medium", deduction: 8 },
-	package_bootstrap: { severity: "medium", deduction: 8 },
+	package_bootstrap: { severity: "high", deduction: 10 },
 	environment_configuration: { severity: "medium", deduction: 8 },
 	payment_processing: { severity: "medium", deduction: 8 },
 	unrestricted_scope: { severity: "high", deduction: 10 },
