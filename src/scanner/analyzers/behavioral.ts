@@ -139,8 +139,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/do\s+not\s+read\s+the\s+source/i,
 			/called?\s+directly\s+as\s+black-?box\s+scripts?/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-04",
 		recommendation:
 			"Avoid telling agents to execute bundled scripts as opaque black boxes. Encourage minimal inspection, provenance checks, or explicit trust boundaries before running helper code.",
