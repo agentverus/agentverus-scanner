@@ -181,6 +181,22 @@ const CAPABILITY_SEVERITY: Readonly<
 	automation_evasion: { severity: "medium", deduction: 8 },
 };
 
+function effectiveCapabilitySeverity(
+	capability: CapabilityKind,
+	evidence: string,
+): { readonly severity: "high" | "medium"; readonly deduction: number } {
+	const base = CAPABILITY_SEVERITY[capability];
+	if (
+		capability === "documentation_ingestion" &&
+		/(?:webfetch|web\s+search|for\s+more\s+information,\s+see|for\s+full\s+.+\s+details|for\s+deeper\s+.+\s+familiarity,\s+see|reference\s+implementation|https?:\/\/|sitemap\.xml|readme\.md)/i.test(
+			evidence,
+		)
+	) {
+		return { severity: "high", deduction: Math.max(base.deduction, 10) };
+	}
+	return base;
+}
+
 const CREDENTIAL_PATTERNS: readonly RegExp[] = [
 	/(?:read|reads|access|get|cat|dump|exfiltrate|steal|harvest)\s+.{0,140}(?:\.env|\.ssh|id_rsa|id_ed25519|credentials?|secrets?|api[_-]?key|access[_-]?token|password)/i,
 	/~\/\.ssh\/(?:id_rsa|id_ed25519|authorized_keys|config)\b/i,
@@ -1072,7 +1088,8 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 		if (!inferred.has(capability)) continue;
 		if (declaredCapabilities.has(capability)) continue;
 
-		const sev = CAPABILITY_SEVERITY[capability];
+		const evidence = inferred.get(capability) ?? CAPABILITY_LABELS[capability];
+		const sev = effectiveCapabilitySeverity(capability, evidence);
 		findings.push({
 			id: `PERM-CONTRACT-MISSING-${missingIndex}`,
 			category: "permissions",
@@ -1080,7 +1097,7 @@ export function analyzeCapabilityContract(skill: ParsedSkill): Finding[] {
 			title: `Capability contract mismatch: inferred ${CAPABILITY_LABELS[capability]} is not declared`,
 			description:
 				"The scanner inferred a risky capability from the skill content/metadata, but no matching declaration was found. Add a declaration with a clear justification, or remove the behavior.",
-			evidence: inferred.get(capability) ?? CAPABILITY_LABELS[capability],
+			evidence,
 			deduction: sev.deduction,
 			recommendation:
 				"Declare this capability explicitly in frontmatter permissions with a specific justification, or remove the risky behavior.",
