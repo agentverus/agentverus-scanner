@@ -199,6 +199,14 @@ function effectiveCapabilitySeverity(
 			? base
 			: { severity: "high", deduction: base.deduction };
 	}
+	if (
+		capability === "file_write" &&
+		/(?:save\s+state|write\s+scripts?\s+to\s+\/tmp|create\s+(?:an\s+)?xml\s+file|create\s+`?tsconfig\.json`?|markdown\s+(?:→|->)\s+html\s+conversion)/i.test(
+			evidence,
+		)
+	) {
+		return { severity: "high", deduction: Math.max(base.deduction, 8) };
+	}
 	return base;
 }
 
