@@ -209,7 +209,7 @@ function effectiveCapabilitySeverity(
 	}
 	if (
 		capability === "filesystem_discovery" &&
-		/(?:common\s+installation\s+paths|project\s+structure\s+analysis|find\s+\.\s+-name\s+\"Dockerfile)/i.test(
+		/(?:common\s+installation\s+paths|project\s+structure\s+analysis|find\s+\.\s+-name\s+\"Dockerfile|\{baseDir\})/i.test(
 			evidence,
 		)
 	) {
