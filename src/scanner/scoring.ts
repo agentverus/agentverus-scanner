@@ -58,6 +58,7 @@ function hasConfigTamperFindings(findings: readonly Finding[]): boolean {
 
 function isBrowserAuthOverlapCandidate(finding: Finding): boolean {
 	if (finding.severity !== "high" && finding.severity !== "medium") return false;
+	if (finding.title.startsWith("Local file access detected")) return false;
 	return AUTH_PROFILE_RELATED.test(`${finding.title}\n${finding.description}\n${finding.evidence}`);
 }
 
