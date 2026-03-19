@@ -215,6 +215,14 @@ function effectiveCapabilitySeverity(
 	) {
 		return { severity: "high", deduction: Math.max(base.deduction, 8) };
 	}
+	if (
+		capability === "environment_configuration" &&
+		/(?:[A-Z0-9_]*KEY\b|XDG_CONFIG_HOME|\$HOME\/\.config|HOME\/.+config|encryption_key)/i.test(
+			evidence,
+		)
+	) {
+		return { severity: "high", deduction: Math.max(base.deduction, 8) };
+	}
 	return base;
 }
 
