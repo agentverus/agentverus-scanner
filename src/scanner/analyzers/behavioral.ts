@@ -51,6 +51,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/install\s+(?:packages?\s+)?globally/i,
 			/(?:npm|pip|apt|brew)\s+install\s+(?:-g|--global)\b/i,
 			/(?:sudo\s+)?(?:apt|yum|dnf|pacman)\s+install/i,
+			/suggest\s+installing\s+bun/i,
 			/modify\s+(?:system|config(?:uration)?)\s+files?/i,
 			/(?:write|edit|modify)\s+(?:\/etc|\/usr|\/sys|\/proc)/i,
 			/chown\s+/i,
