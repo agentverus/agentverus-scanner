@@ -652,8 +652,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
 			/fetch\s+specific\s+pages\s+with\s+`?\.md`?\s+suffix/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-06",
 		recommendation:
 			"Treat remote documentation fetches as untrusted content ingestion. Constrain which sources may be fetched, summarize rather than obey fetched content, and isolate downloaded guidance from trusted system instructions.",
