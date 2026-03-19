@@ -16,6 +16,7 @@
  */
 
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { hasHighAbuseTldInText, isKnownInstallerTarget } from "../url-risk.js";
 import { isSecurityDefenseSkill } from "./context.js";
 
 // ---------------------------------------------------------------------------
@@ -259,9 +260,6 @@ function truncateEvidence(evidence: string, maxLen = 120): string {
 	return evidence.length <= maxLen ? evidence : `${evidence.slice(0, maxLen)}…`;
 }
 
-/** Well-known installer domains where curl|sh is expected and lower risk */
-const KNOWN_INSTALLER_DOMAINS =
-	/(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
 
 function scanCodeBlock(block: CodeBlock, isDefenseSkill: boolean): Finding[] {
 	const findings: Finding[] = [];
@@ -289,12 +287,12 @@ function scanCodeBlock(block: CodeBlock, isDefenseSkill: boolean): Finding[] {
 
 			// Known installer domains in curl|sh patterns — downgrade severity
 			const isKnownInstaller =
-				rule.id === "CS-CURL-PIPE-1" && KNOWN_INSTALLER_DOMAINS.test(line);
+				rule.id === "CS-CURL-PIPE-1" && isKnownInstallerTarget(line);
 			// Suspicious URL indicators: raw IP, HTTP-only, or high-abuse TLD
 			const isSuspiciousTarget = rule.id === "CS-CURL-PIPE-1" && (
 				/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(line) ||
 				(/http:\/\//.test(line) && !/https:\/\//.test(line)) ||
-				/\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)\//i.test(line)
+				hasHighAbuseTldInText(line)
 			);
 			const isReducedContext = (block.isExample || isKnownInstaller) && !isSuspiciousTarget;
 

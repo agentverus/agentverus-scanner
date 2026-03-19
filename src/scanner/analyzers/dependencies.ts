@@ -1,4 +1,6 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { hasSetupHeadingOrYamlContext } from "../setup-context.js";
+import { hasHighAbuseTldHost, isKnownInstallerTarget } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInsideCodeBlock, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
@@ -142,24 +144,6 @@ const DOWNLOAD_EXECUTE_PATTERNS = [
 	/eval\s*\(\s*fetch/i,
 	/import\s+.*?from\s+['"]https?:\/\//i,
 	/require\s*\(\s*['"]https?:\/\//i,
-] as const;
-
-/** Well-known installer domains where curl|bash is a standard practice */
-const KNOWN_INSTALLER_DOMAINS = [
-	/deno\.land/i,
-	/bun\.sh/i,
-	/rustup\.rs/i,
-	/get\.docker\.com/i,
-	/install\.python-poetry\.org/i,
-	/raw\.githubusercontent\.com\/nvm-sh/i,
-	/raw\.githubusercontent\.com\/Homebrew/i,
-	/raw\.githubusercontent\.com\/golangci/i,
-	/foundry\.paradigm\.xyz/i,
-	/tailscale\.com\/install/i,
-	/opencode\.ai\/install/i,
-	/sh\.rustup\.rs/i,
-	/get\.pnpm\.io/i,
-	/volta\.sh/i,
 ] as const;
 
 /** Lifecycle scripts that run automatically during install/publish flows */
@@ -370,9 +354,7 @@ function isExampleDocumentationContext(content: string, offset: number): boolean
  */
 function isLegitimateInstaller(content: string, matchIndex: number, matchText: string): boolean {
 	// Check if URL is a known installer
-	for (const domain of KNOWN_INSTALLER_DOMAINS) {
-		if (domain.test(matchText)) return true;
-	}
+	if (isKnownInstallerTarget(matchText)) return true;
 
 	// If the URL contains a raw IP address, it's never legitimate
 	if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(matchText)) return false;
@@ -385,23 +367,7 @@ function isLegitimateInstaller(content: string, matchIndex: number, matchText: s
 
 	if (!usesHttps || !hasKnownTld) return false;
 
-	// Check if the match is inside a prerequisites/setup/installation section
-	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
-	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
-	if (headings && headings.length > 0) {
-		const lastHeading = headings[headings.length - 1]!.toLowerCase();
-		if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading)) {
-			return true;
-		}
-	}
-
-	// Check if inside YAML frontmatter metadata block (install:, command:, compatibility:)
-	const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
-	if (/\b(?:install|command|compatibility|setup)\s*:/i.test(nearbyLines)) {
-		return true;
-	}
-
-	return false;
+	return hasSetupHeadingOrYamlContext(content, matchIndex);
 }
 
 /** Extract hostname from URL */
@@ -452,7 +418,7 @@ function classifyUrl(url: string): {
 	}
 
 	// High-abuse TLDs get elevated deduction — commonly used for phishing/malware
-	if (/\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)$/i.test(hostname)) {
+	if (hasHighAbuseTldHost(hostname)) {
 		return { risk: "unknown", deduction: 10 };
 	}
 
