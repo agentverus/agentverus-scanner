@@ -737,6 +737,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/\bEXTEND\.md\b/i,
 			/\bReference\s+Files\b/i,
 			/\breferences?\//i,
+			/\bscripts?\/[A-Za-z0-9._-]+\.(?:ts|js|py|sh)\b/i,
+			/\bscript\s+path\s*=\s*`?\{baseDir\}\/scripts\//i,
 		],
 		severity: "high",
 		deduction: 15,
