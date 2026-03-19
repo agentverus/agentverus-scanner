@@ -163,7 +163,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	content_extraction: { severity: "medium", deduction: 8 },
 	remote_delegation: { severity: "high", deduction: 10 },
 	remote_task_management: { severity: "medium", deduction: 8 },
-	server_exposure: { severity: "medium", deduction: 8 },
+	server_exposure: { severity: "high", deduction: 10 },
 	external_tool_bridge: { severity: "high", deduction: 10 },
 	local_service_access: { severity: "high", deduction: 10 },
 	process_orchestration: { severity: "medium", deduction: 8 },
