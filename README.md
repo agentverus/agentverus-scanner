@@ -132,7 +132,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Pin to a release tag or SHA for supply-chain safety and reproducibility.
-      - uses: agentverus/agentverus-scanner/actions/scan-skill@v0.3.0
+      - uses: agentverus/agentverus-scanner/actions/scan-skill@v0.7.0
         with:
           target: .
           fail_on_severity: high

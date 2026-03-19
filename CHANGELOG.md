@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-03-19
+
+### Added
+
+- **URL-parameter exfiltration detection**: catches multi-step attacks that collect secrets, encode them into URL/query-safe strings, and exfiltrate them through external dashboard/report URLs.
+- **Comprehensive secret-collection detection**: flags instructions to gather broad sets of settings, environment variables, tokens, keys, credentials, or file contents for downstream processing or transport.
+- **Suspicious download-and-execute detection**: curl/wget-to-shell patterns targeting raw IPs or high-abuse TLDs are now surfaced as high-confidence malicious behavior across injection, behavioral, and code-safety analyzers.
+- **Public-corpus calibration rules**: scoring now distinguishes active attack signals from legitimate capability-heavy skills that lack declarations, preventing legitimate public skills from being over-rejected while keeping malicious/evasion fixtures rejected.
+- **Expanded rendered report deduplication**: merges the remaining repeated behavioral and dependency finding families so public-skill reports no longer repeat the same medium+/high signal blocks.
+
+### Changed
+
+- **Safe fixture quality improved materially**: safe-fixture medium+ findings dropped from 22 to 4, the minimum safe score improved from 83 to 96, and safe-fixture regressions fell from 1 to 0.
+- **Score separation widened**: the gap between the worst safe fixture and the best malicious fixture increased from 16 to 80, with malicious fixtures now scoring 0–16 and safe fixtures 96–99.
+- **Evasion detection hardened**: the highest-scoring evasion fixture dropped from 92 (`certified`) to 12 (`rejected`), and all tracked evasion fixtures now land in the rejected tier.
+- **Public corpus calibration corrected**: public corpus skills with no critical findings no longer all collapse into `rejected`; they now land in the `suspicious` tier instead of 0–31 rejected scores.
+- **Known installer prerequisite handling refined**: `curl | sh` to trusted installer domains inside real prerequisite/setup sections no longer creates an undeclared `exec` capability mismatch while still surfacing network/code-safety context.
+- **Rendered duplicate findings eliminated**: public-corpus rendered duplicate findings dropped from 23 to 0 and duplicate groups from 16 to 0.
+
+### Fixed
+
+- **Defense-skill abuse hole**: fake “security scanner” skills can no longer exploit defense-skill suppression to hide real credential access or exfiltration behavior.
+- **Threat-listing context over-downgrade**: high-confidence exfiltration and suspicious download patterns are no longer incorrectly discounted when attackers hide them in tables, examples, or faux documentation sections.
+- **Safety-boundary false positives**: negated safety prose, refusal patterns, and educational example sections are now handled more precisely, removing the last safe-fixture regressions.
+- **Public skill over-rejection**: capability-rich but non-malicious skills no longer bottom out purely because many legitimate capability findings drive category scores to zero.
+
+### Tests
+
+- Scanner benchmark suites now cover false-positive reduction, score separation, evasion detection, public-corpus calibration, and rendered-report deduplication regressions.
+- Full suite remains green at 229 tests across scanner and registry coverage.
+
 ## [0.6.2] - 2026-03-14
 
 ### Added
@@ -249,7 +280,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.5.0...v0.6.0
