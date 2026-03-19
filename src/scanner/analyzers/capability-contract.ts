@@ -150,7 +150,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	file_write: { severity: "medium", deduction: 8 },
 	file_read: { severity: "high", deduction: 6 },
 	filesystem_discovery: { severity: "medium", deduction: 8 },
-	configuration_override: { severity: "medium", deduction: 8 },
+	configuration_override: { severity: "high", deduction: 10 },
 	network: { severity: "medium", deduction: 6 },
 	browser_automation: { severity: "high", deduction: 8 },
 	browser_session_attachment: { severity: "high", deduction: 12 },
