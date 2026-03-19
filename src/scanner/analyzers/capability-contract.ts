@@ -201,7 +201,7 @@ function effectiveCapabilitySeverity(
 	}
 	if (
 		capability === "file_write" &&
-		/(?:save\s+state|write\s+scripts?\s+to\s+\/tmp|create\s+(?:an\s+)?xml\s+file|create\s+`?tsconfig\.json`?|markdown\s+(?:→|->)\s+html\s+conversion|save\s+screenshot\s+to\s+file|page\.screenshot)/i.test(
+		/(?:save\s+state|write\s+scripts?\s+to\s+\/tmp|create\s+(?:an\s+)?xml\s+file|create\s+`?tsconfig\.json`?|markdown\s+(?:→|->)\s+html\s+conversion|save\s+screenshot\s+to\s+file|page\.screenshot|--image\s+\S+\.(?:png|jpg|jpeg|webp|gif))/i.test(
 			evidence,
 		)
 	) {
