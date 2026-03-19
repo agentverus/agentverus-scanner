@@ -631,6 +631,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				"Agent-callable endpoint reference",
 				"Local service port exposure",
 				"Local service healthcheck reference",
+				"Local server transport reference",
 			]).has(hint.title)
 				? "high"
 				: "medium";
