@@ -17,6 +17,7 @@ const FULL_SEVERITY_IN_CODE_BLOCKS = new Set([
 	"System modification",
 	"Secret parameter handling",
 	"Package bootstrap execution",
+	"Local service access",
 ]);
 
 const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
