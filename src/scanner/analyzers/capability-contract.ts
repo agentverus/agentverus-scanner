@@ -188,7 +188,7 @@ function effectiveCapabilitySeverity(
 	const base = CAPABILITY_SEVERITY[capability];
 	if (
 		capability === "documentation_ingestion" &&
-		/(?:webfetch|web\s+search|for\s+more\s+information,\s+see|for\s+full\s+.+\s+details|for\s+deeper\s+.+\s+familiarity,\s+see|reference\s+implementation|https?:\/\/|sitemap\.xml|readme\.md)/i.test(
+		/(?:webfetch|web\s+search|for\s+more\s+information,\s+see|for\s+full\s+.+\s+details|for\s+deeper\s+.+\s+familiarity,\s+see|reference\s+implementation|https?:\/\/|sitemap\.xml|readme\.md|see\s+\[references?\/|reference\s+files|\breferences?\/|long-form\s+article\s+publishing\s+\(markdown\))/i.test(
 			evidence,
 		)
 	) {
