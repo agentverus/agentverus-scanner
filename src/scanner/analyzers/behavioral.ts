@@ -471,6 +471,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i,
 			/\bEXPOSE\s+\d{2,5}\b/i,
 			/\(Express\)/i,
+			/\btesting\s+web\s+apps?\b|\btest\s+this\s+web\s+app\b/i,
 		],
 		severity: "high",
 		deduction: 15,
