@@ -42,7 +42,7 @@ describe("analyzeDependencies", () => {
 
 		const localFinding = result.findings.find((f) => f.title.includes("Local service URL"));
 		expect(localFinding).toBeDefined();
-		expect(localFinding?.severity).toBe("medium");
+		expect(localFinding?.severity).toBe("high");
 	});
 
 	it("flags exposed ports and local server transports as local service hints", async () => {

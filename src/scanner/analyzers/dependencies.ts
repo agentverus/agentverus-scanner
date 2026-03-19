@@ -553,9 +553,9 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			}
 
 			let severity: "high" | "medium" | "low" =
-				classification.risk === "ip" || classification.risk === "data"
+				classification.risk === "ip" || classification.risk === "data" || classification.risk === "local"
 					? "high"
-					: classification.risk === "raw" || classification.risk === "local"
+					: classification.risk === "raw"
 						? "medium"
 						: "low";
 
