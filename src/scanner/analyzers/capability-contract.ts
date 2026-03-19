@@ -161,7 +161,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	skill_path_discovery: { severity: "high", deduction: 10 },
 	session_management: { severity: "medium", deduction: 8 },
 	content_extraction: { severity: "medium", deduction: 8 },
-	remote_delegation: { severity: "medium", deduction: 8 },
+	remote_delegation: { severity: "high", deduction: 10 },
 	remote_task_management: { severity: "medium", deduction: 8 },
 	server_exposure: { severity: "medium", deduction: 8 },
 	external_tool_bridge: { severity: "high", deduction: 10 },
