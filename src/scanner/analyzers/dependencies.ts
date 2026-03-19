@@ -655,11 +655,12 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 
 			const lineNumber = content.slice(0, match.index).split("\n").length;
 			const deduction = 8;
+			const severity = hint.title === "Package-managed project bootstrap dependency" ? "high" : "medium";
 			score = Math.max(0, score - deduction);
 			findings.push({
 				id: `DEP-REMOTE-HINT-${findings.length + 1}`,
 				category: "dependencies",
-				severity: "medium",
+				severity,
 				title: hint.title,
 				description: hint.description,
 				evidence: match[0].slice(0, 200),
