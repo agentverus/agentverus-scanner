@@ -666,8 +666,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/external\s+services?.{0,60}(?:remote\s+)?APIs?|(?:remote\s+)?APIs?.{0,60}external\s+services?/i,
 			/expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat agent tool bridges to external services as privileged capability expansion. Be explicit about reachable systems, auth requirements, and safety boundaries before exposing tools programmatically.",
