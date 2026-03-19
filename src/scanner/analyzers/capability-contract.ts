@@ -159,7 +159,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	persistent_session_reuse: { severity: "high", deduction: 10 },
 	mcp_issued_browser_auth_cookie: { severity: "high", deduction: 12 },
 	skill_path_discovery: { severity: "high", deduction: 10 },
-	session_management: { severity: "medium", deduction: 8 },
+	session_management: { severity: "high", deduction: 10 },
 	content_extraction: { severity: "high", deduction: 10 },
 	remote_delegation: { severity: "high", deduction: 10 },
 	remote_task_management: { severity: "high", deduction: 8 },
