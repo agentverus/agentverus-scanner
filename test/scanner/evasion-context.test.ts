@@ -23,7 +23,7 @@ describe("Context bypass evasion detection", () => {
 				f.severity === "critical" ||
 				f.severity === "high" ||
 				f.category === "injection" ||
-				/credential|exfiltrat|ssh|\.env/i.test(f.title + " " + (f.evidence ?? "")),
+				/credential|exfiltrat|ssh|\.env/i.test(`${f.title} ${f.evidence ?? ""}`),
 		);
 		expect(hasThreatFinding).toBe(true);
 	});

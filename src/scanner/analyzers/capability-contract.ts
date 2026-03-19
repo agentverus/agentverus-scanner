@@ -209,7 +209,7 @@ function effectiveCapabilitySeverity(
 	}
 	if (
 		capability === "filesystem_discovery" &&
-		/(?:common\s+installation\s+paths|project\s+structure\s+analysis|find\s+\.\s+-name\s+\"Dockerfile|\{baseDir\})/i.test(
+		/(?:common\s+installation\s+paths|project\s+structure\s+analysis|find\s+\.\s+-name\s+"Dockerfile|{baseDir})/i.test(
 			evidence,
 		)
 	) {
@@ -691,8 +691,8 @@ function isKnownInstallerInSetupSection(content: string, matchIndex: number, mat
 	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
 	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
 	if (!headings || headings.length === 0) return false;
-	const lastHeading = headings[headings.length - 1]!.toLowerCase();
-	return /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading);
+	const lastHeading = headings[headings.length - 1]?.toLowerCase();
+	return /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading ?? "");
 }
 
 function firstPositiveMatch(

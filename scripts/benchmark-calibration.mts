@@ -8,7 +8,7 @@
  * treating contract-mismatch highs the same as active-threat highs.
  */
 import { scanSkill } from "../src/scanner/index.js";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 
 const PUBLIC_CORPUS = readFileSync("benchmarks/public-skill-corpus.txt", "utf-8")
 	.split("\n")

@@ -294,7 +294,7 @@ const scripts = {
 {
   "name": "broken",
   "scripts": {
-    "postinstall": "node -e \"console.log('x')\"",
+    "postinstall": "node -e "console.log('x')"",
     ,
   }
 }

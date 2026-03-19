@@ -258,7 +258,7 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 			title: "Large base64 encoded string (possible obfuscation)",
 			description:
 				"A large base64-encoded string was detected that may be used to hide malicious payloads.",
-			evidence: base64Match[0].slice(0, 80) + "...",
+			evidence: `${base64Match[0].slice(0, 80)}...`,
 			lineNumber,
 			deduction: 15,
 			recommendation:
@@ -280,7 +280,7 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 			severity: "medium",
 			title: "Hex-encoded blob (possible obfuscation)",
 			description: "A hex-encoded blob was detected that may be used to hide malicious payloads.",
-			evidence: hexMatch[0].slice(0, 80) + "...",
+			evidence: `${hexMatch[0].slice(0, 80)}...`,
 			lineNumber,
 			deduction: 15,
 			recommendation: "Replace hex-encoded content with plaintext or explain its purpose.",
@@ -328,7 +328,7 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 				severity: severityMultiplier < 1.0 ? "high" : "critical",
 				title: "Hardcoded API key or secret detected",
 				description: `A hardcoded ${keyPattern.name} was found. Secrets must never be embedded in skill files.`,
-				evidence: matchText.slice(0, 20) + "..." + matchText.slice(-4),
+				evidence: `${matchText.slice(0, 20)}...${matchText.slice(-4)}`,
 				lineNumber,
 				deduction: effectiveDeduction,
 				recommendation:

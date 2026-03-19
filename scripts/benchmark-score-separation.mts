@@ -5,7 +5,7 @@
  * The wider this gap, the better the scanner distinguishes safe from malicious.
  */
 import { scanSkill } from "../src/scanner/index.js";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 
 const SAFE_FIXTURES = [
 	"test/fixtures/skills/safe-basic.md",

@@ -154,7 +154,8 @@ function mergeFindingGroup(
 	reason: "same local context" | "repeated finding family" | "same auth risk family",
 ): Finding {
 	const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
-	const primary = sortedGroup[0]!;
+	const primary = sortedGroup[0];
+	if (!primary) throw new Error("mergeFindingGroup requires a non-empty group");
 	const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => cleanMergedTitle(f.title)))].slice(0, 6);
 	return {
 		...primary,
@@ -182,7 +183,8 @@ function mergeAuthPermissionContractFindings(findings: readonly Finding[]): Find
 	const contractFindings = findings.filter(isAuthPermissionContractFinding);
 	if (contractFindings.length <= 1) return [...findings];
 
-	const primary = [...contractFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0]!;
+	const primary = [...contractFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+	if (!primary) return [...findings];
 	const mergedTitles = [...new Set(contractFindings.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
 	const mergedPrimary: Finding = {
 		...primary,
@@ -224,7 +226,8 @@ function mergeGenericAuthDependencyFindings(findings: readonly Finding[]): Findi
 	const specific = findings.filter(isSpecificAuthDependencyFinding);
 	if (generic.length === 0 || specific.length === 0) return [...findings];
 
-	const primary = [...specific].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0]!;
+	const primary = [...specific].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+	if (!primary) return [...findings];
 	const mergedGenericTitles = [...new Set(generic.map((f) => cleanMergedTitle(f.title)))];
 	const mergedDescription = `${primary.description}\n\nMerged related generic dependency context:\n- ${mergedGenericTitles.join("\n- ")}`;
 	const mergedPrimary: Finding = {
@@ -254,7 +257,8 @@ function mergeAuthPermissionIntoBehavior(findings: readonly Finding[]): Finding[
 	);
 	if (permissionFindings.length === 0 || behavioralFindings.length === 0) return [...findings];
 
-	const primary = [...behavioralFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0]!;
+	const primary = [...behavioralFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+	if (!primary) return [...findings];
 	const mergedPermissionTitles = [
 		...new Set(permissionFindings.map((finding) => cleanMergedTitle(finding.title))),
 	];
@@ -380,7 +384,8 @@ function mergeBroadBehavioralAuthFamilies(findings: readonly Finding[]): Finding
 	const merged = [...passThrough];
 	for (const group of groups.values()) {
 		if (group.length === 1) {
-			merged.push(group[0]!);
+			const only = group[0];
+			if (only) merged.push(only);
 			continue;
 		}
 		merged.push(mergeFindingGroup(group, "same auth risk family"));
@@ -395,7 +400,8 @@ function mergeHighBehavioralAuthSummary(findings: readonly Finding[]): Finding[]
 	);
 	if (authBehaviorals.length <= 1) return [...findings];
 
-	const primary = [...authBehaviorals].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0]!;
+	const primary = [...authBehaviorals].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+	if (!primary) return [...findings];
 	const mergedTitles = [...new Set(authBehaviorals.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
 	const mergedPrimary: Finding = {
 		...primary,
@@ -507,7 +513,8 @@ function mergeSelectedRenderedDuplicates(findings: readonly Finding[]): Finding[
 	const merged = [...passThrough];
 	for (const group of groups.values()) {
 		if (group.length === 1) {
-			merged.push(group[0]!);
+			const only = group[0];
+			if (only) merged.push(only);
 			continue;
 		}
 		merged.push(mergeFindingGroup(group, "repeated finding family"));
@@ -537,7 +544,8 @@ function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Find
 	const stageOne: Finding[] = [...passthrough];
 	for (const group of overlapGroups.values()) {
 		if (group.length === 1) {
-			stageOne.push(group[0]!);
+			const only = group[0];
+			if (only) stageOne.push(only);
 			continue;
 		}
 
@@ -564,7 +572,8 @@ function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Find
 	const stageTwo: Finding[] = [...finalPassThrough];
 	for (const group of familyGroups.values()) {
 		if (group.length === 1) {
-			stageTwo.push(group[0]!);
+			const only = group[0];
+			if (only) stageTwo.push(only);
 			continue;
 		}
 
@@ -597,7 +606,8 @@ function mergeOverlappingBrowserAuthFindings(findings: readonly Finding[]): Find
 	finalMerged.push(...familyPassThrough);
 	for (const group of authFamilies.values()) {
 		if (group.length === 1) {
-			finalMerged.push(group[0]!);
+			const only = group[0];
+			if (only) finalMerged.push(only);
 			continue;
 		}
 		finalMerged.push(mergeFindingGroup(group, "same auth risk family"));

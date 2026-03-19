@@ -7,7 +7,7 @@
  * Also tracks safe fixture scores to ensure no regressions.
  */
 import { scanSkill } from "../src/scanner/index.js";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 
 // Evasion fixtures that SHOULD be caught (scored low)
 const EVASION_FIXTURES = [

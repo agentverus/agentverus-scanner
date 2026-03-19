@@ -329,5 +329,5 @@ export async function writeResolvedUrls(
 	outPath: string,
 ): Promise<void> {
 	const lines = skills.map((s) => s.rawUrl);
-	await writeFile(outPath, lines.join("\n") + "\n", "utf-8");
+	await writeFile(outPath, `${lines.join("\n")}\n`, "utf-8");
 }

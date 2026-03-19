@@ -323,11 +323,11 @@ export async function batchScanRegistry(
 		"slug,version,score,badge,format,findings_count,permissions,injection,dependencies,behavioral,content,code_safety";
 	const csvRows = results.map((r) => {
 		const findingCount = r.findings.length;
-		const p = r.categories["permissions"]?.score ?? 0;
-		const i = r.categories["injection"]?.score ?? 0;
-		const d = r.categories["dependencies"]?.score ?? 0;
-		const b = r.categories["behavioral"]?.score ?? 0;
-		const c = r.categories["content"]?.score ?? 0;
+		const p = r.categories.permissions?.score ?? 0;
+		const i = r.categories.injection?.score ?? 0;
+		const d = r.categories.dependencies?.score ?? 0;
+		const b = r.categories.behavioral?.score ?? 0;
+		const c = r.categories.content?.score ?? 0;
 		const cs = r.categories["code-safety"]?.score ?? 0;
 		return `${r.slug},${r.version},${r.score},${r.badge},${r.format},${findingCount},${p},${i},${d},${b},${c},${cs}`;
 	});

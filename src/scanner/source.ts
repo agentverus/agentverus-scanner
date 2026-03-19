@@ -287,7 +287,7 @@ function isBlockedIpv6(ipRaw: string): boolean {
 	const bytes = parseIpv6ToBytes(ipRaw);
 	if (!bytes) return true;
 	if (bytes.length !== 16) return true;
-	const b = (idx: number): number => bytes[idx]!;
+	const b = (idx: number): number => bytes[idx] ?? 0;
 
 	// Unspecified ::/128
 	if (isAllZero(bytes, 0, 16)) return true;

@@ -5,7 +5,7 @@
  * to ensure we're reducing false positives without weakening detection.
  */
 import { scanSkill } from "../src/scanner/index.js";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 
 const SAFE_FIXTURES = [
 	"test/fixtures/skills/safe-basic.md",

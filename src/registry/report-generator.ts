@@ -72,10 +72,10 @@ function generateReport(
 	lines.push(``);
 	lines.push(`| Badge | Count | Percentage | Meaning |`);
 	lines.push(`|-------|-------|------------|---------|`);
-	lines.push(`| 🟢 CERTIFIED | ${b["certified"] ?? 0} | ${pct(b["certified"] ?? 0, total)} | Score ≥90, no critical or high findings |`);
-	lines.push(`| 🟡 CONDITIONAL | ${b["conditional"] ?? 0} | ${pct(b["conditional"] ?? 0, total)} | Score 75-89, minor issues |`);
-	lines.push(`| 🟠 SUSPICIOUS | ${b["suspicious"] ?? 0} | ${pct(b["suspicious"] ?? 0, total)} | Score 50-74, notable concerns |`);
-	lines.push(`| 🔴 REJECTED | ${b["rejected"] ?? 0} | ${pct(b["rejected"] ?? 0, total)} | Score <50 or critical findings |`);
+	lines.push(`| 🟢 CERTIFIED | ${b.certified ?? 0} | ${pct(b.certified ?? 0, total)} | Score ≥90, no critical or high findings |`);
+	lines.push(`| 🟡 CONDITIONAL | ${b.conditional ?? 0} | ${pct(b.conditional ?? 0, total)} | Score 75-89, minor issues |`);
+	lines.push(`| 🟠 SUSPICIOUS | ${b.suspicious ?? 0} | ${pct(b.suspicious ?? 0, total)} | Score 50-74, notable concerns |`);
+	lines.push(`| 🔴 REJECTED | ${b.rejected ?? 0} | ${pct(b.rejected ?? 0, total)} | Score <50 or critical findings |`);
 	lines.push(``);
 
 	// Score Distribution

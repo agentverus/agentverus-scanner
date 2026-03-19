@@ -135,7 +135,7 @@ function printReport(report: TrustReport): void {
 		}
 	}
 
-	console.log("\n" + "─".repeat(60));
+	console.log(`\n${"─".repeat(60)}`);
 }
 
 function generateMarkdownReport(report: TrustReport, source: string): string {

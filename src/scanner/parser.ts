@@ -209,20 +209,20 @@ export function parseSkill(content: string): ParsedSkill {
 		const bodyMatch = content.match(/^---\s*\n[\s\S]*?\n---\s*\n([\s\S]*)/);
 		instructions = bodyMatch?.[1]?.trim() ?? "";
 	} else if (format === "claude") {
-		name = sections["Description"] ? "" : (Object.keys(sections)[0] ?? "");
-		description = sections["Description"] ?? sections["description"] ?? "";
-		instructions = sections["Instructions"] ?? sections["instructions"] ?? "";
+		name = sections.Description ? "" : (Object.keys(sections)[0] ?? "");
+		description = sections.Description ?? sections.description ?? "";
+		instructions = sections.Instructions ?? sections.instructions ?? "";
 
-		const toolsSection = sections["Tools"] ?? sections["tools"] ?? "";
+		const toolsSection = sections.Tools ?? sections.tools ?? "";
 		tools = extractListItems(toolsSection);
 
-		const permsSection = sections["Permissions"] ?? sections["permissions"] ?? "";
+		const permsSection = sections.Permissions ?? sections.permissions ?? "";
 		permissions = extractListItems(permsSection);
 	} else {
 		// Generic: best-effort extraction
 		const firstHeading = Object.keys(sections)[0];
 		name = firstHeading ?? "";
-		description = sections["Description"] ?? sections["About"] ?? Object.values(sections)[0] ?? "";
+		description = sections.Description ?? sections.About ?? Object.values(sections)[0] ?? "";
 		instructions = content;
 	}
 

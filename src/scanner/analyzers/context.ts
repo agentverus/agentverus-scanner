@@ -274,8 +274,8 @@ export function isInThreatListingContext(content: string, matchIndex: number): b
 	const broaderPreceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
 	const headings = broaderPreceding.match(/^#{1,4}\s+.+$/gm);
 	if (headings && headings.length > 0) {
-		const lastHeading = headings[headings.length - 1]!.toLowerCase();
-		if (/\b(?:detect|ssrf|injection|threat|attack|security|example|exfiltrat|protect|dangerous)\b/.test(lastHeading)) {
+		const lastHeading = headings[headings.length - 1]?.toLowerCase();
+		if (/\b(?:detect|ssrf|injection|threat|attack|security|example|exfiltrat|protect|dangerous)\b/.test(lastHeading ?? "")) {
 			return true;
 		}
 	}

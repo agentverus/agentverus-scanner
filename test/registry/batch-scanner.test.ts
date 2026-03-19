@@ -34,7 +34,7 @@ async function writeTestUrlFile(filePath: string, count: number): Promise<void> 
 	for (let i = 1; i <= count; i += 1) {
 		urls.push(makeDataSkillUrl(`skill-${i}`, SAMPLE_SKILL_MD));
 	}
-	await writeFile(filePath, urls.join("\n") + "\n", "utf-8");
+	await writeFile(filePath, `${urls.join("\n")}\n`, "utf-8");
 }
 
 afterEach(async () => {

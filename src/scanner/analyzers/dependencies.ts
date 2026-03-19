@@ -346,7 +346,7 @@ function extractScriptsFromJsonBlock(blockContent: string): Record<string, unkno
 		if (!parsed) return null;
 		if (!isObjectRecord(parsed)) return null;
 
-		const scripts = parsed["scripts"];
+		const scripts = parsed.scripts;
 		if (!isObjectRecord(scripts)) return null;
 
 		return scripts;
@@ -389,8 +389,8 @@ function isLegitimateInstaller(content: string, matchIndex: number, matchText: s
 	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
 	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
 	if (headings && headings.length > 0) {
-		const lastHeading = headings[headings.length - 1]!.toLowerCase();
-		if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading)) {
+		const lastHeading = headings[headings.length - 1]?.toLowerCase();
+		if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading ?? "")) {
 			return true;
 		}
 	}

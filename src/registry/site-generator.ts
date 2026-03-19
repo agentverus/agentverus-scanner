@@ -25,8 +25,8 @@ function generateHtml(
 	const total = summary.scanned;
 
 	// Pre-compute stats
-	const certifiedPct = total > 0 ? ((b["certified"] ?? 0) / total * 100).toFixed(1) : "0";
-	const rejectedPct = total > 0 ? ((b["rejected"] ?? 0) / total * 100).toFixed(1) : "0";
+	const certifiedPct = total > 0 ? ((b.certified ?? 0) / total * 100).toFixed(1) : "0";
+	const rejectedPct = total > 0 ? ((b.rejected ?? 0) / total * 100).toFixed(1) : "0";
 
 	// Build JSON for client-side search (compact)
 	const compactResults = results.map((r) => ({
@@ -38,11 +38,11 @@ function generateHtml(
 		fc: r.findings.length,
 		fs: r.findings.slice(0, 3).map((f) => ({ t: f.title, sv: f.severity, c: f.owaspCategory })),
 		cats: {
-			p: r.categories["permissions"]?.score ?? 0,
-			i: r.categories["injection"]?.score ?? 0,
-			d: r.categories["dependencies"]?.score ?? 0,
-			bh: r.categories["behavioral"]?.score ?? 0,
-			c: r.categories["content"]?.score ?? 0,
+			p: r.categories.permissions?.score ?? 0,
+			i: r.categories.injection?.score ?? 0,
+			d: r.categories.dependencies?.score ?? 0,
+			bh: r.categories.behavioral?.score ?? 0,
+			c: r.categories.content?.score ?? 0,
 			cs: r.categories["code-safety"]?.score ?? 0,
 		},
 	}));
@@ -55,7 +55,7 @@ function generateHtml(
 <title>${title}</title>
 <meta name="description" content="Security analysis of ${total.toLocaleString()} AI agent skills from the ClawHub registry using AgentVerus Scanner.">
 <meta property="og:title" content="${title}">
-<meta property="og:description" content="We scanned ${total.toLocaleString()} AI agent skills. ${b["rejected"] ?? 0} were rejected. See the full results.">
+<meta property="og:description" content="We scanned ${total.toLocaleString()} AI agent skills. ${b.rejected ?? 0} were rejected. See the full results.">
 <meta property="og:type" content="website">
 <style>
 :root {
@@ -170,19 +170,19 @@ footer { text-align: center; padding: 48px 0 24px; color: var(--text-muted); fon
     <div class="label">Skills Scanned</div>
   </div>
   <div class="stat-card green">
-    <div class="value">${(b["certified"] ?? 0).toLocaleString()}</div>
+    <div class="value">${(b.certified ?? 0).toLocaleString()}</div>
     <div class="label">🟢 Certified (${certifiedPct}%)</div>
   </div>
   <div class="stat-card yellow">
-    <div class="value">${(b["conditional"] ?? 0).toLocaleString()}</div>
+    <div class="value">${(b.conditional ?? 0).toLocaleString()}</div>
     <div class="label">🟡 Conditional</div>
   </div>
   <div class="stat-card orange">
-    <div class="value">${(b["suspicious"] ?? 0).toLocaleString()}</div>
+    <div class="value">${(b.suspicious ?? 0).toLocaleString()}</div>
     <div class="label">🟠 Suspicious</div>
   </div>
   <div class="stat-card red">
-    <div class="value">${(b["rejected"] ?? 0).toLocaleString()}</div>
+    <div class="value">${(b.rejected ?? 0).toLocaleString()}</div>
     <div class="label">🔴 Rejected (${rejectedPct}%)</div>
   </div>
   <div class="stat-card">
@@ -192,10 +192,10 @@ footer { text-align: center; padding: 48px 0 24px; color: var(--text-muted); fon
 </div>
 
 <div class="badge-bar" title="Badge distribution">
-  <div class="segment certified" style="width:${total > 0 ? (b["certified"] ?? 0) / total * 100 : 0}%"></div>
-  <div class="segment conditional" style="width:${total > 0 ? (b["conditional"] ?? 0) / total * 100 : 0}%"></div>
-  <div class="segment suspicious" style="width:${total > 0 ? (b["suspicious"] ?? 0) / total * 100 : 0}%"></div>
-  <div class="segment rejected" style="width:${total > 0 ? (b["rejected"] ?? 0) / total * 100 : 0}%"></div>
+  <div class="segment certified" style="width:${total > 0 ? (b.certified ?? 0) / total * 100 : 0}%"></div>
+  <div class="segment conditional" style="width:${total > 0 ? (b.conditional ?? 0) / total * 100 : 0}%"></div>
+  <div class="segment suspicious" style="width:${total > 0 ? (b.suspicious ?? 0) / total * 100 : 0}%"></div>
+  <div class="segment rejected" style="width:${total > 0 ? (b.rejected ?? 0) / total * 100 : 0}%"></div>
 </div>
 
 <div class="controls">
