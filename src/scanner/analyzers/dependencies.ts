@@ -459,14 +459,27 @@ function classifyUrl(url: string): {
 	return { risk: "unknown", deduction: 5 };
 }
 
-function hasSensitiveUnknownUrlContext(content: string, url: string): boolean {
+function getUrlContextWindow(content: string, url: string): string | null {
 	const idx = content.indexOf(url);
-	if (idx < 0) return false;
+	if (idx < 0) return null;
 
 	const start = Math.max(0, idx - 220);
 	const end = Math.min(content.length, idx + url.length + 220);
-	const window = content.slice(start, end);
+	return content.slice(start, end);
+}
+
+function hasSensitiveUnknownUrlContext(content: string, url: string): boolean {
+	const window = getUrlContextWindow(content, url);
+	if (!window) return false;
 	return /\b(?:auth|authentication|cookie|token|login|dashboard|session|mcp|api|endpoint|provider|oauth|2fa|refresh|credential|secret)\b/i.test(
+		window,
+	);
+}
+
+function hasDocumentationUnknownUrlContext(content: string, url: string): boolean {
+	const window = getUrlContextWindow(content, url);
+	if (!window) return false;
+	return /(?:sitemap\.xml|specification|readme\.md|reference\s+implementation|for\s+more\s+information|for\s+full\s+.+\s+details|for\s+deeper\s+.+\s+familiarity)/i.test(
 		window,
 	);
 }
@@ -557,9 +570,14 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 					? "high"
 					: "low";
 
-			if (classification.risk === "unknown" && hasSensitiveUnknownUrlContext(content, url)) {
-				severity = "medium";
-				effectiveDeduction = Math.max(effectiveDeduction, 8);
+			if (classification.risk === "unknown") {
+				if (hasDocumentationUnknownUrlContext(content, url)) {
+					severity = "high";
+					effectiveDeduction = Math.max(effectiveDeduction, 8);
+				} else if (hasSensitiveUnknownUrlContext(content, url)) {
+					severity = "medium";
+					effectiveDeduction = Math.max(effectiveDeduction, 8);
+				}
 			}
 
 			let titleSuffix = "";
