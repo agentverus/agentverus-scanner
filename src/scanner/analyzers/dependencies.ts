@@ -1,4 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
+import { hasSetupHeadingOrYamlContext } from "../setup-context.js";
 import { hasHighAbuseTldHost, isKnownInstallerTarget } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInsideCodeBlock, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
@@ -366,23 +367,7 @@ function isLegitimateInstaller(content: string, matchIndex: number, matchText: s
 
 	if (!usesHttps || !hasKnownTld) return false;
 
-	// Check if the match is inside a prerequisites/setup/installation section
-	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
-	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
-	if (headings && headings.length > 0) {
-		const lastHeading = headings[headings.length - 1]!.toLowerCase();
-		if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading)) {
-			return true;
-		}
-	}
-
-	// Check if inside YAML frontmatter metadata block (install:, command:, compatibility:)
-	const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
-	if (/\b(?:install|command|compatibility|setup)\s*:/i.test(nearbyLines)) {
-		return true;
-	}
-
-	return false;
+	return hasSetupHeadingOrYamlContext(content, matchIndex);
 }
 
 /** Extract hostname from URL */

@@ -7,6 +7,7 @@ import {
 	isPrecededByNegation,
 	isSecurityDefenseSkill,
 } from "./context.js";
+import { hasSetupHeadingContext } from "../setup-context.js";
 import { isKnownInstallerTarget } from "../url-risk.js";
 import {
 	type CapabilityKind,
@@ -183,11 +184,7 @@ function isKnownInstallerInSetupSection(content: string, matchIndex: number, mat
 	if (!isKnownInstallerTarget(matchText)) return false;
 
 	// Must be under a setup/prerequisites heading
-	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
-	const headings = preceding.match(/^#{1,4}\s+.+$/gm);
-	if (!headings || headings.length === 0) return false;
-	const lastHeading = headings[headings.length - 1]!.toLowerCase();
-	return /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading);
+	return hasSetupHeadingContext(content, matchIndex);
 }
 
 function firstPositiveMatch(
