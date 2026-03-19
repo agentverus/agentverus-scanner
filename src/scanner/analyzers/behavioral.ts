@@ -749,6 +749,7 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/persistent\s+but\s+empty\s+CLI\s+profile/i,
 			/~\/\.config\/browseruse\/profiles\/cli\//i,
 			/\bReference\s+Files\b/i,
+			/\.\/reference\/[A-Za-z0-9_./-]+\.md/i,
 			/\[[^\]]+\]\(\.\/reference\/[A-Za-z0-9_./-]+\.md\)/i,
 			/\[[^\]]+\]\(references?\/[A-Za-z0-9_./-]+\.md\)/i,
 			/\breferences?\//i,
