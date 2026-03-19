@@ -866,7 +866,15 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 		const hasSensitiveUrlContext = /\b(?:auth|authentication|cookie|token|login|payment|payments|mcp|credential|secret)\b/i.test(
 			content,
 		);
-		const severity = hasSensitiveUrlContext ? "medium" : "info";
+		const hasHighRiskUrlMix = skill.urls.some((url) => {
+			const classification = classifyUrl(url);
+			return classification?.risk === "raw" || classification?.risk === "unknown";
+		});
+		const severity = hasSensitiveUrlContext
+			? hasHighRiskUrlMix
+				? "high"
+				: "medium"
+			: "info";
 		const deduction = hasSensitiveUrlContext ? 8 : 0;
 		score = Math.max(0, score - deduction);
 		findings.push({
