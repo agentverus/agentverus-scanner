@@ -527,8 +527,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/auto-?detect(?:s)?\s+(?:running\s+)?dev\s+servers?/i,
 			/detectDevServers\s*\(/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat automatic localhost/dev-server discovery as local service enumeration. Require explicit approval before probing local ports or reusing discovered internal services.",
@@ -682,8 +682,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/remote\s+servers?,\s+using\s+stateless\s+JSON/i,
 			/transport\s+mechanisms?\s*\(streamable\s+HTTP,\s*stdio\)/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-02",
 		recommendation:
 			"Treat remote tool transports as network-exposed attack surface. Be explicit about what data crosses the wire, who can connect, and which authentication or origin controls protect the remote server.",
