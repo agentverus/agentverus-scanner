@@ -731,6 +731,9 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		patterns: [
 			/--allow-file-access\b/i,
 			/\bfile:\/\//i,
+			/\bstate\s+(?:save|load)\s+\.\/auth\.json\b/i,
+			/\bReference\s+Files\b/i,
+			/\breferences?\//i,
 		],
 		severity: "high",
 		deduction: 15,
