@@ -194,6 +194,11 @@ function effectiveCapabilitySeverity(
 	) {
 		return { severity: "high", deduction: Math.max(base.deduction, 10) };
 	}
+	if (capability === "network") {
+		return KNOWN_INSTALLER_DOMAINS.test(evidence)
+			? base
+			: { severity: "high", deduction: base.deduction };
+	}
 	return base;
 }
 
