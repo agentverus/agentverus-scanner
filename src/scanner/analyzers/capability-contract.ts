@@ -207,6 +207,14 @@ function effectiveCapabilitySeverity(
 	) {
 		return { severity: "high", deduction: Math.max(base.deduction, 8) };
 	}
+	if (
+		capability === "filesystem_discovery" &&
+		/(?:common\s+installation\s+paths|project\s+structure\s+analysis|find\s+\.\s+-name\s+\"Dockerfile)/i.test(
+			evidence,
+		)
+	) {
+		return { severity: "high", deduction: Math.max(base.deduction, 8) };
+	}
 	return base;
 }
 
