@@ -191,3 +191,4 @@
 {"run":177,"commit":"6fdcab9","metric":198,"metrics":{},"status":"keep","description":"feat: treat explicit webapp-testing guidance as early local-service access so browser automation skills surface localhost risk before concrete URLs appear","timestamp":1773926730223,"segment":13,"confidence":5}
 {"type":"config","name":"Raise clearly risky public-corpus findings to high severity","metricName":"public_high_findings","metricUnit":"","bestDirection":"higher"}
 {"run":178,"commit":"fa77438","metric":45,"metrics":{},"status":"keep","description":"chore: pivot to public high-severity benchmark — baseline public_high_findings=45 with realtime_prefix_findings holding at 198","timestamp":1773926878713,"segment":14,"confidence":null}
+{"run":179,"commit":"2f22f31","metric":46,"metrics":{},"status":"keep","description":"feat: elevate explicit anti-automation bypass guidance to a high-severity behavioral finding","timestamp":1773926925963,"segment":14,"confidence":null}

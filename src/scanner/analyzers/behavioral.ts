@@ -1,5 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
-import { adjustForContext, buildContentContext, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
+import { adjustForContext, buildContentContext, isInThreatListingContext, isInsideCodeBlock, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
 /** Behavioral risk patterns */
@@ -11,6 +11,8 @@ interface BehavioralPattern {
 	readonly owaspCategory: string;
 	readonly recommendation: string;
 }
+
+const FULL_SEVERITY_IN_CODE_BLOCKS = new Set(["Browser JavaScript evaluation"]);
 
 const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
@@ -808,6 +810,8 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 			while ((match = globalRegex.exec(content)) !== null) {
 				const lineNumber = content.slice(0, match.index).split("\n").length;
 				const line = lines[lineNumber - 1] ?? "";
+				const preserveCodeBlockSeverity =
+					FULL_SEVERITY_IN_CODE_BLOCKS.has(pattern.name) && isInsideCodeBlock(match.index, ctx);
 
 				// Context-aware adjustment
 				const { severityMultiplier, reason } = adjustForContext(
@@ -815,13 +819,16 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 					content,
 					ctx,
 				);
+				const effectiveMultiplier = preserveCodeBlockSeverity
+					? Math.max(severityMultiplier, 1)
+					: severityMultiplier;
 
 				// Do not break: an earlier negated mention must not prevent later real matches.
-				if (severityMultiplier === 0) continue;
+				if (effectiveMultiplier === 0) continue;
 
-				const effectiveDeduction = Math.round(pattern.deduction * severityMultiplier);
+				const effectiveDeduction = Math.round(pattern.deduction * effectiveMultiplier);
 				const effectiveSeverity =
-					severityMultiplier < 1.0
+					effectiveMultiplier < 1.0
 						? downgradeSeverity(pattern.severity)
 						: pattern.severity;
 
