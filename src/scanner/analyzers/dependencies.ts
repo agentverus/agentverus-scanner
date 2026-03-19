@@ -553,11 +553,9 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 			}
 
 			let severity: "high" | "medium" | "low" =
-				classification.risk === "ip" || classification.risk === "data" || classification.risk === "local"
+				classification.risk === "ip" || classification.risk === "data" || classification.risk === "local" || classification.risk === "raw"
 					? "high"
-					: classification.risk === "raw"
-						? "medium"
-						: "low";
+					: "low";
 
 			if (classification.risk === "unknown" && hasSensitiveUnknownUrlContext(content, url)) {
 				severity = "medium";
