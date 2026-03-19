@@ -7,6 +7,7 @@ import {
 	isPrecededByNegation,
 	isSecurityDefenseSkill,
 } from "./context.js";
+import { isKnownInstallerTarget } from "../url-risk.js";
 import {
 	type CapabilityKind,
 	AUTH_STATE_MANAGEMENT_PATTERNS,
@@ -175,15 +176,11 @@ function isInsideInlineCode(content: string, matchIndex: number): boolean {
 	return close >= rel;
 }
 
-/** Well-known installer domains where curl|sh is expected and lower risk */
-const KNOWN_INSTALLER_DOMAINS =
-	/(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
-
 /** Check if a match is a known-installer curl|sh in a setup/prerequisites section */
 function isKnownInstallerInSetupSection(content: string, matchIndex: number, matchText: string): boolean {
 	// Must be a curl|sh pattern with a known installer domain
 	if (!/\b(?:curl|wget)\b/i.test(matchText)) return false;
-	if (!KNOWN_INSTALLER_DOMAINS.test(matchText)) return false;
+	if (!isKnownInstallerTarget(matchText)) return false;
 
 	// Must be under a setup/prerequisites heading
 	const preceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);

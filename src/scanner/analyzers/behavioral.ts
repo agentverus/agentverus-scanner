@@ -1,7 +1,8 @@
 import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
+import { hasHighAbuseTldInText, isKnownInstallerTarget } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
-import { BEHAVIORAL_PATTERNS, KNOWN_INSTALLERS, PREREQUISITE_TRAP_PATTERNS } from "./behavioral-config.js";
+import { BEHAVIORAL_PATTERNS, PREREQUISITE_TRAP_PATTERNS } from "./behavioral-config.js";
 
 /** Downgrade a severity level by one tier */
 function downgradeSeverity(severity: "high" | "medium" | "low"): Severity {
@@ -94,7 +95,7 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 			}
 
 			// Check if this is a well-known installer or in a prerequisites section
-			const isKnownInstaller = KNOWN_INSTALLERS.test(trapMatch[0]);
+			const isKnownInstaller = isKnownInstallerTarget(trapMatch[0]);
 			const hasRawIp = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(trapMatch[0]);
 			const usesHttps = /https:\/\//.test(trapMatch[0]);
 			const hasKnownTld = /\.(com|org|io|dev|sh|rs|land|cloud|app|ai|so|net|co)\//.test(trapMatch[0]);
@@ -128,7 +129,7 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 				const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
 				// For suspicious URLs (raw IP, HTTP-only, unknown TLD), don't reduce
 				// severity just because they're in a code block — that's the evasion.
-				const isSuspiciousUrl = hasRawIp || !usesHttps || !hasKnownTld;
+				const isSuspiciousUrl = hasRawIp || !usesHttps || !hasKnownTld || hasHighAbuseTldInText(trapMatch[0]);
 				const effectiveMultiplier = isSuspiciousUrl ? Math.max(severityMultiplier, 1.0) : severityMultiplier;
 				const effectiveDeduction = Math.round(25 * effectiveMultiplier);
 				score = Math.max(0, score - effectiveDeduction);

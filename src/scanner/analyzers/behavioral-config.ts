@@ -773,8 +773,6 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	},
 ] as const;
 
-export const KNOWN_INSTALLERS = /(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
-
 export const PREREQUISITE_TRAP_PATTERNS = [
 	/curl\s+.*\|\s*(?:sh|bash|zsh)/i,
 	/curl\s+.*-[oO]\s+.*&&\s*(?:chmod|\.\/)/i,

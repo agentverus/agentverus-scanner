@@ -1,4 +1,5 @@
 import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
+import { HIGH_ABUSE_TLD_PATTERN } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 
@@ -48,7 +49,7 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			/\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
 			/\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
 			/\b(?:concatenate|combine|collect|gather)\b.{0,60}\b(?:send|post|transmit|upload|forward)\s+(?:to|it\s+to)\s+https?:\/\//i,
-			/\b(?:send|transmit|upload|forward)\s+(?:them\s+)?(?:to|it\s+to)\s+https?:\/\/\S+\.(?:xyz|top|buzz|click|evil|collect|exfil)/i,
+			new RegExp(`\\b(?:send|transmit|upload|forward)\\s+(?:them\\s+)?(?:to|it\\s+to)\\s+https?:\\/\\/\\S+\\.(?:${HIGH_ABUSE_TLD_PATTERN}|evil|collect|exfil)`, "i"),
 		],
 		severity: "critical",
 		deduction: 40,
@@ -86,7 +87,7 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		name: "Suspicious download-and-execute",
 		patterns: [
 			/\b(?:curl|wget)\b[^\n]*(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
-			/\b(?:curl|wget)\b[^\n]*https?:\/\/[^\s]+\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu)\b[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
+			new RegExp(`\\b(?:curl|wget)\\b[^\\n]*https?:\\/\\/[^\\s]+\\.${HIGH_ABUSE_TLD_PATTERN}\\b[^\\n]*\\|\\s*(?:bash|sh|zsh|python)\\b`, "i"),
 		],
 		severity: "critical",
 		deduction: 35,
