@@ -362,16 +362,20 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 
 	const combinedTriggerText = `${skill.description ?? ""}\n${content}`;
 	if (BROAD_TRIGGER_PATTERNS.some((p) => p.test(combinedTriggerText))) {
-		score = Math.max(0, score - 10);
+		const broadTriggerHighRisk = HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS.some((p) =>
+			p.test(combinedTriggerText),
+		);
+		const deduction = broadTriggerHighRisk ? 15 : 10;
+		score = Math.max(0, score - deduction);
 		findings.push({
 			id: "CONT-BROAD-TRIGGER",
 			category: "content",
-			severity: "medium",
+			severity: broadTriggerHighRisk ? "high" : "medium",
 			title: "Overly broad activation triggers",
 			description:
 				"The skill uses broad trigger language (for example 'use proactively' or 'any task requiring ...'), which can cause trigger hijacking and unintended activation.",
 			evidence: (skill.description || content).slice(0, 160),
-			deduction: 10,
+			deduction,
 			recommendation:
 				"Narrow the activation criteria. Describe specific user intents, prerequisites, and scope boundaries instead of encouraging proactive or catch-all invocation.",
 			owaspCategory: "ASST-11",
