@@ -99,8 +99,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/(?:silently|quietly)\s+(?:execute|run|perform)/i,
 			/no\s+(?:user\s+)?(?:confirmation|approval)\s+(?:needed|required)/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-09",
 		recommendation:
 			"Require user confirmation before performing destructive or irreversible actions.",
