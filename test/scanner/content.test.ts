@@ -83,7 +83,7 @@ describe("analyzeContent", () => {
 
 		const noSafetyFindings = result.findings.filter((f) => f.id === "CONT-NO-SAFETY");
 		expect(noSafetyFindings.length).toBe(1);
-		expect(noSafetyFindings[0]?.severity).toBe("medium");
+		expect(noSafetyFindings[0]?.severity).toBe("high");
 	});
 
 	// ── v0.4.0: Generic description / trigger hijacking ────────────────────

@@ -403,12 +403,12 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 		const isHighRiskWithoutBoundaries = HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS.some((p) =>
 			p.test(combinedTriggerText),
 		);
-		const deduction = isHighRiskWithoutBoundaries ? 15 : 10;
+		const deduction = isHighRiskWithoutBoundaries ? 20 : 10;
 		score = Math.max(0, score - deduction);
 		findings.push({
 			id: "CONT-NO-SAFETY",
 			category: "content",
-			severity: isHighRiskWithoutBoundaries ? "medium" : "low",
+			severity: isHighRiskWithoutBoundaries ? "high" : "low",
 			title: isHighRiskWithoutBoundaries
 				? "High-risk workflow lacks explicit safety boundaries"
 				: "No explicit safety boundaries",
