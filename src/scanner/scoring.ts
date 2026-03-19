@@ -164,6 +164,13 @@ function mergeFindingGroup(
 }
 
 function isAuthPermissionContractFinding(finding: Finding): boolean {
+	if (
+		/\binferred\s+(?:browser\s+session\s+attachment|browser\s+profile\s+copy|auth\s+state\s+management|session\s+management)\b/i.test(
+			finding.title,
+		)
+	) {
+		return false;
+	}
 	return (
 		finding.category === "permissions" &&
 		finding.title.startsWith("Capability contract mismatch") &&
