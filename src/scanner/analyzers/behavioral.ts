@@ -19,6 +19,8 @@ const FULL_SEVERITY_IN_CODE_BLOCKS = new Set([
 	"Package bootstrap execution",
 	"Local service access",
 	"Remote task delegation",
+	"Local file access",
+	"Financial/payment actions",
 ]);
 
 const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
