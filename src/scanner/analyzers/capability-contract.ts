@@ -165,7 +165,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	remote_task_management: { severity: "medium", deduction: 8 },
 	server_exposure: { severity: "medium", deduction: 8 },
 	external_tool_bridge: { severity: "medium", deduction: 8 },
-	local_service_access: { severity: "medium", deduction: 8 },
+	local_service_access: { severity: "high", deduction: 10 },
 	process_orchestration: { severity: "medium", deduction: 8 },
 	ui_state_access: { severity: "medium", deduction: 8 },
 	documentation_ingestion: { severity: "medium", deduction: 8 },
