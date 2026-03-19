@@ -660,6 +660,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				"Hosted browser service dependency",
 				"Third-party AI provider dependency",
 				"External service integration dependency",
+				"Media artifact handoff dependency",
 			]).has(hint.title)
 				? "high"
 				: "medium";
