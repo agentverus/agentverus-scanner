@@ -615,8 +615,8 @@ const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/find\s+\.\s+-name\s+["']Dockerfile\*/i,
 			/find\s+\.\s+-name\s+["']\.dockerignore["']/i,
 		],
-		severity: "medium",
-		deduction: 10,
+		severity: "high",
+		deduction: 15,
 		owaspCategory: "ASST-03",
 		recommendation:
 			"Treat environment discovery and host/container enumeration as privileged reconnaissance. Be explicit about what local state is probed and avoid broad scanning unless the user requested it.",
