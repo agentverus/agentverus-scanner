@@ -627,11 +627,12 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 
 			const lineNumber = content.slice(0, match.index).split("\n").length;
 			const deduction = 8;
+			const severity = hint.title === "Agent-callable endpoint reference" ? "high" : "medium";
 			score = Math.max(0, score - deduction);
 			findings.push({
 				id: `DEP-LOCAL-HINT-${findings.length + 1}`,
 				category: "dependencies",
-				severity: "medium",
+				severity,
 				title: hint.title,
 				description:
 					"The skill references a local-only service port or transport mode, which expands the reachable local attack surface even before explicit localhost URLs appear.",
