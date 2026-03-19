@@ -148,7 +148,7 @@ const CAPABILITY_SEVERITY: Readonly<
 	system_modification: { severity: "high", deduction: 12 },
 	container_runtime_control: { severity: "high", deduction: 10 },
 	file_write: { severity: "medium", deduction: 8 },
-	file_read: { severity: "medium", deduction: 6 },
+	file_read: { severity: "high", deduction: 6 },
 	filesystem_discovery: { severity: "medium", deduction: 8 },
 	configuration_override: { severity: "medium", deduction: 8 },
 	network: { severity: "medium", deduction: 6 },
