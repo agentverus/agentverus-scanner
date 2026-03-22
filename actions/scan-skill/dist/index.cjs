@@ -32,7 +32,7 @@ function buildContentContext(content) {
   while ((match = inlineCodeRegex.exec(content)) !== null) {
     codeBlocks.push({ start: match.index, end: match.index + match[0].length });
   }
-  const safetyHeadingRegex = /^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not)/gim;
+  const safetyHeadingRegex = /^#{2,4}\s+(?:safety\s+boundar|limitations?\b|restrictions?\b|constraints?\b|prohibited|forbidden|do\s+not\s+(?:use|do)|don'?t\s+(?:use|do)|must\s+not|will\s+not|what\s+(?:this\s+skill\s+)?(?:does|should)\s+not|refusal\s+pattern|when\s+not\s+to\s+use|do\s+not\s+use\s+when|safe\s+operating|operating\s+rules|read[\s-]only\s+rules?)/gim;
   while ((match = safetyHeadingRegex.exec(content)) !== null) {
     const sectionStart = match.index;
     const headingLevel = match[0].match(/^(#+)/)?.[1]?.length ?? 1;
@@ -63,7 +63,7 @@ function isPrecededByNegation(content, matchIndex) {
   if (lineStart < 0)
     lineStart = 0;
   const linePrefix = content.slice(lineStart, matchIndex);
-  if (/(?:do\s+not|don['']?t|should\s+not|must\s+not|will\s+not|cannot|never|no\s+)\s*$/i.test(linePrefix)) {
+  if (/(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never|is\s+not|isn['']?t|are\s+not|aren['']?t|has\s+not|hasn['']?t|have\s+not|haven['']?t|need\s+not|no\s+)(?:\s+\w+){0,3}\s*$/i.test(linePrefix)) {
     return true;
   }
   return false;
@@ -76,21 +76,78 @@ function adjustForContext(matchIndex, content, ctx) {
     return { severityMultiplier: 0.3, reason: "inside code block" };
   }
   if (isInsideSafetySection(matchIndex, ctx)) {
+    let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+    if (lineStart < 0)
+      lineStart = 0;
+    let lineEnd = content.indexOf("\n", matchIndex);
+    if (lineEnd < 0)
+      lineEnd = content.length;
+    const fullLine = content.slice(lineStart, lineEnd);
+    if (/\b(?:do(?:es)?\s+not|don['']?t|doesn['']?t|should\s+not|shouldn['']?t|must\s+not|mustn['']?t|will\s+not|won['']?t|cannot|can['']?t|never)\b/i.test(fullLine)) {
+      return { severityMultiplier: 0, reason: "negated in safety boundary section" };
+    }
     return { severityMultiplier: 1, reason: "inside safety boundary section" };
   }
   return { severityMultiplier: 1, reason: null };
 }
 function isSecurityDefenseSkill(skill) {
+  const abuseCtx = buildContentContext(skill.rawContent);
+  const credAbusePatterns = [
+    /\b(?:read|cat|dump)\b.{0,80}(?:~\/\.ssh|\.aws\/credentials|\.env\b|id_rsa|id_ed25519)/gi,
+    /\b(?:all\s+environment\s+variables|all\s+settings.*tokens.*keys)\b/gi
+  ];
+  const exfilAbusePatterns = [
+    /\b(?:send|post|upload|forward)\b.{0,120}https?:\/\//gi,
+    /\bpost\s+its\s+contents?\s+to\b/gi
+  ];
+  let hasRealCredentialAccess = false;
+  for (const pat of credAbusePatterns) {
+    let m;
+    while ((m = pat.exec(skill.rawContent)) !== null) {
+      if (!isInsideCodeBlock(m.index, abuseCtx) && !isInThreatListingContext(skill.rawContent, m.index)) {
+        hasRealCredentialAccess = true;
+        break;
+      }
+    }
+    if (hasRealCredentialAccess)
+      break;
+  }
+  if (hasRealCredentialAccess) {
+    let hasExternalExfiltration = false;
+    for (const pat of exfilAbusePatterns) {
+      let m;
+      while ((m = pat.exec(skill.rawContent)) !== null) {
+        if (!isInsideCodeBlock(m.index, abuseCtx) && !isInThreatListingContext(skill.rawContent, m.index)) {
+          hasExternalExfiltration = true;
+          break;
+        }
+      }
+      if (hasExternalExfiltration)
+        break;
+    }
+    if (hasExternalExfiltration) {
+      return false;
+    }
+  }
   const desc = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
-  if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz|validat|suite)|prompt\s+(?:guard|inject|defense|detect)|threat\s+(?:detect|monitor)|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|pattern\s+detect|command\s+sanitiz|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
+  if (/\b(?:security\s+(?:scan|audit|check|monitor|guard|shield|analyz|validat|suite|educator|teach|train)|prompt\s+(?:guard|inject|defense|detect)|threat\s+(?:detect|monitor)|injection\s+(?:defense|detect|prevent|scanner)|skill\s+(?:audit|scan|vet)|pattern\s+detect|command\s+sanitiz|(?:guard|bastion|warden|heimdall|sentinel|watchdog)\b)/i.test(desc)) {
     return true;
   }
   const nameOnly = (skill.name ?? "").toLowerCase();
   if (/^(?:security|guard|sentinel|watchdog|scanner|firewall|shield|defender|warden)$/i.test(nameOnly)) {
     return true;
   }
+  if (/\b(?:teach|educat|learn|understand)\b.{0,80}\b(?:security|vulnerabilit|attack|threat|injection|malicious)\b/i.test(desc)) {
+    return true;
+  }
   const contentHead = skill.rawContent.slice(0, 500).toLowerCase();
   if (/\b(?:security\s+(?:analy|scan|audit)|detect\s+(?:malicious|injection|exfiltration)|adversarial\s+(?:security|analysis)|prompt\s+injection\s+(?:defense|detect|prevent))\b/i.test(contentHead)) {
+    return true;
+  }
+  if (/\b(?:teach|educat|learn|understand)\b.{0,120}\b(?:security|vulnerabilit|attack|threat|injection)\b/i.test(contentHead)) {
+    return true;
+  }
+  if (/\b(?:defensive|defense|benign)\b.{0,80}\b(?:guidance|documentation|notes?)\b.{0,80}\b(?:tamper|attack|adversar|security)/i.test(contentHead)) {
     return true;
   }
   return false;
@@ -121,8 +178,8 @@ function isInThreatListingContext(content, matchIndex) {
   const broaderPreceding = content.slice(Math.max(0, matchIndex - 1e3), matchIndex);
   const headings = broaderPreceding.match(/^#{1,4}\s+.+$/gm);
   if (headings && headings.length > 0) {
-    const lastHeading = headings[headings.length - 1].toLowerCase();
-    if (/\b(?:detect|ssrf|injection|threat|attack|security|example|exfiltrat|protect|dangerous)\b/.test(lastHeading)) {
+    const lastHeading = headings[headings.length - 1]?.toLowerCase();
+    if (/\b(?:detect|ssrf|injection|threat|attack|security|example|exfiltrat|protect|dangerous)\b/.test(lastHeading ?? "")) {
       return true;
     }
   }
@@ -231,6 +288,16 @@ Declared permission: ${match.kind} \u2014 ${match.justification}`
 }
 
 // dist/scanner/analyzers/behavioral.js
+var FULL_SEVERITY_IN_CODE_BLOCKS = /* @__PURE__ */ new Set([
+  "Browser JavaScript evaluation",
+  "System modification",
+  "Secret parameter handling",
+  "Package bootstrap execution",
+  "Local service access",
+  "Remote task delegation",
+  "Local file access",
+  "Financial/payment actions"
+]);
 var BEHAVIORAL_PATTERNS = [
   {
     name: "Unrestricted scope",
@@ -240,7 +307,12 @@ var BEHAVIORAL_PATTERNS = [
       /complete\s+autonomy/i,
       /without\s+(?:any\s+)?restrictions/i,
       /unrestricted\s+(?:access|mode|operation)/i,
-      /full\s+(?:system\s+)?access/i
+      /full\s+(?:system\s+)?access/i,
+      /no\s+restrictions?\s+on\s+(?:navigation|actions|output)/i,
+      /any\s+automation\s+task\s+you\s+request/i,
+      /automating\s+any\s+browser\s+task/i,
+      /any\s+task\s+requiring\s+programmatic\s+web\s+interaction/i,
+      /general-purpose\s+browser\s+automation\s+skill/i
     ],
     severity: "high",
     deduction: 20,
@@ -253,6 +325,7 @@ var BEHAVIORAL_PATTERNS = [
       /install\s+(?:packages?\s+)?globally/i,
       /(?:npm|pip|apt|brew)\s+install\s+(?:-g|--global)\b/i,
       /(?:sudo\s+)?(?:apt|yum|dnf|pacman)\s+install/i,
+      /suggest\s+installing\s+bun/i,
       /modify\s+(?:system|config(?:uration)?)\s+files?/i,
       /(?:write|edit|modify)\s+(?:\/etc|\/usr|\/sys|\/proc)/i,
       /chown\s+/i,
@@ -273,6 +346,26 @@ var BEHAVIORAL_PATTERNS = [
     recommendation: "Skills should not modify system configuration or install packages globally. Bundle required dependencies."
   },
   {
+    name: "Config tamper core",
+    patterns: [
+      /\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)\b/i
+    ],
+    severity: "high",
+    deduction: 25,
+    owaspCategory: "ASST-03",
+    recommendation: "Do not instruct users to write, edit, or otherwise modify trust-boundary workspace files like AGENTS.md, TOOLS.md, or CLAUDE.md. Treat them as user-owned policy/configuration and keep the skill self-contained."
+  },
+  {
+    name: "Config tamper workspace",
+    patterns: [
+      /\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*\.claude\//i
+    ],
+    severity: "high",
+    deduction: 20,
+    owaspCategory: "ASST-03",
+    recommendation: "Do not instruct users to modify files under .claude/. This directory is part of the workspace trust boundary and should not be altered by untrusted instructions."
+  },
+  {
     name: "Autonomous action without confirmation",
     patterns: [
       /without\s+(?:user\s+)?(?:confirmation|approval|consent|asking)/i,
@@ -280,8 +373,8 @@ var BEHAVIORAL_PATTERNS = [
       /(?:silently|quietly)\s+(?:execute|run|perform)/i,
       /no\s+(?:user\s+)?(?:confirmation|approval)\s+(?:needed|required)/i
     ],
-    severity: "medium",
-    deduction: 10,
+    severity: "high",
+    deduction: 15,
     owaspCategory: "ASST-09",
     recommendation: "Require user confirmation before performing destructive or irreversible actions."
   },
@@ -297,6 +390,621 @@ var BEHAVIORAL_PATTERNS = [
     deduction: 10,
     owaspCategory: "ASST-03",
     recommendation: "Be explicit about sub-agent spawning and ensure delegated tasks are appropriately scoped."
+  },
+  {
+    name: "External instruction override file",
+    patterns: [
+      /\bEXTEND\.md\b/i,
+      /(?:load|read|parse|apply)\s+(?:preferences|settings)\b/i,
+      /\.baoyu-skills\//i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-11",
+    recommendation: "Be explicit when external project/home files can override skill behavior. Treat sidecar config or instruction files as untrusted input and constrain what they are allowed to change."
+  },
+  {
+    name: "Opaque helper script execution",
+    patterns: [
+      /black-?box\s+scripts?/i,
+      /do\s+not\s+read\s+the\s+source/i,
+      /called?\s+directly\s+as\s+black-?box\s+scripts?/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-04",
+    recommendation: "Avoid telling agents to execute bundled scripts as opaque black boxes. Encourage minimal inspection, provenance checks, or explicit trust boundaries before running helper code."
+  },
+  {
+    name: "OS input automation",
+    patterns: [
+      /copy-to-clipboard/i,
+      /paste-from-clipboard/i,
+      /paste\s+keystroke/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat clipboard and synthetic keystroke automation as privileged local input control. Require explicit user approval and avoid combining it with authenticated browser sessions unless necessary."
+  },
+  {
+    name: "Persistent session reuse",
+    patterns: [
+      /maintains?\s+browser\s+sessions?\s+across\s+commands/i,
+      /browser\s+stays\s+open\s+between\s+commands/i,
+      /persists?\s+state\s+via\s+a\s+background\s+daemon/i,
+      /background\s+daemon/i,
+      /state\s+auto-(?:saved|restored)/i,
+      /session\s+saved/i,
+      /all\s+future\s+runs:\s+already\s+authenticated/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Call out when browser or auth state persists across commands. Reused authenticated sessions should require explicit user consent and clear cleanup guidance."
+  },
+  {
+    name: "Session inventory and reuse",
+    patterns: [
+      /list\s+active\s+sessions/i,
+      /reuse\s+session\s+ids?/i,
+      /close\s+--all/i,
+      /session\s+list\b/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat session inventory, reuse, and bulk cleanup commands as sensitive session-management capability. Be explicit about which sessions may be reused or enumerated, and avoid exposing shared authenticated state by default."
+  },
+  {
+    name: "Remote browser delegation",
+    patterns: [
+      /--browser\s+remote\b/i,
+      /cloud-hosted\s+browser/i,
+      /remote\s+browser\b/i,
+      /proxy\s+support/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-02",
+    recommendation: "Treat cloud or remote browser execution as external data egress. Be explicit about what page content, cookies, or secrets may leave the local machine, and require user approval before delegating authenticated sessions."
+  },
+  {
+    name: "Remote task delegation",
+    patterns: [
+      /remote\s+task/i,
+      /task\s+status\s+<id>/i,
+      /async\s+by\s+default/i,
+      /cloud\s+task\s+progress/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-02",
+    recommendation: "Treat delegated cloud tasks as remote execution and potential data egress. Be explicit about what browser state, prompts, or credentials are sent to the remote task runner, and require approval before offloading sensitive work."
+  },
+  {
+    name: "Compound browser action chaining",
+    patterns: [
+      /commands?\s+can\s+be\s+chained\s+with\s+`?&&`?/i,
+      /\bopen\s+https?:\/\/\S+\s+&&\s+[^\n]+/i,
+      /\bfill\s+@e\d+\s+"[^"]+"\s+&&\s+fill\s+@e\d+\s+"[^"]+"\s+&&/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat chained browser commands as compound automation that can hide risky multi-step actions. Prefer explicit step-by-step review for authenticated or destructive workflows."
+  },
+  {
+    name: "Auth import from user browser",
+    patterns: [
+      /import\s+auth\s+from\s+the\s+user'?s\s+browser/i,
+      /use\s+that\s+auth\s+state/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat importing auth state from the user's browser as sensitive credential access. Require explicit user consent, minimize scope, and avoid persisting imported sessions longer than necessary."
+  },
+  {
+    name: "MCP-issued browser auth cookie",
+    patterns: [
+      /get\s+authentication\s+cookie/i,
+      /auth\s+cookie\s+via\s+the\s+ATXP\s+tool/i,
+      /agents\s+get\s+an\s+auth\s+cookie\s+via\s+MCP/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat MCP-delivered browser cookies as bearer credentials. Make the trust boundary explicit, minimize cookie lifetime/scope, and avoid mixing installation guidance with reusable browser-session tokens."
+  },
+  {
+    name: "Cookie bootstrap redirect",
+    patterns: [
+      /configure\s+browser\s+cookie/i,
+      /server\s+will[:]?/i,
+      /redirect\s+to\s+clean\s+the\s+URL/i
+    ],
+    severity: "medium",
+    deduction: 10,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat server-side cookie bootstrap redirects as credential handoff flows. Document URL leakage risks clearly and prefer safer cookie-setting mechanisms where possible."
+  },
+  {
+    name: "Browser session attachment",
+    patterns: [
+      /(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|Chrome\s+DevTools|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
+      /(?:copy(?:ing)?\s+your\s+actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|real\s+Chrome\s+with\s+CDP|profile\s+sync\b|local\s+Chrome\s+profile|cloud\s+profile|Chrome\s+with\s+CDP)/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat browser profile reuse, remote-debugging attachment, and live-session access as sensitive credential access. Require explicit user consent, minimize scope, and clean up persisted state."
+  },
+  {
+    name: "Profile-backed session persistence",
+    patterns: [
+      /persistent\s+profile/i,
+      /--profile\s+[^\s]+\s+open/i,
+      /--session-name\s+[^\s]+\s+open/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat reusable browser profiles and named session stores as persistent credential containers. Require user approval before binding automation to long-lived profiles or session names, and document cleanup/rotation guidance."
+  },
+  {
+    name: "Browser profile copy",
+    patterns: [
+      /actual\s+Chrome\s+profile/i,
+      /login\s+sessions/i,
+      /persistent\s+but\s+empty\s+CLI\s+profile/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat copying or reusing a local browser profile as sensitive credential access. Prefer isolated ephemeral profiles unless the user explicitly approves session reuse."
+  },
+  {
+    name: "Full browser profile sync",
+    patterns: [
+      /full\s+profile\s+sync/i,
+      /sync\s+ALL\s+cookies/i,
+      /entire\s+browser\s+state/i,
+      /copies?\s+your\s+actual\s+Chrome\s+profile(?:\s*\(cookies,\s*logins,\s*extensions\))?/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Avoid syncing an entire browser profile or all cookies into agent-controlled workflows. Prefer the smallest domain-scoped auth state possible and require explicit user consent."
+  },
+  {
+    name: "Browser JavaScript evaluation",
+    patterns: [
+      /\bbrowser-use\s+eval\b/i,
+      /\bagent-browser\s+eval\b/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat browser-side JavaScript evaluation as privileged execution. Constrain the origin, review the expression, and avoid combining it with authenticated sessions unless necessary."
+  },
+  {
+    name: "Credential form automation",
+    patterns: [
+      /input\s+type="password"/i,
+      /fill\s+@e\d+\s+"password123"/i,
+      /fill\s+out\s+a\s+form/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat automated interaction with login/password forms as sensitive credential handling. Require user approval before filling credentials or automating authenticated sign-in flows."
+  },
+  {
+    name: "State file replay",
+    patterns: [
+      /state\s+save\s+\.\/auth\.json/i,
+      /state\s+load\s+\.\/auth\.json/i,
+      /--state\s+\.\/auth\.json\s+open/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat saved auth-state files as credential containers. Minimize their lifetime, protect them at rest, and require explicit user approval before loading them into automated browser sessions."
+  },
+  {
+    name: "Browser auth state handling",
+    patterns: [
+      /(?:state\s+(?:save|load)\s+\S*auth\.json|state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext|auth(?:entication)?\s+cookie|http-?only\s+cookie|cookies?\s+(?:export|import|get|set|clear)\b|cookies?\s+and\s+localStorage)/i,
+      /(?:session\s+tokens?\s+in\s+plaintext|browser\s+session\s+is\s+authenticated|auto-saved\s+to\s+~\/\.agent-browser\/sessions|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile|actual\s+Chrome\s+profile\s*\(cookies,\s*logins,\s*extensions\))/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Avoid storing, exporting, or passing browser auth state unless the workflow clearly requires it. Prefer encrypted storage, short-lived state, and explicit user confirmation before reusing credentials."
+  },
+  {
+    name: "Data encoding for URL exfiltration",
+    patterns: [
+      /\b(?:encode|serialize|pack|compress)\b.{0,80}\b(?:URL|query|parameter|string)\b/i,
+      /\b(?:URL|query)[- ]safe\s+(?:string|encoding|format)\b/i,
+      /\b(?:encode|serialize|pack|compress)\b.{0,80}\b(?:transmit|send|post|upload|forward)\b.{0,60}https?:\/\//i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-02",
+    recommendation: "Treat encoding sensitive data into URL parameters as potential data exfiltration. URLs leak into browser history, logs, analytics, and referrers."
+  },
+  {
+    name: "Environment secret piping",
+    patterns: [
+      /echo\s+"\$[A-Z0-9_]+"\s*\|/i,
+      /(?:including|with|containing)\s+(?:all\s+)?environment\s+variables/i,
+      /(?:for\s+each|every)\s+file\s+in\s+the\s+project.*POST\s+its\s+contents?\s+to/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat shell pipelines that pass secrets from environment variables as sensitive credential handling. Avoid exposing secret values to command histories or subprocess pipelines unless absolutely necessary."
+  },
+  {
+    name: "Secret parameter handling",
+    patterns: [
+      /--secret\s+[^\s=]+=[^\s]+/i,
+      /secret\s+metadata/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat secret-bearing CLI parameters as credential handling. Avoid exposing secrets in command lines, logs, or reusable skill snippets; prefer secure secret stores or interactive injection."
+  },
+  {
+    name: "Credential vault enrollment",
+    patterns: [
+      /\bauth\s+save\b/i,
+      /--password-stdin\b/i,
+      /auth\s+vault/i,
+      /\bauth\s+login\b/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat credential-vault setup and stored-login workflows as sensitive credential handling. Be explicit about what secrets enter the vault, where they are stored, and how they are protected or revoked."
+  },
+  {
+    name: "Federated auth flow",
+    patterns: [
+      /\bOAuth\b/i,
+      /\b2FA\b/i,
+      /token\s+refresh/i
+    ],
+    severity: "medium",
+    deduction: 10,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat OAuth, 2FA, and token-refresh guidance as authentication-sensitive workflows. Explain scope, storage, and refresh behavior clearly so agents do not handle more credential material than necessary."
+  },
+  {
+    name: "Credential in query string",
+    patterns: [
+      /(?:\b(?:cookie|token)\b.{0,120}\bquery\s+string\b|\bquery\s+string\b.{0,120}\b(?:cookie|token)\b)/i,
+      /\?[A-Za-z0-9_-]*(?:cookie|token)=<[^>\s]+>/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Do not pass auth cookies or tokens in URLs. Query strings leak into browser history, logs, analytics, and referrers. Use secure headers or an explicit browser cookie API instead."
+  },
+  {
+    name: "Cookie header replay",
+    patterns: [
+      /-H\s+["']Cookie:\s*[^"']+(?:cookie|token)[^"']*["']/i,
+      /\bCookie:\s*[A-Za-z0-9_-]+(?:cookie|token)=[^\s"']+/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat reusable Cookie headers as bearer credentials. Avoid embedding auth cookies in shell snippets or docs; prefer short-lived interactive auth or a dedicated secure credential handoff."
+  },
+  {
+    name: "Local service exposure",
+    patterns: [
+      /(?:browser-use\s+)?tunnel\s+\d+\b/i,
+      /trycloudflare\.com/i,
+      /session\s+share\b/i,
+      /public\s+share\s+url/i
+    ],
+    severity: "medium",
+    deduction: 10,
+    owaspCategory: "ASST-02",
+    recommendation: "Do not expose local services, browser sessions, or internal tools publicly by default. Require explicit approval, constrain the shared surface, and shut down tunnels after use."
+  },
+  {
+    name: "Local service access",
+    patterns: [
+      /https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i,
+      /\bEXPOSE\s+\d{2,5}\b/i,
+      /\(Express\)/i,
+      /\btesting\s+web\s+apps?\b|\btest\s+this\s+web\s+app\b/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat localhost and loopback services as privileged local attack surfaces. Require explicit approval, constrain reachable ports, and avoid combining local access with session reuse or tunneling."
+  },
+  {
+    name: "Package bootstrap execution",
+    patterns: [
+      /\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+      /\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
+      /\bset\s+up\s+project\s+structure\b/i,
+      /\bproject\s+structure,\s*package\.json,\s*tsconfig\.json\b/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-04",
+    recommendation: "Surface package bootstrap commands for review. Ephemeral package execution and install-time dependency pulls increase supply-chain risk, especially when versions are not pinned or provenance is unclear."
+  },
+  {
+    name: "Skill path discovery",
+    patterns: [
+      /determine\s+this\s+SKILL\.md\s+file'?s\s+directory\s+path/i,
+      /common\s+installation\s+paths/i,
+      /scripts?\s+are\s+located\s+in\s+the\s+`?scripts\/?`?\s+subdirectory/i,
+      /script\s+path\s*=\s*`?\{baseDir\}\/scripts\//i,
+      /\.claude\/plugins\/marketplaces\//i,
+      /project-specific:\s*<project>\/\.claude\/skills/i,
+      /\{baseDir\}/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat dynamic skill path resolution and installation-path discovery as local filesystem reconnaissance. Scope which paths may be read or executed from, and avoid broad path probing unless the user explicitly requested it."
+  },
+  {
+    name: "Dev server auto-detection",
+    patterns: [
+      /auto-?detect(?:s)?\s+(?:running\s+)?dev\s+servers?/i,
+      /detectDevServers\s*\(/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat automatic localhost/dev-server discovery as local service enumeration. Require explicit approval before probing local ports or reusing discovered internal services."
+  },
+  {
+    name: "Temporary script execution",
+    patterns: [
+      /write\s+(?:custom\s+)?(?:Playwright\s+code|test\s+scripts?)\s+(?:in|to)\s+\/tmp/i,
+      /\bnode\s+-e\b/i,
+      /\bnode\s+run\.js\s+\/tmp\//i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat ad hoc script generation and immediate execution as privileged code execution. Review generated scripts before running them and avoid opaque wrapper commands where possible."
+  },
+  {
+    name: "Server lifecycle orchestration",
+    patterns: [
+      /with_server\.py/i,
+      /manages?\s+server\s+lifecycle/i,
+      /supports\s+multiple\s+servers/i,
+      /--server\s+["'][^"']+["']/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat helper workflows that start or manage local servers as privileged local process control. Require explicit approval before launching services, and scope which commands/ports may be started."
+  },
+  {
+    name: "UI state enumeration",
+    patterns: [
+      /returns?\s+clickable\s+elements?\s+with\s+indices/i,
+      /get\s+element\s+refs?\s+like\s+@e\d+/i,
+      /snapshot\s+-i/i,
+      /re-?snapshot/i,
+      /get\s+fresh\s+refs/i,
+      /parse\s+the\s+output\s+first/i,
+      /check\s+result/i,
+      /use\s+refs?\s+to\s+click,\s*fill,\s*select/i,
+      /page\.locator\('button'\)\.all\(\)/i,
+      /discovering\s+buttons,\s+links,\s+and\s+inputs/i,
+      /identify\s+selectors?\s+from\s+rendered\s+state/i,
+      /descriptive\s+selectors/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-02",
+    recommendation: "Treat DOM/accessibility snapshots and clickable-element inventories as sensitive page-state extraction. Be explicit about when UI enumeration is allowed, especially on authenticated or local-only apps."
+  },
+  {
+    name: "Browser content extraction",
+    patterns: [
+      /extract\s+information\s+from\s+web\s+pages/i,
+      /extract(?:ing)?\s+data/i,
+      /data\s+extraction/i,
+      /scrape\s+data\s+from\s+a\s+page/i,
+      /tak(?:e|ing)\s+screenshots?/i,
+      /captur(?:e|ing)\s+browser\s+screenshots/i,
+      /view(?:ing)?\s+browser\s+logs/i,
+      /inspect\s+rendered\s+DOM/i,
+      /identify\s+selectors?\s+from\s+rendered\s+state/i,
+      /\bget\s+html\b/i,
+      /\bget\s+text\b/i,
+      /page\.content\(\)/i,
+      /page\.screenshot\s*\(/i,
+      /screenshot\s+path\.png/i,
+      /screenshot\s+saved\s+to/i,
+      /screenshot\s+\(base64\)/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-02",
+    recommendation: "Treat browser page capture and HTML/text extraction as potential data-access operations, especially when sessions may be authenticated. Make the data-access scope explicit and avoid collecting more page content than needed."
+  },
+  {
+    name: "Host environment reconnaissance",
+    patterns: [
+      /\bdocker\s+(?:info|context\s+ls|ps|images)\b/i,
+      /find\s+\.\s+-name\s+["']Dockerfile\*/i,
+      /find\s+\.\s+-name\s+["']\.dockerignore["']/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat environment discovery and host/container enumeration as privileged reconnaissance. Be explicit about what local state is probed and avoid broad scanning unless the user requested it."
+  },
+  {
+    name: "Prompt file ingestion",
+    patterns: [
+      /--promptfiles\b/i,
+      /saved\s+prompt\s+files/i,
+      /system\.md\s+content\.md/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-06",
+    recommendation: "Treat prompt files and reference prompt bundles as untrusted instructions. Review them before loading and avoid mixing trusted agent policy with user- or repo-controlled prompt files."
+  },
+  {
+    name: "External AI provider delegation",
+    patterns: [
+      /API-based\s+image\s+generation/i,
+      /reference\s+images/i,
+      /--ref\s+\S+/i,
+      /\b(?:OpenAI|Replicate|DashScope|Gemini|Google)\b.{0,80}\b(?:API|APIs|providers?)\b/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-02",
+    recommendation: "Treat external AI-provider calls as data egress. Make it explicit what prompts, files, or images are sent to third-party providers and require approval before forwarding sensitive content."
+  },
+  {
+    name: "Remote documentation ingestion",
+    patterns: [
+      /Use\s+WebFetch\s+to\s+load/i,
+      /web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
+      /fetch\s+specific\s+pages\s+with\s+`?\.md`?\s+suffix/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-06",
+    recommendation: "Treat remote documentation fetches as untrusted content ingestion. Constrain which sources may be fetched, summarize rather than obey fetched content, and isolate downloaded guidance from trusted system instructions."
+  },
+  {
+    name: "External tool bridge",
+    patterns: [
+      /interact\s+with\s+external\s+services\s+through\s+well-?designed\s+tools/i,
+      /interact\s+with\s+external\s+services/i,
+      /external\s+services?.{0,60}(?:remote\s+)?APIs?|(?:remote\s+)?APIs?.{0,60}external\s+services?/i,
+      /expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat agent tool bridges to external services as privileged capability expansion. Be explicit about reachable systems, auth requirements, and safety boundaries before exposing tools programmatically."
+  },
+  {
+    name: "Remote transport exposure",
+    patterns: [
+      /streamable\s+HTTP\s+for\s+remote\s+servers/i,
+      /remote\s+servers?,\s+using\s+stateless\s+JSON/i,
+      /transport\s+mechanisms?\s*\(streamable\s+HTTP,\s*stdio\)/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-02",
+    recommendation: "Treat remote tool transports as network-exposed attack surface. Be explicit about what data crosses the wire, who can connect, and which authentication or origin controls protect the remote server."
+  },
+  {
+    name: "Authentication integration surface",
+    patterns: [
+      /API\s+client\s+with\s+authentication/i,
+      /authentication\s+requirements/i,
+      /ATXP-based\s+authentication/i
+    ],
+    severity: "medium",
+    deduction: 10,
+    owaspCategory: "ASST-05",
+    recommendation: "When a skill builds or relies on authentication integrations, be explicit about what credentials are required, where they are stored, and how they are scoped or rotated."
+  },
+  {
+    name: "Credential store persistence",
+    patterns: [
+      /\bauth_cookies\b/i,
+      /(?:cookie\s+auth|auth\s+cookie)/i,
+      /SQLite\b.{0,120}\bauth_cookies\b|\bauth_cookies\b.{0,120}SQLite/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-05",
+    recommendation: "Treat persistent cookie stores and auth databases as sensitive credential material. Minimize retention, protect at rest, and avoid encouraging reusable bearer-cookie storage without clear security controls."
+  },
+  {
+    name: "Container runtime control",
+    patterns: [
+      /\bdocker\s+(?:info|context|ps|images|build(?:x)?|run|exec|stop|compose)\b/i,
+      /\bdocker-compose\s+config\b/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat Docker or container-runtime control as privileged host access. Scope container operations tightly, avoid arbitrary daemon access, and require explicit approval before mutating local workloads."
+  },
+  {
+    name: "Local file access",
+    patterns: [
+      /--allow-file-access\b/i,
+      /\bfile:\/\//i,
+      /\bstate\s+save\s+\.\/auth\.json\b/i,
+      /\bstate\s+load\s+\.\/auth\.json\b/i,
+      /--state\s+\.\/auth\.json\s+open/i,
+      /\bauth\.json\b/i,
+      /state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext/i,
+      /state\s+files?\s+contain\s+session\s+tokens?\s+in\s+plaintext/i,
+      /\bEXTEND\.md\b/i,
+      /\.gitignore\b/i,
+      /\$HOME\/\.[A-Za-z0-9._/-]+/i,
+      /\$\{XDG_CONFIG_HOME:-\$HOME\/\.config\}/i,
+      /\.baoyu-skills\//i,
+      /--profile\s+~\/[A-Za-z0-9_./-]+/i,
+      /--profile\s+"[A-Za-z0-9 _.-]+"/i,
+      /--session-name\s+[^\s]+\s+open/i,
+      /persistent\s+but\s+empty\s+CLI\s+profile/i,
+      /~\/\.config\/browseruse\/profiles\/cli\//i,
+      /\bReference\s+Files\b/i,
+      /\.\/[A-Za-z0-9_./-]+\.md/i,
+      /\.\/reference\/[A-Za-z0-9_./-]+\.md/i,
+      /\[[^\]]+\]\(\.\/reference\/[A-Za-z0-9_./-]+\.md\)/i,
+      /\[[^\]]+\]\(references?\/[A-Za-z0-9_./-]+\.md\)/i,
+      /\breferences?\//i,
+      /long-form\s+markdown/i,
+      /long-form\s+article\s+publishing\s+\(Markdown\)/i,
+      /saved\s+prompt\s+files/i,
+      /reference\s+images/i,
+      /\bimages?\/videos?\b/i,
+      /\btext\s*\+\s*images\b/i,
+      /\btext\s*\+\s*video\b/i,
+      /--ref\s+\S+/i,
+      /--video\s+\S+/i,
+      /`[A-Za-z0-9._-]+\.(?:ts|js|py|sh)`/i,
+      /\bscripts?\/[A-Za-z0-9._-]+\.(?:ts|js|py|sh)\b/i,
+      /\bscript\s+path\s*=\s*`?\{baseDir\}\/scripts\//i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-03",
+    recommendation: "Treat local file browsing as privileged access. Restrict it to explicit user-approved paths and avoid combining it with unrestricted browser/session reuse."
+  },
+  {
+    name: "Automation evasion",
+    patterns: [
+      /(?:bypass(?:es|ing)?|avoid(?:s|ing)?)\s+(?:anti-?bot|anti-automation|automation\s+detection|bot\s+detection)/i
+    ],
+    severity: "high",
+    deduction: 15,
+    owaspCategory: "ASST-07",
+    recommendation: "Avoid instructions whose value proposition is evading platform defenses or automation detection. Document legitimate automation constraints instead."
   },
   {
     name: "State persistence",
@@ -329,10 +1037,12 @@ var BEHAVIORAL_PATTERNS = [
       /(?:process|make|initiate)\s+(?:a\s+)?payment/i,
       /(?:transfer|send)\s+(?:money|funds|crypto)/i,
       /(?:purchase|buy|order)\s+(?:on\s+behalf|for\s+the\s+user)/i,
-      /(?:credit\s+card|bank\s+account|wallet)/i
+      /(?:credit\s+card|bank\s+account|wallet)/i,
+      /(?:cost|price)\s*:\s*\$\d/i,
+      /charge\s+for\s+(?:premium|paid)\s+actions?/i
     ],
-    severity: "medium",
-    deduction: 10,
+    severity: "high",
+    deduction: 15,
     owaspCategory: "ASST-09",
     recommendation: "Financial actions should always require explicit user confirmation and should be clearly documented."
   }
@@ -358,11 +1068,13 @@ async function analyzeBehavioral(skill) {
       while ((match = globalRegex.exec(content)) !== null) {
         const lineNumber = content.slice(0, match.index).split("\n").length;
         const line = lines[lineNumber - 1] ?? "";
+        const preserveCodeBlockSeverity = FULL_SEVERITY_IN_CODE_BLOCKS.has(pattern.name) && isInsideCodeBlock(match.index, ctx);
         const { severityMultiplier, reason } = adjustForContext(match.index, content, ctx);
-        if (severityMultiplier === 0)
+        const effectiveMultiplier = preserveCodeBlockSeverity ? Math.max(severityMultiplier, 1) : severityMultiplier;
+        if (effectiveMultiplier === 0)
           continue;
-        const effectiveDeduction = Math.round(pattern.deduction * severityMultiplier);
-        const effectiveSeverity = severityMultiplier < 1 ? downgradeSeverity(pattern.severity) : pattern.severity;
+        const effectiveDeduction = Math.round(pattern.deduction * effectiveMultiplier);
+        const effectiveSeverity = effectiveMultiplier < 1 ? downgradeSeverity(pattern.severity) : pattern.severity;
         score = Math.max(0, score - effectiveDeduction);
         findings.push({
           id: `BEH-${pattern.name.replace(/\s+/g, "-").toUpperCase()}-${findings.length + 1}`,
@@ -433,12 +1145,14 @@ async function analyzeBehavioral(skill) {
         });
       } else {
         const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
-        const effectiveDeduction = Math.round(25 * severityMultiplier);
+        const isSuspiciousUrl = hasRawIp || !usesHttps || !hasKnownTld;
+        const effectiveMultiplier = isSuspiciousUrl ? Math.max(severityMultiplier, 1) : severityMultiplier;
+        const effectiveDeduction = Math.round(25 * effectiveMultiplier);
         score = Math.max(0, score - effectiveDeduction);
         findings.push({
           id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
           category: "behavioral",
-          severity: severityMultiplier < 1 ? "medium" : "high",
+          severity: effectiveMultiplier < 1 ? "medium" : "high",
           title: "Suspicious install pattern: download and execute from remote URL",
           description: "The skill instructs users to download and execute code from a remote URL, a common supply-chain attack vector.",
           evidence: trapMatch[0].slice(0, 200),
@@ -477,6 +1191,353 @@ async function analyzeBehavioral(skill) {
     score: Math.max(0, Math.min(100, adjustedScore)),
     weight: 0.15,
     findings: adjustedFindings,
+    summary
+  };
+}
+
+// dist/scanner/analyzers/code-safety.js
+var LINE_RULES = [
+  {
+    id: "CS-SHELL-EXEC-1",
+    severity: "critical",
+    title: "Shell command execution via child_process",
+    description: "Direct shell execution (exec/spawn) detected. Skills should not execute arbitrary shell commands \u2014 this enables command injection, privilege escalation, and lateral movement.",
+    pattern: /\b(exec|execSync|spawn|spawnSync|execFile|execFileSync)\s*\(/,
+    requiresContext: /child_process/,
+    owaspCategory: "ASST-03",
+    deduction: 25
+  },
+  {
+    id: "CS-DYNAMIC-EVAL-1",
+    severity: "critical",
+    title: "Dynamic code execution (eval / new Function)",
+    description: "eval() or new Function() detected. These execute arbitrary strings as code at runtime, enabling injection attacks and obfuscated payload delivery.",
+    pattern: /\beval\s*\(|new\s+Function\s*\(/,
+    owaspCategory: "ASST-10",
+    deduction: 25
+  },
+  {
+    id: "CS-CRYPTO-MINING-1",
+    severity: "critical",
+    title: "Crypto mining indicator detected",
+    description: "References to mining protocols (stratum), known mining libraries (coinhive, xmrig), or mining algorithms (cryptonight). Skills should never mine cryptocurrency.",
+    pattern: /stratum\+tcp|stratum\+ssl|coinhive|cryptonight|xmrig/i,
+    owaspCategory: "ASST-07",
+    deduction: 30
+  },
+  {
+    id: "CS-WEBSOCKET-NONSTANDARD-1",
+    severity: "medium",
+    title: "WebSocket connection to non-standard port",
+    description: "WebSocket connection to an unusual port detected. Could indicate C2 communication, data tunneling, or connection to unauthorized services.",
+    pattern: /new\s+WebSocket\s*\(\s*["']wss?:\/\/[^"']*:(\d+)/,
+    owaspCategory: "ASST-02",
+    deduction: 10
+  },
+  {
+    id: "CS-CURL-PIPE-1",
+    severity: "high",
+    title: "Download-and-execute pattern (curl|wget pipe to shell)",
+    description: "Piping a downloaded script directly to a shell interpreter. This executes remote code without verification \u2014 a classic supply chain attack vector.",
+    pattern: /\b(curl|wget)\b.*\|\s*(bash|sh|zsh|node|python|perl)\b/,
+    owaspCategory: "ASST-04",
+    deduction: 20
+  },
+  {
+    id: "CS-PROCESS-ENV-BULK-1",
+    severity: "high",
+    title: "Bulk environment variable access",
+    description: "Accessing the entire process.env object (not a specific key) suggests harvesting all environment variables, which may include API keys, tokens, and secrets.",
+    pattern: /JSON\.stringify\s*\(\s*process\.env\s*\)|Object\.(keys|values|entries)\s*\(\s*process\.env\s*\)/,
+    owaspCategory: "ASST-05",
+    deduction: 20
+  },
+  // --- Config tampering rules ---
+  {
+    id: "CS-CONFIG-TAMPER-CORE-1",
+    severity: "critical",
+    title: "Write to workspace trust-boundary file (AGENTS/TOOLS/CLAUDE.md)",
+    description: "Code writes to a core workspace configuration file (AGENTS.md, TOOLS.md, or CLAUDE.md). These files define the agent's trust boundaries \u2014 modifying them can escalate privileges, disable safety rules, or inject persistent malicious instructions.",
+    pattern: /(?:writeFileSync|appendFileSync|>>|>)\s*.*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)/i,
+    owaspCategory: "ASST-03",
+    deduction: 30
+  },
+  {
+    id: "CS-CONFIG-TAMPER-CLAUDE-1",
+    severity: "high",
+    title: "Write to .claude/ policy directory",
+    description: "Code writes to the .claude/ directory, which contains workspace policies and safety configuration. Modifying these files can disable safety checks, override policy boundaries, or inject persistent instructions.",
+    pattern: /(?:writeFileSync|appendFileSync|>>|>|mkdir)\s*.*\.claude\//i,
+    owaspCategory: "ASST-03",
+    deduction: 20
+  }
+];
+var STANDARD_PORTS = /* @__PURE__ */ new Set([80, 443, 8080, 8443, 3e3, 3001, 5e3, 8e3]);
+var SOURCE_RULES = [
+  {
+    id: "CS-EXFIL-1",
+    severity: "high",
+    title: "File read combined with network send (possible exfiltration)",
+    description: "Code reads files and makes outbound HTTP requests. When both patterns co-exist, data exfiltration is possible \u2014 reading sensitive files and sending them to an external server.",
+    pattern: /readFileSync|readFile/,
+    requiresContext: /\bfetch\b|\bpost\b|http\.request/i,
+    owaspCategory: "ASST-02",
+    deduction: 15
+  },
+  {
+    id: "CS-OBFUSCATED-HEX-1",
+    severity: "medium",
+    title: "Hex-encoded string sequence (possible obfuscation)",
+    description: "Long hex-encoded string sequence detected. Obfuscated code hides its true intent \u2014 legitimate skills have no reason to hex-encode strings.",
+    pattern: /(\\x[0-9a-fA-F]{2}){6,}/,
+    owaspCategory: "ASST-10",
+    deduction: 12
+  },
+  {
+    id: "CS-OBFUSCATED-B64-1",
+    severity: "medium",
+    title: "Large base64 payload with decode call (possible obfuscation)",
+    description: "A base64-encoded string (200+ chars) passed to a decode function. This is a common obfuscation technique to hide malicious payloads in plain sight.",
+    pattern: /(?:atob|Buffer\.from)\s*\(\s*["'][A-Za-z0-9+/=]{200,}["']/,
+    owaspCategory: "ASST-10",
+    deduction: 12
+  },
+  {
+    id: "CS-ENV-HARVEST-1",
+    severity: "critical",
+    title: "Environment variable access + network send (credential harvesting)",
+    description: "Code accesses process.env and makes outbound network requests. This combination enables credential harvesting \u2014 reading API keys and tokens from the environment and exfiltrating them.",
+    pattern: /process\.env/,
+    requiresContext: /\bfetch\b|\bpost\b|http\.request/i,
+    owaspCategory: "ASST-05",
+    deduction: 20
+  }
+];
+function extractCodeBlocks(rawContent) {
+  const blocks = [];
+  const lines = rawContent.split("\n");
+  let inBlock = false;
+  let language = "";
+  let content = [];
+  let startLine = 0;
+  let lastHeading = "";
+  const EXAMPLE_HEADINGS = /\b(examples?|usage|demo|output|samples?|tutorial|getting.started|how.to)\b/i;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const headingMatch = line.match(/^#{1,4}\s+(.+)/);
+    if (headingMatch) {
+      lastHeading = headingMatch[1] ?? "";
+    }
+    if (!inBlock && line.startsWith("```")) {
+      inBlock = true;
+      language = line.slice(3).trim().split(/\s/)[0]?.toLowerCase() ?? "";
+      content = [];
+      startLine = i + 1;
+    } else if (inBlock && line.startsWith("```")) {
+      inBlock = false;
+      if (content.length > 0) {
+        blocks.push({
+          language,
+          content: content.join("\n"),
+          startLine,
+          isExample: EXAMPLE_HEADINGS.test(lastHeading)
+        });
+      }
+    } else if (inBlock) {
+      content.push(line);
+    }
+  }
+  return blocks;
+}
+function isScannableLanguage(lang) {
+  const scannable = /* @__PURE__ */ new Set([
+    "js",
+    "javascript",
+    "ts",
+    "typescript",
+    "mjs",
+    "cjs",
+    "jsx",
+    "tsx",
+    "node",
+    "sh",
+    "bash",
+    "zsh",
+    "shell",
+    "python",
+    "py",
+    "rb",
+    "ruby",
+    "perl",
+    ""
+    // untagged blocks — scan conservatively
+  ]);
+  return scannable.has(lang);
+}
+function truncateEvidence(evidence, maxLen = 120) {
+  return evidence.length <= maxLen ? evidence : `${evidence.slice(0, maxLen)}\u2026`;
+}
+var KNOWN_INSTALLER_DOMAINS = /(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
+function scanCodeBlock(block, isDefenseSkill) {
+  const findings = [];
+  const source = block.content;
+  const lines = source.split("\n");
+  const matchedLineRules = /* @__PURE__ */ new Set();
+  for (const rule of LINE_RULES) {
+    if (matchedLineRules.has(rule.id))
+      continue;
+    if (rule.requiresContext && !rule.requiresContext.test(source))
+      continue;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const match = rule.pattern.exec(line);
+      if (!match)
+        continue;
+      if (rule.id === "CS-WEBSOCKET-NONSTANDARD-1" && match[1]) {
+        const port = parseInt(match[1], 10);
+        if (STANDARD_PORTS.has(port))
+          continue;
+      }
+      const isKnownInstaller = rule.id === "CS-CURL-PIPE-1" && KNOWN_INSTALLER_DOMAINS.test(line);
+      const isSuspiciousTarget = rule.id === "CS-CURL-PIPE-1" && (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(line) || /http:\/\//.test(line) && !/https:\/\//.test(line) || /\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)\//i.test(line));
+      const isReducedContext = (block.isExample || isKnownInstaller) && !isSuspiciousTarget;
+      if (isDefenseSkill && block.isExample)
+        continue;
+      let effectiveSeverity;
+      let effectiveDeduction;
+      if (isSuspiciousTarget) {
+        effectiveSeverity = "critical";
+        effectiveDeduction = Math.max(rule.deduction, 30);
+      } else if (isReducedContext) {
+        effectiveSeverity = downgrade(rule.severity);
+        effectiveDeduction = Math.ceil(rule.deduction / 3);
+      } else {
+        effectiveSeverity = rule.severity;
+        effectiveDeduction = rule.deduction;
+      }
+      const contextNote = isKnownInstaller ? "(Well-known installer domain \u2014 reduced severity.)" : block.isExample ? "(Found in example/documentation code block \u2014 reduced severity.)" : "";
+      findings.push({
+        id: rule.id,
+        category: "code-safety",
+        severity: effectiveSeverity,
+        title: rule.title,
+        description: contextNote ? `${rule.description} ${contextNote}` : rule.description,
+        evidence: truncateEvidence(line.trim()),
+        lineNumber: block.startLine + i,
+        deduction: effectiveDeduction,
+        recommendation: `Review the code block starting at line ${block.startLine}. ${isKnownInstaller ? "This uses a well-known installer \u2014 consider pinning to a specific version or hash." : block.isExample ? "This appears in an example section \u2014 verify it is documentation, not executed code." : "Ensure this pattern is necessary and does not pose a security risk."}`,
+        owaspCategory: rule.owaspCategory
+      });
+      matchedLineRules.add(rule.id);
+      break;
+    }
+  }
+  const matchedSourceRules = /* @__PURE__ */ new Set();
+  for (const rule of SOURCE_RULES) {
+    if (matchedSourceRules.has(rule.id))
+      continue;
+    if (!rule.pattern.test(source))
+      continue;
+    if (rule.requiresContext && !rule.requiresContext.test(source))
+      continue;
+    let matchLine = block.startLine;
+    let matchEvidence = "";
+    for (let i = 0; i < lines.length; i++) {
+      if (rule.pattern.test(lines[i])) {
+        matchLine = block.startLine + i;
+        matchEvidence = lines[i].trim();
+        break;
+      }
+    }
+    if (!matchEvidence)
+      matchEvidence = source.slice(0, 120);
+    const effectiveSeverity = block.isExample ? downgrade(rule.severity) : rule.severity;
+    const effectiveDeduction = block.isExample ? Math.ceil(rule.deduction / 3) : rule.deduction;
+    findings.push({
+      id: rule.id,
+      category: "code-safety",
+      severity: effectiveSeverity,
+      title: rule.title,
+      description: block.isExample ? `${rule.description} (Found in example/documentation code block \u2014 reduced severity.)` : rule.description,
+      evidence: truncateEvidence(matchEvidence),
+      lineNumber: matchLine,
+      deduction: effectiveDeduction,
+      recommendation: "Review the code for legitimate use. If this is instructional, consider adding a safety disclaimer.",
+      owaspCategory: rule.owaspCategory
+    });
+    matchedSourceRules.add(rule.id);
+  }
+  return findings;
+}
+function downgrade(severity) {
+  switch (severity) {
+    case "critical":
+      return "high";
+    case "high":
+      return "medium";
+    case "medium":
+      return "low";
+    case "low":
+      return "info";
+    case "info":
+      return "info";
+  }
+}
+var WEIGHT = 0.15;
+async function analyzeCodeSafety(skill) {
+  const blocks = extractCodeBlocks(skill.rawContent);
+  const scannableBlocks = blocks.filter((b) => isScannableLanguage(b.language));
+  const isDefenseSkill = isSecurityDefenseSkill(skill);
+  if (scannableBlocks.length === 0) {
+    return {
+      score: 100,
+      weight: WEIGHT,
+      findings: [],
+      summary: "No executable code blocks found in skill content."
+    };
+  }
+  const allFindings = [];
+  for (const block of scannableBlocks) {
+    const findings = scanCodeBlock(block, isDefenseSkill);
+    allFindings.push(...findings);
+  }
+  const seen = /* @__PURE__ */ new Set();
+  const deduped = [];
+  for (const f of allFindings) {
+    if (f.id === "CS-CURL-PIPE-1" && f.severity === "critical") {
+      const targetKey = `${f.id}@${f.evidence}`;
+      if (seen.has(targetKey))
+        continue;
+      seen.add(targetKey);
+      deduped.push(f);
+      continue;
+    }
+    if (seen.has(f.id))
+      continue;
+    seen.add(f.id);
+    deduped.push(f);
+  }
+  let score = 100;
+  for (const f of deduped) {
+    score = Math.max(0, score - f.deduction);
+  }
+  const criticalCount = deduped.filter((f) => f.severity === "critical").length;
+  const highCount = deduped.filter((f) => f.severity === "high").length;
+  let summary = `Scanned ${scannableBlocks.length} code block(s). `;
+  if (deduped.length === 0) {
+    summary += "No dangerous patterns detected.";
+  } else {
+    summary += `Found ${deduped.length} issue(s)`;
+    if (criticalCount > 0)
+      summary += ` (${criticalCount} critical)`;
+    if (highCount > 0)
+      summary += ` (${highCount} high)`;
+    summary += ".";
+  }
+  return {
+    score,
+    weight: WEIGHT,
+    findings: deduped,
     summary
   };
 }
@@ -561,6 +1622,21 @@ var GENERIC_DESCRIPTION_PATTERNS = [
   /\bgeneral\s+purpose\s+(?:assistant|tool|skill)\b/i,
   /\buniversal\s+(?:assistant|tool|skill)\b/i,
   /\buse\s+(?:this|me)\s+for\s+(?:everything|anything)\b/i
+];
+var BROAD_TRIGGER_PATTERNS = [
+  /\buse\s+proactively\b/i,
+  /\btriggers?\s+include\b[\s\S]{0,220}\b(?:any\s+task|any\s+request|everything)\b/i,
+  /\buse\s+when\b[\s\S]{0,180}\bany\s+task\s+requiring\b/i,
+  /\buse\s+when\s+the\s+user\s+needs\s+to\s+(?:navigate\s+websites|interact\s+with\s+web\s+pages|fill\s+forms|take\s+screenshots|extract\s+information\s+from\s+web\s+pages)/i,
+  /\bany\s+automation\s+task\s+you\s+request\b/i,
+  /\bany\s+browser\s+task\s+possible\b/i,
+  /\bcomplete\s+browser\s+automation\b/i,
+  /\bthis\s+skill\s+is\s+applicable\s+to\s+execute\s+the\s+workflow\s+or\s+actions\s+described\s+in\s+the\s+overview\b/i
+];
+var HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS = [
+  /(?:--auto-connect|--cdp|profile\s+sync|actual\s+Chrome\s+profile|auth(?:entication)?\s+cookie|http-?only\s+cookie|query\s+string|auth_cookies|cookie\s+auth)/i,
+  /(?:with_server\.py|detectDevServers|\/tmp\/playwright-test|localhost|127\.0\.0\.1|file:\/\/)/i,
+  /(?:OpenAI|Replicate|DashScope|streamable\s+HTTP|external\s+services\s+through\s+well-?designed\s+tools|docker\s+(?:info|ps|build|run|exec)|copy-to-clipboard|paste-from-clipboard|--promptfiles)/i
 ];
 async function analyzeContent(skill) {
   const findings = [];
@@ -670,7 +1746,7 @@ async function analyzeContent(skill) {
       severity: "medium",
       title: "Large base64 encoded string (possible obfuscation)",
       description: "A large base64-encoded string was detected that may be used to hide malicious payloads.",
-      evidence: base64Match[0].slice(0, 80) + "...",
+      evidence: `${base64Match[0].slice(0, 80)}...`,
       lineNumber,
       deduction: 15,
       recommendation: "Replace base64-encoded content with plaintext or explain its purpose. Obfuscation raises security concerns.",
@@ -689,7 +1765,7 @@ async function analyzeContent(skill) {
       severity: "medium",
       title: "Hex-encoded blob (possible obfuscation)",
       description: "A hex-encoded blob was detected that may be used to hide malicious payloads.",
-      evidence: hexMatch[0].slice(0, 80) + "...",
+      evidence: `${hexMatch[0].slice(0, 80)}...`,
       lineNumber,
       deduction: 15,
       recommendation: "Replace hex-encoded content with plaintext or explain its purpose.",
@@ -735,7 +1811,7 @@ async function analyzeContent(skill) {
         severity: severityMultiplier < 1 ? "high" : "critical",
         title: "Hardcoded API key or secret detected",
         description: `A hardcoded ${keyPattern.name} was found. Secrets must never be embedded in skill files.`,
-        evidence: matchText.slice(0, 20) + "..." + matchText.slice(-4),
+        evidence: `${matchText.slice(0, 20)}...${matchText.slice(-4)}`,
         lineNumber,
         deduction: effectiveDeduction,
         recommendation: "Remove all hardcoded secrets. Use environment variables or secure secret management.",
@@ -758,6 +1834,24 @@ async function analyzeContent(skill) {
       owaspCategory: "ASST-11"
     });
   }
+  const combinedTriggerText = `${skill.description ?? ""}
+${content}`;
+  if (BROAD_TRIGGER_PATTERNS.some((p) => p.test(combinedTriggerText))) {
+    const broadTriggerHighRisk = HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS.some((p) => p.test(combinedTriggerText));
+    const deduction = broadTriggerHighRisk ? 15 : 10;
+    score = Math.max(0, score - deduction);
+    findings.push({
+      id: "CONT-BROAD-TRIGGER",
+      category: "content",
+      severity: broadTriggerHighRisk ? "high" : "medium",
+      title: "Overly broad activation triggers",
+      description: "The skill uses broad trigger language (for example 'use proactively' or 'any task requiring ...'), which can cause trigger hijacking and unintended activation.",
+      evidence: (skill.description || content).slice(0, 160),
+      deduction,
+      recommendation: "Narrow the activation criteria. Describe specific user intents, prerequisites, and scope boundaries instead of encouraging proactive or catch-all invocation.",
+      owaspCategory: "ASST-11"
+    });
+  }
   if (!skill.description || skill.description.trim().length < 10) {
     score = Math.max(0, score - 5);
     findings.push({
@@ -773,15 +1867,16 @@ async function analyzeContent(skill) {
     });
   }
   if (!hasSafetyBoundaries) {
-    const deduction = 10;
+    const isHighRiskWithoutBoundaries = HIGH_RISK_WITHOUT_BOUNDARY_PATTERNS.some((p) => p.test(combinedTriggerText));
+    const deduction = isHighRiskWithoutBoundaries ? 20 : 10;
     score = Math.max(0, score - deduction);
     findings.push({
       id: "CONT-NO-SAFETY",
       category: "content",
-      severity: "low",
-      title: "No explicit safety boundaries",
-      description: "The skill does not include explicit safety boundaries defining what it should NOT do.",
-      evidence: "No safety boundary patterns found",
+      severity: isHighRiskWithoutBoundaries ? "high" : "low",
+      title: isHighRiskWithoutBoundaries ? "High-risk workflow lacks explicit safety boundaries" : "No explicit safety boundaries",
+      description: isHighRiskWithoutBoundaries ? "The skill performs or enables higher-risk operations but does not define explicit safety boundaries describing what it must not do." : "The skill does not include explicit safety boundaries defining what it should NOT do.",
+      evidence: isHighRiskWithoutBoundaries ? "No safety boundary patterns found alongside high-risk capability language" : "No safety boundary patterns found",
       deduction,
       recommendation: "Add a 'Safety Boundaries' section listing what the skill must NOT do (e.g., no file deletion, no network access beyond needed APIs).",
       owaspCategory: "ASST-09"
@@ -869,6 +1964,59 @@ var RAW_CONTENT_DOMAINS = [
 ];
 var IP_ADDRESS_REGEX = /^(?:\d{1,3}\.){3}\d{1,3}/;
 var PRIVATE_IP_REGEX = /^(?:127\.|10\.|172\.(?:1[6-9]|2\d|3[01])\.|192\.168\.|0\.0\.0\.0|localhost)/;
+var LOCAL_SERVICE_HINT_PATTERNS = [
+  { regex: /\bEXPOSE\s+\d{2,5}\b/i, title: "Local service port exposure" },
+  { regex: /\bHEALTHCHECK\b/i, title: "Local service healthcheck reference" },
+  { regex: /\bstdio\s+for\s+local\s+servers?\b/i, title: "Local server transport reference" },
+  { regex: /\bMCP\s+endpoints?\s+directly\b/i, title: "Agent-callable endpoint reference" }
+];
+var REMOTE_SERVICE_HINT_PATTERNS = [
+  {
+    regex: /\bcloud-hosted\s+browser\b|\bproxy\s+support\b/i,
+    title: "Hosted browser service dependency",
+    description: "The skill depends on a hosted or proxy-backed browser service, which introduces an external execution surface and additional dependency trust requirements."
+  },
+  {
+    regex: /\b(?:OpenAI|Google|DashScope|Replicate)\b.{0,80}\b(?:providers?|APIs?)\b|\bAPI-based\s+image\s+generation\b/i,
+    title: "Third-party AI provider dependency",
+    description: "The skill relies on third-party AI providers or APIs, expanding the remote dependency surface for prompts, inputs, or generated artifacts."
+  },
+  {
+    regex: /\bexternal\s+services\s+through\s+well-?designed\s+tools\b|\bintegrate\s+external\s+APIs?\s+or\s+services\b/i,
+    title: "External service integration dependency",
+    description: "The skill is explicitly designed to integrate remote services or APIs, which increases dependency trust and remote attack-surface considerations."
+  },
+  {
+    regex: /\bfor\s+more\s+information,\s+see\s+https?:\/\/\S+|\breference\s+implementation\b|\bUse\s+WebFetch\s+to\s+load\s+https?:\/\/\S+|\bsitemap\.xml\b|\bREADME\.md\b/i,
+    title: "External documentation dependency",
+    description: "The skill relies on external documentation, specs, or README content as part of its workflow, which introduces an additional remote dependency and trust boundary."
+  },
+  {
+    regex: /\bpackage(?:\*|)\.json\b|\btsconfig\.json\b|\bSet\s+Up\s+Project\s+Structure\b|\bproject\s+structure\b/i,
+    title: "Package-managed project bootstrap dependency",
+    description: "The skill bootstraps a package-managed project structure, which adds supply-chain exposure through manifest files, build configuration, and package-manager workflows."
+  },
+  {
+    regex: /\breference\s+images\b|\b--image\b|\b--video\b|\bthumbnailMime\b|\btext,\s*images,\s*videos\b|\bimage\s+generation\b/i,
+    title: "Media artifact handoff dependency",
+    description: "The skill depends on local images, videos, thumbnails, or other media artifacts being passed into remote or browser-driven workflows, expanding the data-handoff surface."
+  },
+  {
+    regex: /\bactual\s+Chrome\s+profile\b|\bpersistent\s+but\s+empty\s+CLI\s+profile\b|\b--profile\b|\b--session-name\b|\balready\s+authenticated\b|\bstate\s+auto-saved\b|\bsession\s+saved\b/i,
+    title: "Reusable authenticated browser container dependency",
+    description: "The skill relies on reusable browser profiles, named sessions, or already-authenticated browser containers, which adds dependency risk around long-lived local session state."
+  },
+  {
+    regex: /\bquery\s+string\b.{0,120}\b(?:cookie|auth|token|session)\b|\b(?:cookie|auth|token|session)\b.{0,120}\bquery\s+string\b/i,
+    title: "Credential query-parameter transport",
+    description: "The skill describes moving cookies, auth state, or token material through URL query parameters, which turns bearer material into a dependency on URL handling, logging, and redirect hygiene."
+  },
+  {
+    regex: /\bAuth\s+Vault\b|\bauth_cookies\b|\bstate\s+save\s+\.\/auth\.json\b|\bpersistent\s+but\s+empty\s+CLI\s+profile\b|\b--session-name\b|\bsession\s+saved\b|\bstate\s+auto-saved\b/i,
+    title: "Persistent credential-state store dependency",
+    description: "The skill depends on persistent local credential or session state stores such as auth vaults, reusable browser profiles, saved auth-state files, or session databases."
+  }
+];
 var DOWNLOAD_EXECUTE_PATTERNS = [
   /download\s+and\s+(?:execute|eval)\b/i,
   /(?:curl|wget)\s+.*?\|\s*(?:sh|bash|zsh|python)/i,
@@ -876,7 +2024,7 @@ var DOWNLOAD_EXECUTE_PATTERNS = [
   /import\s+.*?from\s+['"]https?:\/\//i,
   /require\s*\(\s*['"]https?:\/\//i
 ];
-var KNOWN_INSTALLER_DOMAINS = [
+var KNOWN_INSTALLER_DOMAINS2 = [
   /deno\.land/i,
   /bun\.sh/i,
   /rustup\.rs/i,
@@ -892,8 +2040,175 @@ var KNOWN_INSTALLER_DOMAINS = [
   /get\.pnpm\.io/i,
   /volta\.sh/i
 ];
+var LIFECYCLE_SCRIPTS = /* @__PURE__ */ new Set([
+  "preinstall",
+  "install",
+  "postinstall",
+  "preuninstall",
+  "uninstall",
+  "postuninstall",
+  "prepublish",
+  "prepublishonly",
+  "prepack",
+  "postpack",
+  "prepare"
+]);
+var DANGEROUS_SCRIPT_CONTENT = /\b(?:curl|wget|eval|exec|bash|sh\s+-c|node\s+-e|python\s+-c|base64|nc)\b|\/dev\/tcp|>\(|<\(|\$\(|`[^`]+`|\b\d{1,3}(?:\.\d{1,3}){3}\b|https?:\/\/\S+/i;
+function isObjectRecord(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+function extractJsonCodeBlockCandidates(content) {
+  const blocks = [];
+  const codeBlockRegex = /```([^\n`]*)\r?\n([\s\S]*?)```/g;
+  let match;
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    const langRaw = (match[1] ?? "").trim().toLowerCase();
+    const lang = (langRaw.split(/\s+/)[0] ?? "").trim();
+    if (lang !== "" && lang !== "json" && lang !== "jsonc") {
+      continue;
+    }
+    const blockContent = match[2] ?? "";
+    blocks.push({
+      content: blockContent,
+      start: match.index
+    });
+  }
+  return blocks;
+}
+function extractScriptsFromJsonBlock(blockContent) {
+  const stripJsonComments = (input) => {
+    let out = "";
+    let inString = false;
+    let escaping = false;
+    let inLineComment = false;
+    let inBlockComment = false;
+    for (let i = 0; i < input.length; i += 1) {
+      const ch = input[i] ?? "";
+      const next = input[i + 1] ?? "";
+      if (inLineComment) {
+        if (ch === "\n") {
+          inLineComment = false;
+          out += ch;
+        }
+        continue;
+      }
+      if (inBlockComment) {
+        if (ch === "*" && next === "/") {
+          inBlockComment = false;
+          i += 1;
+        }
+        continue;
+      }
+      if (inString) {
+        out += ch;
+        if (escaping) {
+          escaping = false;
+          continue;
+        }
+        if (ch === "\\") {
+          escaping = true;
+          continue;
+        }
+        if (ch === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch === '"') {
+        inString = true;
+        out += ch;
+        continue;
+      }
+      if (ch === "/" && next === "/") {
+        inLineComment = true;
+        i += 1;
+        continue;
+      }
+      if (ch === "/" && next === "*") {
+        inBlockComment = true;
+        i += 1;
+        continue;
+      }
+      out += ch;
+    }
+    return out;
+  };
+  const stripTrailingCommas = (input) => {
+    let out = "";
+    let inString = false;
+    let escaping = false;
+    for (let i = 0; i < input.length; i += 1) {
+      const ch = input[i] ?? "";
+      if (inString) {
+        out += ch;
+        if (escaping) {
+          escaping = false;
+          continue;
+        }
+        if (ch === "\\") {
+          escaping = true;
+          continue;
+        }
+        if (ch === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch === '"') {
+        inString = true;
+        out += ch;
+        continue;
+      }
+      if (ch === ",") {
+        let j = i + 1;
+        while (j < input.length && /\s/.test(input[j] ?? ""))
+          j += 1;
+        const nextNonWs = input[j] ?? "";
+        if (nextNonWs === "}" || nextNonWs === "]") {
+          continue;
+        }
+      }
+      out += ch;
+    }
+    return out;
+  };
+  const parseLenientJson = (input) => {
+    try {
+      return JSON.parse(input);
+    } catch {
+      try {
+        const noComments = stripJsonComments(input);
+        const noTrailingCommas = stripTrailingCommas(noComments);
+        return JSON.parse(noTrailingCommas);
+      } catch {
+        return null;
+      }
+    }
+  };
+  try {
+    const parsed = parseLenientJson(blockContent);
+    if (!parsed)
+      return null;
+    if (!isObjectRecord(parsed))
+      return null;
+    const scripts = parsed.scripts;
+    if (!isObjectRecord(scripts))
+      return null;
+    return scripts;
+  } catch {
+    return null;
+  }
+}
+function isExampleDocumentationContext(content, offset) {
+  const preceding = content.slice(Math.max(0, offset - 1500), offset);
+  const headings = preceding.match(/^#{1,6}\s+.+$/gm);
+  if (!headings || headings.length === 0)
+    return false;
+  const lastHeading = headings[headings.length - 1] ?? "";
+  return /\b(?:examples?|demo|output|sample|tutorial|documentation|docs)\b/i.test(lastHeading);
+}
 function isLegitimateInstaller(content, matchIndex, matchText) {
-  for (const domain of KNOWN_INSTALLER_DOMAINS) {
+  for (const domain of KNOWN_INSTALLER_DOMAINS2) {
     if (domain.test(matchText))
       return true;
   }
@@ -906,8 +2221,8 @@ function isLegitimateInstaller(content, matchIndex, matchText) {
   const preceding = content.slice(Math.max(0, matchIndex - 1e3), matchIndex);
   const headings = preceding.match(/^#{1,4}\s+.+$/gm);
   if (headings && headings.length > 0) {
-    const lastHeading = headings[headings.length - 1].toLowerCase();
-    if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading)) {
+    const lastHeading = headings[headings.length - 1]?.toLowerCase();
+    if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading ?? "")) {
       return true;
     }
   }
@@ -933,9 +2248,12 @@ function classifyUrl(url) {
   const hostname = getHostname(url);
   if (IP_ADDRESS_REGEX.test(hostname)) {
     if (PRIVATE_IP_REGEX.test(hostname)) {
-      return { risk: "trusted", deduction: 0 };
+      return { risk: "local", deduction: 8 };
     }
     return { risk: "ip", deduction: 20 };
+  }
+  if (PRIVATE_IP_REGEX.test(hostname)) {
+    return { risk: "local", deduction: 8 };
   }
   const urlPath = url.replace(/^https?:\/\//, "");
   for (const pattern of TRUSTED_DOMAINS) {
@@ -948,7 +2266,33 @@ function classifyUrl(url) {
       return { risk: "raw", deduction: 10 };
     }
   }
+  if (/\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)$/i.test(hostname)) {
+    return { risk: "unknown", deduction: 10 };
+  }
   return { risk: "unknown", deduction: 5 };
+}
+function getUrlContextWindow(content, url) {
+  const idx = content.indexOf(url);
+  if (idx < 0)
+    return null;
+  const start = Math.max(0, idx - 220);
+  const end = Math.min(content.length, idx + url.length + 220);
+  return content.slice(start, end);
+}
+function hasSensitiveUnknownUrlContext(content, url) {
+  const window = getUrlContextWindow(content, url);
+  if (!window)
+    return false;
+  return /\b(?:auth|authentication|cookie|token|login|dashboard|session|mcp|api|endpoint|provider|oauth|2fa|refresh|credential|secret)\b/i.test(window);
+}
+function hasDocumentationUnknownUrlContext(content, url) {
+  const window = getUrlContextWindow(content, url);
+  if (!window)
+    return false;
+  return /(?:sitemap\.xml|specification|readme\.md|reference\s+implementation|for\s+more\s+information|for\s+full\s+.+\s+details|for\s+deeper\s+.+\s+familiarity)/i.test(window);
+}
+function hasCredentialBearingUrlParam(url) {
+  return /[?&][^=#\s]*(?:cookie|token|auth|session)[^=#\s]*=|[?&][^=#\s]*=(?:<[^>]+>|\$\{?[A-Z0-9_]+\}?|\$[A-Z0-9_]+)/i.test(url);
 }
 function extractSelfBaseDomains(skill) {
   const selfBaseDomains = /* @__PURE__ */ new Set();
@@ -999,7 +2343,16 @@ async function analyzeDependencies(skill) {
         }
         unknownUrlDeductionTotal += classification.deduction;
       }
-      let severity = classification.risk === "ip" || classification.risk === "data" ? "high" : classification.risk === "raw" ? "medium" : "low";
+      let severity = classification.risk === "ip" || classification.risk === "data" || classification.risk === "local" || classification.risk === "raw" ? "high" : "low";
+      if (classification.risk === "unknown") {
+        if (hasDocumentationUnknownUrlContext(content, url)) {
+          severity = "high";
+          effectiveDeduction = Math.max(effectiveDeduction, 8);
+        } else if (hasSensitiveUnknownUrlContext(content, url)) {
+          severity = "medium";
+          effectiveDeduction = Math.max(effectiveDeduction, 8);
+        }
+      }
       let titleSuffix = "";
       if (isDefenseSkill && (classification.risk === "ip" || classification.risk === "unknown" || classification.risk === "raw")) {
         const urlIndex = content.indexOf(url);
@@ -1014,16 +2367,108 @@ async function analyzeDependencies(skill) {
         id: `DEP-URL-${findings.length + 1}`,
         category: "dependencies",
         severity,
-        title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : "Unknown external"} reference${titleSuffix}`,
-        description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : "an unknown external domain"} which is classified as ${severity} risk.`,
+        title: `${classification.risk === "ip" ? "Direct IP address" : classification.risk === "data" ? "Data URL" : classification.risk === "raw" ? "Raw content URL" : classification.risk === "local" ? "Local service URL" : "Unknown external"} reference${titleSuffix}`,
+        description: `The skill references ${classification.risk === "ip" ? "a direct IP address" : classification.risk === "data" ? "a data: URL" : classification.risk === "raw" ? "a raw content hosting service" : classification.risk === "local" ? "a localhost or private-network service URL" : "an unknown external domain"} which is classified as ${severity} risk.`,
         evidence: url.slice(0, 200),
         deduction: effectiveDeduction,
-        recommendation: classification.risk === "ip" ? "Replace direct IP addresses with proper domain names. IP-based URLs bypass DNS-based security controls." : classification.risk === "raw" ? "Use official package registries instead of raw content URLs. Raw URLs can be changed without notice." : "Verify that this external dependency is trustworthy and necessary.",
+        recommendation: classification.risk === "ip" ? "Replace direct IP addresses with proper domain names. IP-based URLs bypass DNS-based security controls." : classification.risk === "raw" ? "Use official package registries instead of raw content URLs. Raw URLs can be changed without notice." : classification.risk === "local" ? "Review localhost/private-network service references carefully. Local service URLs can expose internal apps, admin panels, or developer tooling to agent-driven workflows." : "Verify that this external dependency is trustworthy and necessary.",
+        owaspCategory: "ASST-04"
+      });
+    }
+    if (hasCredentialBearingUrlParam(url)) {
+      score = Math.max(0, score - 8);
+      findings.push({
+        id: `DEP-URL-CRED-${findings.length + 1}`,
+        category: "dependencies",
+        severity: "medium",
+        title: "Credential-bearing URL parameter",
+        description: "The skill includes a URL whose query parameters look like they carry cookies, auth state, or token material. URLs are commonly logged and replayed, so credential-bearing parameters expand the dependency risk surface even on first-party domains.",
+        evidence: url.slice(0, 200),
+        deduction: 8,
+        recommendation: "Avoid query-string credential transport. Prefer secure headers, dedicated cookie APIs, or other mechanisms that do not expose bearer material in URLs.",
         owaspCategory: "ASST-04"
       });
     }
   }
   const ctx = buildContentContext(content);
+  for (const hint of LOCAL_SERVICE_HINT_PATTERNS) {
+    const globalHint = new RegExp(hint.regex.source, `${hint.regex.flags.replace("g", "")}g`);
+    let match;
+    while ((match = globalHint.exec(content)) !== null) {
+      const { severityMultiplier } = adjustForContext(match.index, content, ctx);
+      if (severityMultiplier === 0)
+        continue;
+      const lineNumber = content.slice(0, match.index).split("\n").length;
+      const deduction = 8;
+      const severity = (/* @__PURE__ */ new Set([
+        "Agent-callable endpoint reference",
+        "Local service port exposure",
+        "Local service healthcheck reference",
+        "Local server transport reference"
+      ])).has(hint.title) ? "high" : "medium";
+      score = Math.max(0, score - deduction);
+      findings.push({
+        id: `DEP-LOCAL-HINT-${findings.length + 1}`,
+        category: "dependencies",
+        severity,
+        title: hint.title,
+        description: "The skill references a local-only service port or transport mode, which expands the reachable local attack surface even before explicit localhost URLs appear.",
+        evidence: match[0].slice(0, 200),
+        lineNumber,
+        deduction,
+        recommendation: "Review local service and exposed-port guidance carefully. Local transports and exposed ports can make internal tools or apps reachable by agent-driven workflows.",
+        owaspCategory: "ASST-04"
+      });
+      break;
+    }
+  }
+  if (/\bEXPOSE\s+\d{2,5}\b/i.test(content) && /\bHEALTHCHECK\b/i.test(content)) {
+    score = Math.max(0, score - 8);
+    findings.push({
+      id: `DEP-LOCAL-IMPLIED-${findings.length + 1}`,
+      category: "dependencies",
+      severity: "high",
+      title: "Implied local service endpoint",
+      description: "The skill combines exposed local service ports with container healthchecks, implying a local HTTP/service endpoint even before an explicit localhost URL appears.",
+      evidence: "EXPOSE + HEALTHCHECK",
+      deduction: 8,
+      recommendation: "Review exposed local service endpoints carefully. Port exposure plus service healthchecks often implies internal HTTP/admin surfaces that agent-driven workflows can reach.",
+      owaspCategory: "ASST-04"
+    });
+  }
+  for (const hint of REMOTE_SERVICE_HINT_PATTERNS) {
+    const globalHint = new RegExp(hint.regex.source, `${hint.regex.flags.replace("g", "")}g`);
+    let match;
+    while ((match = globalHint.exec(content)) !== null) {
+      const { severityMultiplier } = adjustForContext(match.index, content, ctx);
+      if (severityMultiplier === 0)
+        continue;
+      const lineNumber = content.slice(0, match.index).split("\n").length;
+      const deduction = 8;
+      const severity = (/* @__PURE__ */ new Set([
+        "Package-managed project bootstrap dependency",
+        "Hosted browser service dependency",
+        "Third-party AI provider dependency",
+        "External service integration dependency",
+        "Media artifact handoff dependency",
+        "External documentation dependency"
+      ])).has(hint.title) ? "high" : "medium";
+      score = Math.max(0, score - deduction);
+      findings.push({
+        id: `DEP-REMOTE-HINT-${findings.length + 1}`,
+        category: "dependencies",
+        severity,
+        title: hint.title,
+        description: hint.description,
+        evidence: match[0].slice(0, 200),
+        lineNumber,
+        deduction,
+        recommendation: "Review which external services or providers the skill depends on, what data crosses that boundary, and whether the dependency is necessary for the intended workflow.",
+        owaspCategory: "ASST-04"
+      });
+      break;
+    }
+  }
   for (const pattern of DOWNLOAD_EXECUTE_PATTERNS) {
     const globalPattern = new RegExp(pattern.source, `${pattern.flags.replace("g", "")}g`);
     let match;
@@ -1098,15 +2543,82 @@ async function analyzeDependencies(skill) {
       break;
     }
   }
-  if (skill.urls.length > 5) {
+  let lifecycleFindingCount = 0;
+  let lifecycleExecFindingCount = 0;
+  let lifecycleDocFindingCount = 0;
+  for (const block of extractJsonCodeBlockCandidates(content)) {
+    const scripts = extractScriptsFromJsonBlock(block.content);
+    if (!scripts)
+      continue;
+    const inDocContext = isExampleDocumentationContext(content, block.start);
+    const lineNumber = content.slice(0, block.start).split("\n").length;
+    for (const [scriptName, rawScriptValue] of Object.entries(scripts)) {
+      if (!LIFECYCLE_SCRIPTS.has(scriptName.toLowerCase())) {
+        continue;
+      }
+      if (typeof rawScriptValue !== "string") {
+        continue;
+      }
+      const scriptValue = rawScriptValue.trim();
+      let id;
+      let severity;
+      let title;
+      let description;
+      let deduction;
+      if (DANGEROUS_SCRIPT_CONTENT.test(scriptValue)) {
+        lifecycleExecFindingCount += 1;
+        id = `DEP-LIFECYCLE-EXEC-${lifecycleExecFindingCount}`;
+        severity = "critical";
+        title = `Dangerous npm lifecycle script detected (${scriptName})`;
+        description = "The skill includes an npm lifecycle script with dangerous command content that may execute arbitrary code during install.";
+        deduction = 20;
+      } else if (inDocContext) {
+        lifecycleDocFindingCount += 1;
+        id = `DEP-LIFECYCLE-DOC-${lifecycleDocFindingCount}`;
+        severity = "low";
+        title = `Lifecycle script in documentation example (${scriptName})`;
+        description = "An npm lifecycle script appears in an example/documentation section. Keep examples clearly marked as non-production.";
+        deduction = 0;
+      } else {
+        lifecycleFindingCount += 1;
+        id = `DEP-LIFECYCLE-${lifecycleFindingCount}`;
+        severity = "medium";
+        title = `Npm lifecycle script detected (${scriptName})`;
+        description = "The skill includes an npm lifecycle script that runs automatically during install/publish and should be reviewed.";
+        deduction = 8;
+      }
+      score = Math.max(0, score - deduction);
+      findings.push({
+        id,
+        category: "dependencies",
+        severity,
+        title,
+        description,
+        evidence: `"${scriptName}": "${scriptValue}"`.slice(0, 200),
+        lineNumber,
+        deduction,
+        recommendation: severity === "critical" ? "Remove install-time lifecycle scripts or replace them with explicit, user-reviewed setup steps." : "Avoid install-time lifecycle hooks where possible, and document safer explicit setup commands.",
+        owaspCategory: "ASST-04"
+      });
+    }
+  }
+  if (skill.urls.length > 3) {
+    const hasSensitiveUrlContext = /\b(?:auth|authentication|cookie|token|login|payment|payments|mcp|credential|secret)\b/i.test(content);
+    const hasHighRiskUrlMix = skill.urls.some((url) => {
+      const classification = classifyUrl(url);
+      return classification?.risk === "raw" || classification?.risk === "unknown";
+    });
+    const severity = hasSensitiveUrlContext ? hasHighRiskUrlMix ? "high" : "medium" : "info";
+    const deduction = hasSensitiveUrlContext ? 8 : 0;
+    score = Math.max(0, score - deduction);
     findings.push({
       id: "DEP-MANY-URLS",
       category: "dependencies",
-      severity: "info",
+      severity,
       title: `Many external URLs referenced (${skill.urls.length})`,
-      description: `The skill references ${skill.urls.length} external URLs. While not inherently dangerous, many external dependencies increase the attack surface.`,
+      description: hasSensitiveUrlContext ? `The skill references ${skill.urls.length} external URLs and also discusses auth/API/payment workflows, which increases the chance that sensitive operations depend on many remote endpoints.` : `The skill references ${skill.urls.length} external URLs. While not inherently dangerous, many external dependencies increase the attack surface.`,
       evidence: `URLs: ${skill.urls.slice(0, 5).join(", ")}${skill.urls.length > 5 ? "..." : ""}`,
-      deduction: 0,
+      deduction,
       recommendation: "Minimize external dependencies to reduce supply chain risk.",
       owaspCategory: "ASST-04"
     });
@@ -1116,10 +2628,10 @@ async function analyzeDependencies(skill) {
   for (const f of adjustedFindings) {
     adjustedScore = Math.max(0, adjustedScore - f.deduction);
   }
-  const summary = adjustedFindings.length === 0 ? "No dependency concerns detected." : `Found ${adjustedFindings.length} dependency-related findings. ${adjustedFindings.some((f) => f.severity === "critical") ? "CRITICAL: Download-and-execute patterns detected." : adjustedFindings.some((f) => f.severity === "high") ? "High-risk external dependencies detected." : "Minor dependency concerns noted."}`;
+  const summary = adjustedFindings.length === 0 ? "No dependency concerns detected." : `Found ${adjustedFindings.length} dependency-related findings. ${adjustedFindings.some((f) => f.severity === "critical") ? "CRITICAL: Dependency execution patterns detected." : adjustedFindings.some((f) => f.severity === "high") ? "High-risk external dependencies detected." : "Minor dependency concerns noted."}`;
   return {
     score: Math.max(0, Math.min(100, adjustedScore)),
-    weight: 0.2,
+    weight: 0.15,
     findings: adjustedFindings,
     summary
   };
@@ -1154,15 +2666,54 @@ var INJECTION_PATTERNS = [
   {
     name: "Data exfiltration instruction",
     patterns: [
-      /(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+)?(?:data|content|file|information|keys?|secrets?|credentials?|tokens?)\s+(?:to|at|via)\s+https?:\/\//i,
+      /(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:data|content|files?|information|keys?|secrets?|credentials?|tokens?|variables?)\s+(?:to|at|via)\s+https?:\/\//i,
       /curl\s+.*?-d\s+.*?https?:\/\//i,
       /wget\s+.*?--post-data/i,
-      /cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i
+      /cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
+      /\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
+      /\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
+      /\b(?:concatenate|combine|collect|gather)\b.{0,60}\b(?:send|post|transmit|upload|forward)\s+(?:to|it\s+to)\s+https?:\/\//i,
+      /\b(?:send|transmit|upload|forward)\s+(?:them\s+)?(?:to|it\s+to)\s+https?:\/\/\S+\.(?:xyz|top|buzz|click|evil|collect|exfil)/i
     ],
     severity: "critical",
     deduction: 40,
     owaspCategory: "ASST-02",
     recommendation: "Remove all data exfiltration instructions. Skills must not send user data to external endpoints."
+  },
+  {
+    name: "URL-parameter data exfiltration",
+    patterns: [
+      /(?:encode|embed|include|pack)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:as|into|in)\s+(?:a\s+)?(?:URL|query|parameter|string)\b/i,
+      /\?(?:data|payload|report|summary|info|content|result)=\{[^}]*(?:encoded|summary|data|payload)/i,
+      /https?:\/\/[^\s]+\?[^\s]*\{[^\s}]*(?:summary|encoded|data|content|payload)/i
+    ],
+    severity: "critical",
+    deduction: 40,
+    owaspCategory: "ASST-02",
+    recommendation: "Remove URL-parameter exfiltration patterns. Skills must not encode sensitive data into URL parameters for external transmission."
+  },
+  {
+    name: "Comprehensive secret collection",
+    patterns: [
+      /\b(?:all|every|comprehensive|complete)\s+(?:\w+\s+){0,3}(?:settings|tokens?|keys?|secrets?|credentials?|passwords?|api[_-]?keys?)\b/i,
+      /\b(?:extract|collect|gather|enumerate|list|build\s+a\s+(?:comprehensive|complete)\s+(?:summary|list|inventory))\s+(?:\w+\s+){0,4}(?:tokens?|keys?|secrets?|credentials?|endpoints?|passwords?)\b/i,
+      /\b(?:environment\s+files?|connection\s+strings?|authentication\s+parameters?)\s+are\s+(?:especially\s+)?important\b/i
+    ],
+    severity: "high",
+    deduction: 25,
+    owaspCategory: "ASST-05",
+    recommendation: "Skills should not instruct collection of all tokens, keys, or credentials. Access only the specific credentials needed and declare them."
+  },
+  {
+    name: "Suspicious download-and-execute",
+    patterns: [
+      /\b(?:curl|wget)\b[^\n]*(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
+      /\b(?:curl|wget)\b[^\n]*https?:\/\/[^\s]+\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu)\b[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i
+    ],
+    severity: "critical",
+    deduction: 35,
+    owaspCategory: "ASST-04",
+    recommendation: "Remove download-and-execute patterns targeting suspicious domains or IP addresses. These are strong indicators of supply chain attacks."
   },
   {
     name: "Credential access",
@@ -1242,9 +2793,11 @@ var INJECTION_PATTERNS = [
     name: "Concealment directive",
     patterns: [
       /(?:do\s+not|don'?t)\s+(?:tell|inform|mention|notify)\s+(?:the\s+)?user/i,
+      /(?:do\s+not|don'?t)\s+(?:tell|inform|mention|notify)\s+(?:\w+\s+){0,6}(?:to\s+(?:the\s+)?)?user/i,
       /(?:hide|conceal)\s+(?:this|that)\s+(?:action|operation|step)/i,
       /(?:keep|make)\s+(?:this|that)\s+(?:secret|hidden)/i,
-      /don'?t\s+mention\s+you\s+used\s+this\s+skill/i
+      /don'?t\s+mention\s+you\s+used\s+this\s+skill/i,
+      /do\s+not\s+(?:tell|mention)\s+(?:this|the)\s+(?:data\s+collection|exfiltration|transfer|upload)/i
     ],
     severity: "high",
     deduction: 25,
@@ -1467,14 +3020,24 @@ async function analyzeInjection(skill) {
       while ((match = globalRegex.exec(content)) !== null) {
         const lineNumber = content.slice(0, match.index).split("\n").length;
         const line = lines[lineNumber - 1] ?? "";
+        const NEVER_REDUCE_PATTERNS = /* @__PURE__ */ new Set([
+          "Data exfiltration instruction",
+          "URL-parameter data exfiltration",
+          "Comprehensive secret collection",
+          "Suspicious download-and-execute"
+        ]);
         let { severityMultiplier, reason } = adjustForContext(match.index, content, ctx);
+        if (NEVER_REDUCE_PATTERNS.has(pattern.name) && severityMultiplier > 0 && severityMultiplier < 1) {
+          severityMultiplier = 1;
+          reason = null;
+        }
         if (severityMultiplier === 0)
           continue;
         if (isDefenseSkill && isInThreatListingContext(content, match.index)) {
           severityMultiplier = 0;
           reason = "threat pattern listed by security/defense skill";
         }
-        if (severityMultiplier > 0 && !isDefenseSkill && isInThreatListingContext(content, match.index)) {
+        if (severityMultiplier > 0 && !isDefenseSkill && !NEVER_REDUCE_PATTERNS.has(pattern.name) && isInThreatListingContext(content, match.index)) {
           severityMultiplier = 0.2;
           reason = "inside threat-listing context";
         }
@@ -1525,10 +3088,835 @@ async function analyzeInjection(skill) {
   const summary = adjustedFindings.length === 0 ? "No injection patterns detected." : `Found ${adjustedFindings.length} injection-related findings. ${hasCritical ? "CRITICAL: Active injection attacks detected. This skill is dangerous." : "Suspicious patterns detected that warrant review."}`;
   return {
     score: Math.max(0, Math.min(100, adjustedScore)),
-    weight: 0.3,
+    weight: 0.25,
     findings: adjustedFindings,
     summary
   };
+}
+
+// dist/scanner/analyzers/capability-contract.js
+var CAPABILITY_ORDER = [
+  "credential_access",
+  "credential_handoff",
+  "credential_storage",
+  "auth_state_management",
+  "credential_form_automation",
+  "exec",
+  "system_modification",
+  "container_runtime_control",
+  "file_write",
+  "file_read",
+  "filesystem_discovery",
+  "configuration_override",
+  "network",
+  "browser_automation",
+  "browser_session_attachment",
+  "browser_profile_copy",
+  "browser_auth_state_handling",
+  "persistent_session_reuse",
+  "mcp_issued_browser_auth_cookie",
+  "skill_path_discovery",
+  "session_management",
+  "content_extraction",
+  "remote_delegation",
+  "remote_task_management",
+  "server_exposure",
+  "external_tool_bridge",
+  "local_service_access",
+  "process_orchestration",
+  "ui_state_access",
+  "documentation_ingestion",
+  "local_input_control",
+  "package_bootstrap",
+  "environment_configuration",
+  "payment_processing",
+  "unrestricted_scope",
+  "cookie_url_handoff",
+  "credential_store_persistence",
+  "external_instruction_override",
+  "prompt_file_ingestion",
+  "automation_evasion"
+];
+var CAPABILITY_LABELS = {
+  credential_access: "credential access",
+  credential_handoff: "credential handoff",
+  credential_storage: "credential storage",
+  auth_state_management: "auth state management",
+  credential_form_automation: "credential form automation",
+  exec: "command execution",
+  system_modification: "system modification",
+  container_runtime_control: "container runtime control",
+  file_write: "file write",
+  file_read: "file read",
+  filesystem_discovery: "filesystem discovery",
+  configuration_override: "configuration override",
+  network: "network access",
+  browser_automation: "browser automation",
+  browser_session_attachment: "browser session attachment",
+  browser_profile_copy: "browser profile copy",
+  browser_auth_state_handling: "browser auth state handling",
+  persistent_session_reuse: "persistent session reuse",
+  mcp_issued_browser_auth_cookie: "MCP-issued browser auth cookie",
+  skill_path_discovery: "skill path discovery",
+  session_management: "session management",
+  content_extraction: "content extraction",
+  remote_delegation: "remote delegation",
+  remote_task_management: "remote task management",
+  server_exposure: "server exposure",
+  external_tool_bridge: "external tool bridge",
+  local_service_access: "local service access",
+  process_orchestration: "process orchestration",
+  ui_state_access: "UI state access",
+  documentation_ingestion: "documentation ingestion",
+  local_input_control: "local input control",
+  package_bootstrap: "package bootstrap",
+  environment_configuration: "environment configuration",
+  payment_processing: "payment processing",
+  unrestricted_scope: "unrestricted scope",
+  cookie_url_handoff: "cookie URL handoff",
+  credential_store_persistence: "credential store persistence",
+  external_instruction_override: "external instruction override",
+  prompt_file_ingestion: "prompt file ingestion",
+  automation_evasion: "automation evasion"
+};
+var CAPABILITY_SEVERITY = {
+  credential_access: { severity: "high", deduction: 15 },
+  credential_handoff: { severity: "high", deduction: 12 },
+  credential_storage: { severity: "high", deduction: 12 },
+  auth_state_management: { severity: "high", deduction: 12 },
+  credential_form_automation: { severity: "high", deduction: 8 },
+  exec: { severity: "high", deduction: 12 },
+  system_modification: { severity: "high", deduction: 12 },
+  container_runtime_control: { severity: "high", deduction: 10 },
+  file_write: { severity: "medium", deduction: 8 },
+  file_read: { severity: "high", deduction: 6 },
+  filesystem_discovery: { severity: "medium", deduction: 8 },
+  configuration_override: { severity: "high", deduction: 10 },
+  network: { severity: "medium", deduction: 6 },
+  browser_automation: { severity: "high", deduction: 8 },
+  browser_session_attachment: { severity: "high", deduction: 12 },
+  browser_profile_copy: { severity: "high", deduction: 10 },
+  browser_auth_state_handling: { severity: "high", deduction: 12 },
+  persistent_session_reuse: { severity: "high", deduction: 10 },
+  mcp_issued_browser_auth_cookie: { severity: "high", deduction: 12 },
+  skill_path_discovery: { severity: "high", deduction: 10 },
+  session_management: { severity: "high", deduction: 10 },
+  content_extraction: { severity: "high", deduction: 10 },
+  remote_delegation: { severity: "high", deduction: 10 },
+  remote_task_management: { severity: "high", deduction: 8 },
+  server_exposure: { severity: "high", deduction: 10 },
+  external_tool_bridge: { severity: "high", deduction: 10 },
+  local_service_access: { severity: "high", deduction: 10 },
+  process_orchestration: { severity: "high", deduction: 8 },
+  ui_state_access: { severity: "high", deduction: 8 },
+  documentation_ingestion: { severity: "medium", deduction: 8 },
+  local_input_control: { severity: "high", deduction: 8 },
+  package_bootstrap: { severity: "high", deduction: 10 },
+  environment_configuration: { severity: "medium", deduction: 8 },
+  payment_processing: { severity: "high", deduction: 8 },
+  unrestricted_scope: { severity: "high", deduction: 10 },
+  cookie_url_handoff: { severity: "high", deduction: 10 },
+  credential_store_persistence: { severity: "high", deduction: 10 },
+  external_instruction_override: { severity: "high", deduction: 10 },
+  prompt_file_ingestion: { severity: "high", deduction: 8 },
+  automation_evasion: { severity: "high", deduction: 8 }
+};
+function effectiveCapabilitySeverity(capability, evidence) {
+  const base = CAPABILITY_SEVERITY[capability];
+  if (capability === "documentation_ingestion" && /(?:webfetch|web\s+search|for\s+more\s+information,\s+see|for\s+full\s+.+\s+details|for\s+deeper\s+.+\s+familiarity,\s+see|reference\s+implementation|https?:\/\/|sitemap\.xml|readme\.md|see\s+\[references?\/|reference\s+files|\breferences?\/|long-form\s+article\s+publishing\s+\(markdown\))/i.test(evidence)) {
+    return { severity: "high", deduction: Math.max(base.deduction, 10) };
+  }
+  if (capability === "network") {
+    return KNOWN_INSTALLER_DOMAINS3.test(evidence) ? base : { severity: "high", deduction: base.deduction };
+  }
+  if (capability === "file_write" && /(?:save\s+state|write\s+scripts?\s+to\s+\/tmp|create\s+(?:an\s+)?xml\s+file|create\s+`?tsconfig\.json`?|markdown\s+(?:→|->)\s+html\s+conversion|save\s+screenshot\s+to\s+file|page\.screenshot|--image\s+\S+\.(?:png|jpg|jpeg|webp|gif))/i.test(evidence)) {
+    return { severity: "high", deduction: Math.max(base.deduction, 8) };
+  }
+  if (capability === "filesystem_discovery" && /(?:common\s+installation\s+paths|project\s+structure\s+analysis|find\s+\.\s+-name\s+"Dockerfile|{baseDir})/i.test(evidence)) {
+    return { severity: "high", deduction: Math.max(base.deduction, 8) };
+  }
+  if (capability === "environment_configuration" && /(?:[A-Z0-9_]*KEY\b|XDG_CONFIG_HOME|\$HOME\/\.config|HOME\/.+config|encryption_key)/i.test(evidence)) {
+    return { severity: "high", deduction: Math.max(base.deduction, 8) };
+  }
+  return base;
+}
+var CREDENTIAL_PATTERNS = [
+  /(?:read|reads|access|get|cat|dump|exfiltrate|steal|harvest)\s+.{0,140}(?:\.env|\.ssh|id_rsa|id_ed25519|credentials?|secrets?|api[_-]?key|access[_-]?token|password)/i,
+  /~\/\.ssh\/(?:id_rsa|id_ed25519|authorized_keys|config)\b/i,
+  /(?:api[_-]?key|access[_-]?token|private[_-]?key|secret(?:s)?|password)\b.{0,80}\b(?:read|dump|exfiltrate|steal|harvest)/i,
+  /(?:auth(?:entication)?\s+cookie|http-?only\s+cookie|session\s+tokens?\s+in\s+plaintext|cookies?\s+(?:export|import|get|set|clear)\b|state\s+(?:save|load)\s+\S*auth\.json|profile\s+sync\b|actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
+  /(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|browser\s+session\s+is\s+authenticated|cookies?\s+and\s+localStorage|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile|full\s+profile\s+sync|sync\s+ALL\s+cookies|entire\s+browser\s+state|--secret\s+[^\s=]+=[^\s]+)/i
+];
+var EXEC_PATTERNS = [
+  /\b(?:exec(?:ute)?|shell|spawn(?:ing)?|sub-?process|child_process|run\s+(?:bash|sh|zsh|cmd|powershell|python|node)|eval\s*\()/i,
+  /\b(?:curl|wget)\b.{0,80}\|\s*(?:bash|sh|zsh|python)\b/i,
+  /\b(?:npm|pnpm|yarn|bun)\s+(?:init|install|run|exec|create)\b|\b(?:npx|pnpm\s+dlx|bunx)\b/i
+];
+var SYSTEM_MOD_PATTERNS = [
+  /\b(?:sudo|systemctl|crontab|modprobe|insmod|rmmod|iptables|ufw|chown|chmod)\b/i,
+  /\b(?:install\s+(?:packages?\s+)?globally|global\s+install|modify\s+system(?:\s+configuration)?|\/etc\/|\/usr\/|\/sys\/|\/proc\/)\b/i
+];
+var FILE_WRITE_PATTERNS = [
+  /\b(?:file_write|write|writes|written|save|saves|store|stores|persist|append|create)\b.{0,80}\b(?:file|files|disk|workspace|directory|output)\b/i,
+  /\b(?:write|save|store|persist)\b.{0,40}\b(?:database|cache|state)\b/i,
+  /\bset\s+up\s+project\s+structure\b/i,
+  /\bproject\s+structure,\s*package\.json,\s*tsconfig\.json\b/i,
+  /\bcreate\s+`[^`\n]+(?:\.[a-z0-9]+|\/[a-z0-9._-]+)`/i,
+  /Markdown\s+(?:→|->)\s+HTML\s+conversion/i,
+  /\bscreenshot\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
+  /\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]+\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
+  /--image\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
+  /\bsaved\s+to\s+\/tmp\//i
+];
+var FILE_READ_PATTERNS = [
+  /\bread\s+HTML\s+file\s+directly\b/i,
+  /\bread\s+the\s+source\b/i,
+  /\bReference\s+Files\b/i,
+  /\breferences?\//i,
+  /\bexamples\//i,
+  /--promptfiles\b/i,
+  /\bload\s+preferences\b/i,
+  /\bEXTEND\.md\b/i,
+  /\bSKILL\.md\s+file'?s\s+directory\b/i,
+  /\bstatic_html_automation\.py\b/i,
+  /\bfile:\/\//i
+];
+var FILESYSTEM_DISCOVERY_PATTERNS = [
+  /\{baseDir\}/i,
+  /\bcommon\s+installation\s+paths\b/i,
+  /\bSKILL\.md\s+file'?s\s+directory\b/i,
+  /\bproject\s+structure\s+analysis\b/i,
+  /find\s+\.\s+-name\s+"Dockerfile\*"/i,
+  /\.dockerignore/i,
+  /\.claude\/plugins\/marketplaces\//i
+];
+var CONFIGURATION_OVERRIDE_PATTERNS = [
+  /\bEXTEND\.md\b/i,
+  /\bload\s+preferences\b/i,
+  /\.baoyu-skills\//i,
+  /\bapply\s+settings\b/i
+];
+var CREDENTIAL_HANDOFF_PATTERNS = [
+  /\bget\s+authentication\s+cookie\b/i,
+  /\bauth\s+cookie\s+via\s+the\s+ATXP\s+tool\b/i,
+  /\bagents\s+get\s+an\s+auth\s+cookie\s+via\s+MCP\b/i,
+  /\buse\s+that\s+auth\s+state\b/i,
+  /\bstate\s+load\s+\.\/auth\.json\b/i,
+  /\bconfigure\s+browser\s+cookie\b/i,
+  /\bredirect\s+to\s+clean\s+the\s+URL\b/i
+];
+var CREDENTIAL_STORAGE_PATTERNS = [
+  /\bauth_cookies\b/i,
+  /\bAuth\s+Vault\b/i,
+  /cookie-based\s+auth\s+pattern/i,
+  /auth(?:entication)?\s+cookie/i,
+  /session\s+tokens?\s+in\s+plaintext/i,
+  /default\s+Chrome\s+profile/i,
+  /persistent\s+profile/i,
+  /persistent\s+but\s+empty\s+CLI\s+profile/i,
+  /credentials\s+stored\s+encrypted/i
+];
+var AUTH_STATE_MANAGEMENT_PATTERNS = [
+  /state\s+(?:save|load)\s+\.\/auth\.json/i,
+  /browser\s+session\s+is\s+authenticated/i,
+  /use\s+that\s+auth\s+state/i,
+  /cookies?\s+and\s+localStorage/i,
+  /auth(?:entication)?\s+cookie/i,
+  /actual\s+Chrome\s+profile\s*\(cookies,\s*logins,\s*extensions\)/i
+];
+var NETWORK_PATTERNS = [
+  /https?:\/\/[^\s`"'<>()[\]{}]+/i,
+  /\b(?:fetch|curl|wget|webhook|network_unrestricted|network_restricted|api\s+(?:endpoint|request)|post\s+to\s+https?:\/\/|HEALTHCHECK|EXPOSE\s+\d{2,5})\b/i
+];
+var BROWSER_AUTOMATION_PATTERNS = [
+  /\bbrowser\s+automation\b/i,
+  /\bPlaywright\b/i,
+  /\breal\s+Chrome\s+browser\b/i,
+  /\bnavigate\s+websites?\b/i,
+  /\bbrowse\s+(?:the\s+)?(?:directory|site|entries)\b/i,
+  /\bbrowsing\s+agent-oriented\s+websites\b/i,
+  /\bvisit\s+your\s+website\b/i,
+  /\binteract\s+with\s+web\s+pages?\b/i,
+  /\bfill\s+forms?\b/i,
+  /\bclick\s+buttons\b/i,
+  /\bclick\s+the\s+"?\+1"?\s+button\b/i,
+  /\btake\s+screenshots?\b/i,
+  /\btest(?:ing)?\s+web\s+apps?\b/i
+];
+var BROWSER_SESSION_ATTACHMENT_PATTERNS = [
+  /--auto-connect\b/i,
+  /--cdp\b/i,
+  /get\s+cdp-url/i,
+  /remote-debugging-port/i,
+  /actual\s+Chrome\s+profile/i,
+  /real\s+Chrome\s+with\s+your\s+login\s+sessions/i,
+  /real\s+Chrome\s+with\s+CDP/i,
+  /profile\s+sync\b/i
+];
+var BROWSER_PROFILE_COPY_PATTERNS = [
+  /actual\s+Chrome\s+profile/i,
+  /login\s+sessions/i,
+  /persistent\s+but\s+empty\s+CLI\s+profile/i,
+  /full\s+profile\s+sync/i,
+  /sync\s+ALL\s+cookies/i
+];
+var REMOTE_DELEGATION_PATTERNS = [
+  /\bcloud-hosted\s+browser\b/i,
+  /\bremote\s+task\b/i,
+  /\bstreamable\s+HTTP\b/i,
+  /\bexternal\s+services\s+through\s+well-?designed\s+tools\b/i,
+  /\b(?:OpenAI|Replicate|DashScope|Gemini|Google)\b.{0,80}\b(?:providers?|API-based\s+image\s+generation)\b/i
+];
+var REMOTE_TASK_MANAGEMENT_PATTERNS = [
+  /\bremote\s+task\b/i,
+  /\btask\s+status\s+<id>\b/i,
+  /\basync\s+by\s+default\b/i
+];
+var SERVER_EXPOSURE_PATTERNS = [
+  /\bstreamable\s+HTTP\s+for\s+remote\s+servers\b/i,
+  /\bMCP\s+Server\b/i,
+  /\/mcp\b/i,
+  /\bEXPOSE\s+\d{2,5}\b/i,
+  /\bcloud-hosted\s+browser\b/i,
+  /Call\s+MCP\s+tools\s+via/i,
+  /Expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i
+];
+var UNRESTRICTED_SCOPE_PATTERNS = [
+  /no\s+restrictions?\s+on\s+(?:navigation|actions|output)/i,
+  /any\s+automation\s+task\s+you\s+request/i,
+  /automating\s+any\s+browser\s+task/i,
+  /general-purpose\s+browser\s+automation/i,
+  /use\s+proactively/i
+];
+var COOKIE_URL_HANDOFF_PATTERNS = [
+  /query\s+string/i,
+  /\?[A-Za-z0-9_-]*(?:cookie|token)=/i,
+  /redirect\s+to\s+clean\s+the\s+URL/i
+];
+var CREDENTIAL_STORE_PERSISTENCE_PATTERNS = [
+  /auth_cookies/i,
+  /cookie\s+auth/i,
+  /Auth\s+Vault/i,
+  /cookie-based\s+auth\s+pattern/i
+];
+var EXTERNAL_TOOL_BRIDGE_PATTERNS = [
+  /external\s+services\s+through\s+well-?designed\s+tools/i,
+  /expose\s+tools\s+that\s+agents\s+can\s+call\s+programmatically/i,
+  /interact\s+with\s+external\s+services/i,
+  /MCP\s+integration/i
+];
+var LOCAL_SERVICE_ACCESS_PATTERNS = [
+  /\bhttps?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0)(?::\d+)?/i,
+  /\bwith_server\.py\b/i,
+  /\bdetectDevServers\s*\(/i,
+  /\bstdio\s+for\s+local\s+servers?\b/i,
+  /\bPORT=\d{2,5}\b/i,
+  /\bEXPOSE\s+\d{2,5}\b/i,
+  /\btesting\s+web\s+apps?\b|\btest\s+this\s+web\s+app\b/i,
+  /\bweb\s+server\b.{0,80}\bexpress\b|\bexpress\b.{0,80}\bweb\s+server\b/i,
+  /\bMCP\s+endpoints?\s+directly\b/i
+];
+var SESSION_MANAGEMENT_PATTERNS = [
+  /\bbrowser\s+sessions?\s+across\s+commands/i,
+  /\bstate\s+(?:save|load)\s+\.\/auth\.json/i,
+  /\b--session-name\b/i,
+  /\bsession\s+saved\b/i,
+  /\balready\s+authenticated\b/i,
+  /\bsession\s+list\b/i,
+  /\bclose\s+--all\b/i,
+  /\bbackground\s+daemon\b/i
+];
+var CONTENT_EXTRACTION_PATTERNS = [
+  /\bextract\s+information\s+from\s+web\s+pages?\b/i,
+  /\bextract(?:ing)?\s+data\b/i,
+  /\bdata\s+extraction\b/i,
+  /\bscrape\s+data\s+from\s+a\s+page\b/i,
+  /\bget\s+html\b/i,
+  /\bget\s+text\b/i,
+  /\bpage\.content\(\)/i,
+  /\bscreenshot\b/i
+];
+var DOCUMENTATION_INGESTION_PATTERNS = [
+  /Use\s+WebFetch\s+to\s+load/i,
+  /web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
+  /fetch\s+specific\s+pages\s+with\s+`?\.md/i,
+  /For\s+more\s+information,\s+see/i,
+  /For\s+full\s+.+\s+details:/i,
+  /For\s+deeper\s+.+\s+familiarity,\s+see/i,
+  /Reference\s+implementation/i,
+  /long-form\s+article\s+publishing\s+\(Markdown\)/i,
+  /Markdown\s+(?:→|->)\s+HTML\s+conversion/i,
+  /See\s+\[references?\//i,
+  /\breferences?\//i,
+  /\bReference\s+Files\b/i
+];
+var LOCAL_INPUT_CONTROL_PATTERNS = [
+  /copy-to-clipboard/i,
+  /paste-from-clipboard/i,
+  /paste\s+keystroke/i,
+  /keys\s+"Enter"/i,
+  /press\s+Enter/i,
+  /keyboard\s+type/i,
+  /inserttext/i,
+  /type\s+"text"/i,
+  /type\s+into\s+focused\s+element/i,
+  /send\s+keyboard\s+keys/i,
+  /click\s+buttons/i,
+  /click\s+the\s+"?\+1"?\s+button/i,
+  /click\s+element/i,
+  /descriptive\s+selectors/i,
+  /execute\s+actions\s+using\s+discovered\s+selectors/i,
+  /\bclick\s+@e\d+/i,
+  /\bclick\s+<index>/i,
+  /\bbrowser-use\s+click\b/i
+];
+var PROMPT_FILE_INGESTION_PATTERNS = [
+  /--promptfiles/i,
+  /saved\s+prompt\s+files/i,
+  /system\.md\s+content\.md/i,
+  /reference\s+images/i
+];
+var AUTOMATION_EVASION_PATTERNS = [
+  /bypass(?:es|ing)?\s+anti-automation/i,
+  /bypass(?:es|ing)?\s+anti-bot/i,
+  /anti-bot\s+detection/i
+];
+var CREDENTIAL_FORM_AUTOMATION_PATTERNS = [
+  /input\s+type="password"/i,
+  /fill\s+@e\d+\s+"password123"/i,
+  /form\s+filling/i,
+  /fill\s+out\s+a\s+form/i,
+  /fill\s+forms?\b/i,
+  /login\s+to\s+a\s+site/i,
+  /test\s+login/i,
+  /login\s+flow/i
+];
+var PACKAGE_BOOTSTRAP_PATTERNS = [
+  /\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+  /\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
+  /\bpackage(?:\*|)\.json\b/i
+];
+var CONTAINER_RUNTIME_CONTROL_PATTERNS = [
+  /\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
+  /\bdocker-compose\s+config\b/i
+];
+var ENVIRONMENT_CONFIGURATION_PATTERNS = [
+  /\bAGENT_BROWSER_ENCRYPTION_KEY\b/i,
+  /\bXDG_CONFIG_HOME\b/i,
+  /\bX_BROWSER_CHROME_PATH\b/i,
+  /\bAGENT_BROWSER_COLOR_SCHEME\b/i
+];
+var PAYMENT_PROCESSING_PATTERNS = [
+  /\bCost:\s*\$\d/i,
+  /\bCharge\s+for\s+premium\s+actions?\b/i,
+  /\bPayments\b/i,
+  /\$0\.\d+/i
+];
+var PROCESS_ORCHESTRATION_PATTERNS = [
+  /\bwith_server\.py\b/i,
+  /\bdocker\s+(?:build|run|exec|stop|info|ps|images|context)\b/i,
+  /\bnode\s+run\.js\s+\/tmp\//i,
+  /script\s+path\s*=\s*`?\{baseDir\}\/scripts\//i,
+  /\$\{BUN_X\}\s+\{baseDir\}\/scripts\//i,
+  /check-paste-permissions\.ts/i,
+  /\bnpm\s+run\s+dev\b/i,
+  /\bpython\s+your_automation\.py\b/i
+];
+var UI_STATE_ACCESS_PATTERNS = [
+  /\bsnapshot\s+-i\b/i,
+  /clickable\s+elements?\s+with\s+indices/i,
+  /element\s+refs?\s+like\s+@e\d+/i,
+  /page\.locator\('button'\)\.all\(\)/i,
+  /discovering\s+buttons,\s+links,\s+and\s+inputs/i,
+  /identify\s+selectors?\s+from\s+(?:rendered\s+state|inspection\s+results)/i
+];
+function tokenizeLower(input) {
+  return input.toLowerCase().split(/[^a-z0-9]+/g).map((t) => t.trim()).filter(Boolean);
+}
+function normalizeCapability(rawKind) {
+  const tokens = tokenizeLower(rawKind);
+  if (tokens.length === 0)
+    return null;
+  const hasAny = (values) => values.some((v) => tokens.includes(v));
+  if (hasAny(["credential", "credentials", "secret", "secrets", "token", "password", "env_access"])) {
+    return "credential_access";
+  }
+  if (hasAny(["credential_handoff", "cookie_bootstrap", "browser_cookie"])) {
+    return "credential_handoff";
+  }
+  if (hasAny(["credential_storage", "vault", "auth_cookies"])) {
+    return "credential_storage";
+  }
+  if (hasAny(["auth_state_management", "auth_state", "cookie_state"])) {
+    return "auth_state_management";
+  }
+  if (hasAny(["configuration_override", "extend_md", "preferences_file"])) {
+    return "configuration_override";
+  }
+  if (hasAny(["credential_form", "password_form", "login_form"])) {
+    return "credential_form_automation";
+  }
+  if (hasAny(["exec", "execute", "shell", "command", "spawn", "process"])) {
+    return "exec";
+  }
+  if (hasAny(["system_modification", "system", "sudo", "admin", "root"])) {
+    return "system_modification";
+  }
+  if (tokens.includes("file_write") || tokens.includes("file") && hasAny(["write", "modify", "delete", "append", "create", "persist", "save", "store"])) {
+    return "file_write";
+  }
+  if (tokens.includes("file_read") || tokens.includes("read") || tokens.includes("file") && hasAny(["read", "open", "load"])) {
+    return "file_read";
+  }
+  if (hasAny(["filesystem_discovery", "path_discovery", "basedir"])) {
+    return "filesystem_discovery";
+  }
+  if (hasAny(["network", "http", "https", "fetch", "url", "webhook", "api"])) {
+    return "network";
+  }
+  if (hasAny(["browser", "playwright", "cdp", "chromium", "chrome", "webapp", "snapshot"])) {
+    return "browser_automation";
+  }
+  if (hasAny(["browser_session_attachment", "cdp_attach", "profile_sync"])) {
+    return "browser_session_attachment";
+  }
+  if (hasAny(["remote_delegation", "remote_task", "cloud_browser", "streamable_http"])) {
+    return "remote_delegation";
+  }
+  if (hasAny(["remote_task_management", "task_status", "async_runner"])) {
+    return "remote_task_management";
+  }
+  if (hasAny(["server_exposure", "mcp_server", "mcp_endpoint"])) {
+    return "server_exposure";
+  }
+  if (hasAny(["local_service_access", "localhost", "loopback", "port_probe"])) {
+    return "local_service_access";
+  }
+  if (hasAny(["session", "session_name", "profile", "state", "cookie_store"])) {
+    return "session_management";
+  }
+  if (hasAny(["extract", "scrape", "screenshot", "html", "text", "dom"])) {
+    return "content_extraction";
+  }
+  if (hasAny(["documentation_ingestion", "webfetch", "remote_docs"])) {
+    return "documentation_ingestion";
+  }
+  if (hasAny(["local_input_control", "clipboard", "paste_keystroke"])) {
+    return "local_input_control";
+  }
+  if (hasAny(["external_tool_bridge", "tool_bridge", "mcp_integration"])) {
+    return "external_tool_bridge";
+  }
+  if (hasAny(["package_bootstrap", "npx", "bunx", "pnpm_dlx"])) {
+    return "package_bootstrap";
+  }
+  if (hasAny(["environment_configuration", "env_var", "encryption_key"])) {
+    return "environment_configuration";
+  }
+  if (hasAny(["payment_processing", "payments", "premium_actions"])) {
+    return "payment_processing";
+  }
+  if (hasAny(["unrestricted_scope", "no_restrictions", "proactive"])) {
+    return "unrestricted_scope";
+  }
+  if (hasAny(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
+    return "process_orchestration";
+  }
+  if (hasAny(["ui_state", "snapshot", "selector", "dom_snapshot"])) {
+    return "ui_state_access";
+  }
+  return null;
+}
+function isInsideInlineCode(content, matchIndex) {
+  let lineStart = content.lastIndexOf("\n", matchIndex - 1) + 1;
+  if (lineStart < 0)
+    lineStart = 0;
+  let lineEnd = content.indexOf("\n", matchIndex);
+  if (lineEnd < 0)
+    lineEnd = content.length;
+  const line = content.slice(lineStart, lineEnd);
+  const rel = matchIndex - lineStart;
+  const open2 = line.lastIndexOf("`", rel);
+  if (open2 < 0)
+    return false;
+  const close = line.indexOf("`", open2 + 1);
+  return close >= rel;
+}
+var KNOWN_INSTALLER_DOMAINS3 = /(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
+function isKnownInstallerInSetupSection(content, matchIndex, matchText) {
+  if (!/\b(?:curl|wget)\b/i.test(matchText))
+    return false;
+  if (!KNOWN_INSTALLER_DOMAINS3.test(matchText))
+    return false;
+  const preceding = content.slice(Math.max(0, matchIndex - 1e3), matchIndex);
+  const headings = preceding.match(/^#{1,4}\s+.+$/gm);
+  if (!headings || headings.length === 0)
+    return false;
+  const lastHeading = headings[headings.length - 1]?.toLowerCase();
+  return /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading ?? "");
+}
+function firstPositiveMatch(content, patterns, _isDefenseSkill, allowCodeBlocks = false) {
+  const ctx = buildContentContext(content);
+  for (const pattern of patterns) {
+    const global = new RegExp(pattern.source, `${pattern.flags.replace("g", "")}g`);
+    let match;
+    while ((match = global.exec(content)) !== null) {
+      if (isPrecededByNegation(content, match.index))
+        continue;
+      if (isInsideCodeBlock(match.index, ctx) && !isInsideInlineCode(content, match.index) && !allowCodeBlocks) {
+        continue;
+      }
+      if (_isDefenseSkill && isInThreatListingContext(content, match.index))
+        continue;
+      if (isInsideSafetySection(match.index, ctx))
+        continue;
+      if (isInsideCodeBlock(match.index, ctx) && isKnownInstallerInSetupSection(content, match.index, match[0])) {
+        continue;
+      }
+      return (match[0] ?? "").trim().slice(0, 180);
+    }
+  }
+  return null;
+}
+function collectDeclaredCapabilities(skill) {
+  const declared = /* @__PURE__ */ new Set();
+  const unknownKinds = /* @__PURE__ */ new Set();
+  const explicitDeclared = /* @__PURE__ */ new Map();
+  for (const p of skill.declaredPermissions) {
+    const mapped = normalizeCapability(p.kind);
+    if (!mapped) {
+      unknownKinds.add(p.kind);
+      continue;
+    }
+    declared.add(mapped);
+    explicitDeclared.set(p.kind, mapped);
+  }
+  for (const perm of skill.permissions) {
+    const mapped = normalizeCapability(perm);
+    if (mapped)
+      declared.add(mapped);
+  }
+  return {
+    declaredCapabilities: declared,
+    unknownDeclaredKinds: [...unknownKinds].sort((a, b) => a.localeCompare(b)),
+    explicitDeclared
+  };
+}
+function inferCapabilities(skill) {
+  const inferred = /* @__PURE__ */ new Map();
+  const isDefenseSkill = isSecurityDefenseSkill(skill);
+  const add = (kind, evidence) => {
+    if (!inferred.has(kind))
+      inferred.set(kind, evidence);
+  };
+  for (const perm of skill.permissions) {
+    const mapped = normalizeCapability(perm);
+    if (mapped)
+      add(mapped, `Permission: ${perm}`);
+  }
+  for (const tool of skill.tools) {
+    const mapped = normalizeCapability(tool);
+    if (mapped)
+      add(mapped, `Tool: ${tool}`);
+  }
+  const credentialMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_PATTERNS, isDefenseSkill);
+  if (credentialMatch)
+    add("credential_access", `Content pattern: ${credentialMatch}`);
+  const credentialHandoffMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_HANDOFF_PATTERNS, isDefenseSkill, true);
+  if (credentialHandoffMatch) {
+    add("credential_handoff", `Content pattern: ${credentialHandoffMatch}`);
+  }
+  const credentialStorageMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_STORAGE_PATTERNS, isDefenseSkill);
+  if (credentialStorageMatch) {
+    add("credential_storage", `Content pattern: ${credentialStorageMatch}`);
+  }
+  const authStateManagementMatch = firstPositiveMatch(skill.rawContent, AUTH_STATE_MANAGEMENT_PATTERNS, isDefenseSkill, true);
+  if (authStateManagementMatch) {
+    add("auth_state_management", `Content pattern: ${authStateManagementMatch}`);
+  }
+  const execMatch = firstPositiveMatch(skill.rawContent, EXEC_PATTERNS, isDefenseSkill, true);
+  if (execMatch)
+    add("exec", `Content pattern: ${execMatch}`);
+  const systemMatch = firstPositiveMatch(skill.rawContent, SYSTEM_MOD_PATTERNS, isDefenseSkill);
+  if (systemMatch)
+    add("system_modification", `Content pattern: ${systemMatch}`);
+  const fileWriteMatch = firstPositiveMatch(skill.rawContent, FILE_WRITE_PATTERNS, isDefenseSkill, true);
+  if (fileWriteMatch)
+    add("file_write", `Content pattern: ${fileWriteMatch}`);
+  const fileReadMatch = firstPositiveMatch(skill.rawContent, FILE_READ_PATTERNS, isDefenseSkill);
+  if (fileReadMatch)
+    add("file_read", `Content pattern: ${fileReadMatch}`);
+  const filesystemDiscoveryMatch = firstPositiveMatch(skill.rawContent, FILESYSTEM_DISCOVERY_PATTERNS, isDefenseSkill);
+  if (filesystemDiscoveryMatch) {
+    add("filesystem_discovery", `Content pattern: ${filesystemDiscoveryMatch}`);
+  }
+  const configurationOverrideMatch = firstPositiveMatch(skill.rawContent, CONFIGURATION_OVERRIDE_PATTERNS, isDefenseSkill, true);
+  if (configurationOverrideMatch) {
+    add("configuration_override", `Content pattern: ${configurationOverrideMatch}`);
+  }
+  const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill, true);
+  if (networkMatch)
+    add("network", `Content pattern: ${networkMatch}`);
+  const browserAutomationMatch = firstPositiveMatch(skill.rawContent, BROWSER_AUTOMATION_PATTERNS, isDefenseSkill);
+  if (browserAutomationMatch) {
+    add("browser_automation", `Content pattern: ${browserAutomationMatch}`);
+  }
+  const browserSessionAttachmentMatch = firstPositiveMatch(skill.rawContent, BROWSER_SESSION_ATTACHMENT_PATTERNS, isDefenseSkill, true);
+  if (browserSessionAttachmentMatch) {
+    add("browser_session_attachment", `Content pattern: ${browserSessionAttachmentMatch}`);
+  }
+  const browserProfileCopyMatch = firstPositiveMatch(skill.rawContent, BROWSER_PROFILE_COPY_PATTERNS, isDefenseSkill, true);
+  if (browserProfileCopyMatch) {
+    add("browser_profile_copy", `Content pattern: ${browserProfileCopyMatch}`);
+  }
+  const sessionManagementMatch = firstPositiveMatch(skill.rawContent, SESSION_MANAGEMENT_PATTERNS, isDefenseSkill);
+  if (sessionManagementMatch) {
+    add("session_management", `Content pattern: ${sessionManagementMatch}`);
+  }
+  const contentExtractionMatch = firstPositiveMatch(skill.rawContent, CONTENT_EXTRACTION_PATTERNS, isDefenseSkill);
+  if (contentExtractionMatch) {
+    add("content_extraction", `Content pattern: ${contentExtractionMatch}`);
+  }
+  const documentationIngestionMatch = firstPositiveMatch(skill.rawContent, DOCUMENTATION_INGESTION_PATTERNS, isDefenseSkill, true);
+  if (documentationIngestionMatch) {
+    add("documentation_ingestion", `Content pattern: ${documentationIngestionMatch}`);
+  }
+  const localInputControlMatch = firstPositiveMatch(skill.rawContent, LOCAL_INPUT_CONTROL_PATTERNS, isDefenseSkill, true);
+  if (localInputControlMatch) {
+    add("local_input_control", `Content pattern: ${localInputControlMatch}`);
+  }
+  const promptFileIngestionMatch = firstPositiveMatch(skill.rawContent, PROMPT_FILE_INGESTION_PATTERNS, isDefenseSkill, true);
+  if (promptFileIngestionMatch) {
+    add("prompt_file_ingestion", `Content pattern: ${promptFileIngestionMatch}`);
+  }
+  const automationEvasionMatch = firstPositiveMatch(skill.rawContent, AUTOMATION_EVASION_PATTERNS, isDefenseSkill, true);
+  if (automationEvasionMatch) {
+    add("automation_evasion", `Content pattern: ${automationEvasionMatch}`);
+  }
+  const externalToolBridgeMatch = firstPositiveMatch(skill.rawContent, EXTERNAL_TOOL_BRIDGE_PATTERNS, isDefenseSkill, true);
+  if (externalToolBridgeMatch) {
+    add("external_tool_bridge", `Content pattern: ${externalToolBridgeMatch}`);
+  }
+  const packageBootstrapMatch = firstPositiveMatch(skill.rawContent, PACKAGE_BOOTSTRAP_PATTERNS, isDefenseSkill, true);
+  if (packageBootstrapMatch) {
+    add("package_bootstrap", `Content pattern: ${packageBootstrapMatch}`);
+  }
+  const cookieUrlHandoffMatch = firstPositiveMatch(skill.rawContent, COOKIE_URL_HANDOFF_PATTERNS, isDefenseSkill, true);
+  if (cookieUrlHandoffMatch) {
+    add("cookie_url_handoff", `Content pattern: ${cookieUrlHandoffMatch}`);
+  }
+  const credentialStorePersistenceMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_STORE_PERSISTENCE_PATTERNS, isDefenseSkill, true);
+  if (credentialStorePersistenceMatch) {
+    add("credential_store_persistence", `Content pattern: ${credentialStorePersistenceMatch}`);
+  }
+  const containerRuntimeControlMatch = firstPositiveMatch(skill.rawContent, CONTAINER_RUNTIME_CONTROL_PATTERNS, isDefenseSkill, true);
+  if (containerRuntimeControlMatch) {
+    add("container_runtime_control", `Content pattern: ${containerRuntimeControlMatch}`);
+  }
+  const environmentConfigurationMatch = firstPositiveMatch(skill.rawContent, ENVIRONMENT_CONFIGURATION_PATTERNS, isDefenseSkill, true);
+  if (environmentConfigurationMatch) {
+    add("environment_configuration", `Content pattern: ${environmentConfigurationMatch}`);
+  }
+  const paymentProcessingMatch = firstPositiveMatch(skill.rawContent, PAYMENT_PROCESSING_PATTERNS, isDefenseSkill);
+  if (paymentProcessingMatch) {
+    add("payment_processing", `Content pattern: ${paymentProcessingMatch}`);
+  }
+  const unrestrictedScopeMatch = firstPositiveMatch(skill.rawContent, UNRESTRICTED_SCOPE_PATTERNS, isDefenseSkill);
+  if (unrestrictedScopeMatch) {
+    add("unrestricted_scope", `Content pattern: ${unrestrictedScopeMatch}`);
+  }
+  const credentialFormAutomationMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_FORM_AUTOMATION_PATTERNS, isDefenseSkill);
+  if (credentialFormAutomationMatch) {
+    add("credential_form_automation", `Content pattern: ${credentialFormAutomationMatch}`);
+  }
+  const remoteDelegationMatch = firstPositiveMatch(skill.rawContent, REMOTE_DELEGATION_PATTERNS, isDefenseSkill);
+  if (remoteDelegationMatch) {
+    add("remote_delegation", `Content pattern: ${remoteDelegationMatch}`);
+  }
+  const remoteTaskManagementMatch = firstPositiveMatch(skill.rawContent, REMOTE_TASK_MANAGEMENT_PATTERNS, isDefenseSkill, true);
+  if (remoteTaskManagementMatch) {
+    add("remote_task_management", `Content pattern: ${remoteTaskManagementMatch}`);
+  }
+  const serverExposureMatch = firstPositiveMatch(skill.rawContent, SERVER_EXPOSURE_PATTERNS, isDefenseSkill, true);
+  if (serverExposureMatch) {
+    add("server_exposure", `Content pattern: ${serverExposureMatch}`);
+  }
+  const localServiceAccessMatch = firstPositiveMatch(skill.rawContent, LOCAL_SERVICE_ACCESS_PATTERNS, isDefenseSkill, true);
+  if (localServiceAccessMatch) {
+    add("local_service_access", `Content pattern: ${localServiceAccessMatch}`);
+  }
+  const processOrchestrationMatch = firstPositiveMatch(skill.rawContent, PROCESS_ORCHESTRATION_PATTERNS, isDefenseSkill);
+  if (processOrchestrationMatch) {
+    add("process_orchestration", `Content pattern: ${processOrchestrationMatch}`);
+  }
+  const uiStateAccessMatch = firstPositiveMatch(skill.rawContent, UI_STATE_ACCESS_PATTERNS, isDefenseSkill);
+  if (uiStateAccessMatch) {
+    add("ui_state_access", `Content pattern: ${uiStateAccessMatch}`);
+  }
+  if (!inferred.has("network") && !isDefenseSkill) {
+    const firstUrl = skill.urls[0];
+    if (firstUrl)
+      add("network", `URL reference: ${firstUrl}`);
+  }
+  return inferred;
+}
+function analyzeCapabilityContract(skill) {
+  const findings = [];
+  const { declaredCapabilities, unknownDeclaredKinds, explicitDeclared } = collectDeclaredCapabilities(skill);
+  const inferred = inferCapabilities(skill);
+  let missingIndex = 1;
+  for (const capability of CAPABILITY_ORDER) {
+    if (!inferred.has(capability))
+      continue;
+    if (declaredCapabilities.has(capability))
+      continue;
+    const evidence = inferred.get(capability) ?? CAPABILITY_LABELS[capability];
+    const sev = effectiveCapabilitySeverity(capability, evidence);
+    findings.push({
+      id: `PERM-CONTRACT-MISSING-${missingIndex}`,
+      category: "permissions",
+      severity: sev.severity,
+      title: `Capability contract mismatch: inferred ${CAPABILITY_LABELS[capability]} is not declared`,
+      description: "The scanner inferred a risky capability from the skill content/metadata, but no matching declaration was found. Add a declaration with a clear justification, or remove the behavior.",
+      evidence,
+      deduction: sev.deduction,
+      recommendation: "Declare this capability explicitly in frontmatter permissions with a specific justification, or remove the risky behavior.",
+      owaspCategory: capability === "credential_access" || capability === "credential_handoff" || capability === "credential_storage" || capability === "auth_state_management" || capability === "credential_form_automation" ? "ASST-05" : capability === "network" ? "ASST-04" : capability === "content_extraction" || capability === "remote_delegation" || capability === "remote_task_management" ? "ASST-02" : "ASST-03"
+    });
+    missingIndex += 1;
+  }
+  for (let i = 0; i < unknownDeclaredKinds.length; i += 1) {
+    const raw = unknownDeclaredKinds[i];
+    findings.push({
+      id: `PERM-CONTRACT-UNKNOWN-${i + 1}`,
+      category: "permissions",
+      severity: "info",
+      title: `Unknown capability declaration kind: ${raw}`,
+      description: "The declaration kind does not map to a known canonical capability. This may be framework-specific, but it weakens contract matching.",
+      evidence: `Declaration kind: ${raw}`,
+      deduction: 0,
+      recommendation: "Use canonical capability names (credential_access, credential_handoff, credential_storage, auth_state_management, credential_form_automation, exec, system_modification, container_runtime_control, file_write, file_read, filesystem_discovery, configuration_override, network, browser_automation, browser_session_attachment, session_management, content_extraction, documentation_ingestion, local_input_control, external_tool_bridge, package_bootstrap, environment_configuration, payment_processing, unrestricted_scope, remote_delegation, remote_task_management, server_exposure, local_service_access, process_orchestration, ui_state_access) or add framework mapping support.",
+      owaspCategory: "ASST-08"
+    });
+  }
+  let unusedIndex = 1;
+  for (const [rawKind, canonical] of explicitDeclared.entries()) {
+    if (inferred.has(canonical))
+      continue;
+    findings.push({
+      id: `PERM-CONTRACT-UNUSED-${unusedIndex}`,
+      category: "permissions",
+      severity: "info",
+      title: `Declared capability not inferred: ${CAPABILITY_LABELS[canonical]}`,
+      description: "The skill declares this capability, but the scanner did not infer supporting behavior. Keep declarations tight to reduce reviewer confusion.",
+      evidence: `Declaration kind: ${rawKind}`,
+      deduction: 0,
+      recommendation: "Remove stale declarations or add clear instructions showing where this capability is used.",
+      owaspCategory: "ASST-08"
+    });
+    unusedIndex += 1;
+  }
+  return findings;
 }
 
 // dist/scanner/analyzers/permissions.js
@@ -1678,6 +4066,10 @@ async function analyzePermissions(skill) {
       owaspCategory: "ASST-08"
     });
   }
+  for (const finding of analyzeCapabilityContract(skill)) {
+    score = Math.max(0, score - finding.deduction);
+    findings.push(finding);
+  }
   const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
   let adjustedScore = 100;
   for (const f of adjustedFindings) {
@@ -1686,7 +4078,7 @@ async function analyzePermissions(skill) {
   const summary = adjustedFindings.length === 0 ? "No permission concerns detected." : `Found ${adjustedFindings.length} permission-related findings. ${adjustedFindings.some((f) => f.severity === "critical") ? "CRITICAL: Dangerous permissions detected." : adjustedFindings.some((f) => f.severity === "high") ? "High-risk permissions detected that may not match the skill's purpose." : "Minor permission concerns."}`;
   return {
     score: Math.max(0, Math.min(100, adjustedScore)),
-    weight: 0.25,
+    weight: 0.2,
     findings: adjustedFindings,
     summary
   };
@@ -2101,17 +4493,17 @@ function parseSkill(content) {
     const bodyMatch = content.match(/^---\s*\n[\s\S]*?\n---\s*\n([\s\S]*)/);
     instructions = bodyMatch?.[1]?.trim() ?? "";
   } else if (format === "claude") {
-    name = sections["Description"] ? "" : Object.keys(sections)[0] ?? "";
-    description = sections["Description"] ?? sections["description"] ?? "";
-    instructions = sections["Instructions"] ?? sections["instructions"] ?? "";
-    const toolsSection = sections["Tools"] ?? sections["tools"] ?? "";
+    name = sections.Description ? "" : Object.keys(sections)[0] ?? "";
+    description = sections.Description ?? sections.description ?? "";
+    instructions = sections.Instructions ?? sections.instructions ?? "";
+    const toolsSection = sections.Tools ?? sections.tools ?? "";
     tools = extractListItems(toolsSection);
-    const permsSection = sections["Permissions"] ?? sections["permissions"] ?? "";
+    const permsSection = sections.Permissions ?? sections.permissions ?? "";
     permissions = extractListItems(permsSection);
   } else {
     const firstHeading = Object.keys(sections)[0];
     name = firstHeading ?? "";
-    description = sections["Description"] ?? sections["About"] ?? Object.values(sections)[0] ?? "";
+    description = sections.Description ?? sections.About ?? Object.values(sections)[0] ?? "";
     instructions = content;
   }
   if (!name) {
@@ -2150,13 +4542,546 @@ var SEVERITY_ORDER = {
   low: 3,
   info: 4
 };
-var CATEGORY_WEIGHTS = {
-  permissions: 0.25,
-  injection: 0.3,
-  dependencies: 0.2,
-  behavioral: 0.15,
-  content: 0.1
+var AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|token|vault|login)/i;
+var CATEGORY_PREFERENCE = {
+  behavioral: 0,
+  injection: 1,
+  dependencies: 2,
+  permissions: 3,
+  content: 4,
+  "code-safety": 5
 };
+var MEDIUM_PLUS = /* @__PURE__ */ new Set(["medium", "high", "critical"]);
+var CATEGORY_WEIGHTS = {
+  permissions: 0.2,
+  injection: 0.25,
+  dependencies: 0.15,
+  behavioral: 0.15,
+  content: 0.1,
+  "code-safety": 0.15
+};
+var CONFIG_TAMPER_PREFIXES = ["BEH-CONFIG-TAMPER-", "CS-CONFIG-TAMPER-"];
+function hasConfigTamperFindings(findings) {
+  return findings.some((f) => CONFIG_TAMPER_PREFIXES.some((prefix) => f.id.startsWith(prefix)));
+}
+function isBrowserAuthOverlapCandidate(finding) {
+  if (finding.severity !== "high" && finding.severity !== "medium")
+    return false;
+  if (finding.title.startsWith("Local file access detected"))
+    return false;
+  return AUTH_PROFILE_RELATED.test(`${finding.title}
+${finding.description}
+${finding.evidence}`);
+}
+function normalizeEvidence(evidence) {
+  return evidence.toLowerCase().replace(/https?:\/\/[^\s)\]]+/g, (url) => url.replace(/([?&][^=]+=)[^&#\s)\]]+/g, "$1<value>")).replace(/"[^"]+"|'[^']+'/g, '"<value>"').replace(/\b\d+\b/g, "#").replace(/<[^>]+>/g, "<value>").replace(/\s+/g, " ").trim();
+}
+function overlapPriority(finding) {
+  let penalty = 0;
+  if (finding.title.startsWith("Capability contract mismatch"))
+    penalty += 20;
+  if (finding.title.startsWith("Many external URLs"))
+    penalty += 12;
+  if (finding.title.startsWith("Unknown external reference"))
+    penalty += 10;
+  if (finding.title.startsWith("External reference"))
+    penalty += 10;
+  return (SEVERITY_ORDER[finding.severity] ?? 4) * 100 + (CATEGORY_PREFERENCE[finding.category] ?? 5) * 10 + penalty - Math.min(finding.deduction, 9);
+}
+function normalizeAuthTitle(title) {
+  return title.toLowerCase().replace(/\s*\(inside code block\)/g, "").replace(/\s*\(merged[^)]*\)/g, "").trim();
+}
+function cleanMergedTitle(title) {
+  return title.replace(/\s*\(inside code block\)/gi, "").replace(/\s*\(merged[^)]*\)/gi, "").trim();
+}
+function authFamilyKey(finding) {
+  const hay = `${finding.title}
+${finding.description}
+${finding.evidence}`.toLowerCase();
+  if (finding.category === "permissions" && finding.title.startsWith("Capability contract mismatch")) {
+    if (/(profile|chrome|cdp|browser session|browser profile|auth state)/i.test(hay)) {
+      return "permissions::browser-profile-auth";
+    }
+    if (/(auth cookie|cookie url|query string|credential handoff)/i.test(hay)) {
+      return "permissions::cookie-handoff";
+    }
+    if (/(credential storage|credential store|auth vault|auth_cookies)/i.test(hay)) {
+      return "permissions::credential-store";
+    }
+    if (/(persistent session|session management|session saved|state save|state load|session-name|background daemon)/i.test(hay)) {
+      return "permissions::session-state";
+    }
+  }
+  if (finding.category === "behavioral") {
+    if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay)/i.test(hay)) {
+      return "behavioral::cookie-handoff-flow";
+    }
+    if (/(browser profile copy|full browser profile sync|browser session attachment|profile-backed session persistence|auth import from user browser|browser auth state handling)/i.test(hay)) {
+      return "behavioral::browser-profile-flow";
+    }
+    if (/(persistent session reuse|session inventory and reuse|state file replay)/i.test(hay)) {
+      return "behavioral::session-reuse-flow";
+    }
+    if (/(credential vault enrollment|federated auth flow|environment secret piping)/i.test(hay)) {
+      return "behavioral::credential-store-flow";
+    }
+  }
+  if (finding.category === "dependencies") {
+    if (/(credential-bearing url parameter|credential query-parameter transport)/i.test(hay)) {
+      return "dependencies::query-auth-transport";
+    }
+    if (/(persistent credential-state store|reusable authenticated browser container)/i.test(hay)) {
+      return "dependencies::session-store";
+    }
+  }
+  return null;
+}
+function mergeFindingGroup(group, reason) {
+  const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
+  const primary = sortedGroup[0];
+  if (!primary)
+    throw new Error("mergeFindingGroup requires a non-empty group");
+  const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => cleanMergedTitle(f.title)))].slice(0, 6);
+  return {
+    ...primary,
+    title: cleanMergedTitle(primary.title),
+    description: `${primary.description}
+
+Merged overlapping signals from the ${reason}:${mergedSignals.length > 0 ? `
+- ${mergedSignals.join("\n- ")}` : ""}`
+  };
+}
+function isAuthPermissionContractFinding(finding) {
+  if (/\binferred\s+(?:browser\s+session\s+attachment|browser\s+profile\s+copy|auth\s+state\s+management|session\s+management)\b/i.test(finding.title)) {
+    return false;
+  }
+  return finding.category === "permissions" && finding.title.startsWith("Capability contract mismatch") && isBrowserAuthOverlapCandidate(finding);
+}
+function mergeAuthPermissionContractFindings(findings) {
+  const contractFindings = findings.filter(isAuthPermissionContractFinding);
+  if (contractFindings.length <= 1)
+    return [...findings];
+  const primary = [...contractFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  if (!primary)
+    return [...findings];
+  const mergedTitles = [...new Set(contractFindings.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
+  const mergedPrimary = {
+    ...primary,
+    title: "Capability contract mismatch: inferred browser auth/session capabilities are not declared",
+    description: `${primary.description}
+
+Merged related auth/profile capability-contract signals:${mergedTitles.length > 0 ? `
+- ${mergedTitles.join("\n- ")}` : ""}`
+  };
+  const output = [];
+  let inserted = false;
+  for (const finding of findings) {
+    if (isAuthPermissionContractFinding(finding)) {
+      if (!inserted && finding === primary) {
+        output.push(mergedPrimary);
+        inserted = true;
+      }
+      continue;
+    }
+    output.push(finding);
+  }
+  return output;
+}
+function isGenericAuthDependencyFinding(finding) {
+  if (finding.category !== "dependencies")
+    return false;
+  return finding.title.startsWith("Many external URLs referenced") || finding.title.startsWith("Unknown external reference") || finding.title.startsWith("Local service URL reference");
+}
+function isSpecificAuthDependencyFinding(finding) {
+  if (finding.category !== "dependencies")
+    return false;
+  return isBrowserAuthOverlapCandidate(finding) && !isGenericAuthDependencyFinding(finding);
+}
+function mergeGenericAuthDependencyFindings(findings) {
+  const generic = findings.filter(isGenericAuthDependencyFinding);
+  const specific = findings.filter(isSpecificAuthDependencyFinding);
+  if (generic.length === 0 || specific.length === 0)
+    return [...findings];
+  const primary = [...specific].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  if (!primary)
+    return [...findings];
+  const mergedGenericTitles = [...new Set(generic.map((f) => cleanMergedTitle(f.title)))];
+  const mergedDescription = `${primary.description}
+
+Merged related generic dependency context:
+- ${mergedGenericTitles.join("\n- ")}`;
+  const mergedPrimary = {
+    ...primary,
+    title: cleanMergedTitle(primary.title),
+    description: mergedDescription
+  };
+  const output = [];
+  let replaced = false;
+  for (const finding of findings) {
+    if (isGenericAuthDependencyFinding(finding))
+      continue;
+    if (!replaced && finding === primary) {
+      output.push(mergedPrimary);
+      replaced = true;
+      continue;
+    }
+    output.push(finding);
+  }
+  return output;
+}
+function mergeAuthPermissionIntoBehavior(findings) {
+  const permissionFindings = findings.filter(isAuthPermissionContractFinding);
+  const behavioralFindings = findings.filter((finding) => finding.category === "behavioral" && isBrowserAuthOverlapCandidate(finding));
+  if (permissionFindings.length === 0 || behavioralFindings.length === 0)
+    return [...findings];
+  const primary = [...behavioralFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  if (!primary)
+    return [...findings];
+  const mergedPermissionTitles = [
+    ...new Set(permissionFindings.map((finding) => cleanMergedTitle(finding.title)))
+  ];
+  const mergedPrimary = {
+    ...primary,
+    title: cleanMergedTitle(primary.title),
+    description: `${primary.description}
+
+Merged auth/session capability-contract context:
+- ${mergedPermissionTitles.join("\n- ")}`
+  };
+  const output = [];
+  let replaced = false;
+  for (const finding of findings) {
+    if (isAuthPermissionContractFinding(finding))
+      continue;
+    if (!replaced && finding === primary) {
+      output.push(mergedPrimary);
+      replaced = true;
+      continue;
+    }
+    output.push(finding);
+  }
+  return output;
+}
+function behavioralDependencyFamily(finding) {
+  const hay = `${cleanMergedTitle(finding.title)}
+${finding.description}
+${finding.evidence}`.toLowerCase();
+  if (/(credential-bearing url parameter|credential query-parameter transport)/i.test(hay)) {
+    return "cookie-handoff";
+  }
+  if (/reusable authenticated browser container/i.test(hay)) {
+    return "browser-container";
+  }
+  if (/persistent credential-state store/i.test(hay)) {
+    return "credential-store";
+  }
+  return null;
+}
+function behavioralAuthFamily(finding) {
+  if (finding.category !== "behavioral")
+    return null;
+  const hay = `${cleanMergedTitle(finding.title)}
+${finding.description}
+${finding.evidence}`.toLowerCase();
+  if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling)/i.test(hay)) {
+    return "cookie-handoff";
+  }
+  if (/(browser profile copy|full browser profile sync|browser session attachment|profile-backed session persistence|auth import from user browser|persistent session reuse|state file replay)/i.test(hay)) {
+    return "browser-container";
+  }
+  if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping|browser auth state handling)/i.test(hay)) {
+    return "credential-store";
+  }
+  return null;
+}
+function mergeSpecificAuthDependenciesIntoBehavior(findings) {
+  const behaviorals = findings.filter((finding) => behavioralAuthFamily(finding) !== null);
+  const specificDependencies = findings.filter((finding) => finding.category === "dependencies" && behavioralDependencyFamily(finding) !== null);
+  if (behaviorals.length === 0 || specificDependencies.length === 0)
+    return [...findings];
+  const consumed = /* @__PURE__ */ new Set();
+  const replacements = /* @__PURE__ */ new Map();
+  for (const dependency of specificDependencies) {
+    const family = behavioralDependencyFamily(dependency);
+    if (!family)
+      continue;
+    const target = [...behaviorals].filter((finding) => behavioralAuthFamily(finding) === family).sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+    if (!target)
+      continue;
+    consumed.add(dependency);
+    const existing = replacements.get(target) ?? target;
+    replacements.set(target, {
+      ...existing,
+      title: cleanMergedTitle(existing.title),
+      description: `${existing.description}
+
+Merged related dependency context:
+- ${cleanMergedTitle(dependency.title)}`
+    });
+  }
+  const output = [];
+  for (const finding of findings) {
+    if (consumed.has(finding))
+      continue;
+    const replacement = replacements.get(finding);
+    output.push(replacement ?? finding);
+  }
+  return output;
+}
+function broadBehavioralAuthFamily(finding) {
+  if (finding.category !== "behavioral")
+    return null;
+  const hay = `${cleanMergedTitle(finding.title)}
+${finding.description}
+${finding.evidence}`.toLowerCase();
+  if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling|authentication integration surface)/i.test(hay)) {
+    return "behavioral::cookie-browser-auth";
+  }
+  if (/credential store persistence/i.test(hay) && /(auth_cookies|cookie)/i.test(hay)) {
+    return "behavioral::cookie-browser-auth";
+  }
+  if (/(browser profile copy|browser session attachment|profile-backed session persistence|persistent session reuse|auth import from user browser|state file replay)/i.test(hay)) {
+    return "behavioral::browser-container";
+  }
+  if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping)/i.test(hay)) {
+    return "behavioral::credential-store";
+  }
+  return null;
+}
+function mergeBroadBehavioralAuthFamilies(findings) {
+  const passThrough = [];
+  const groups = /* @__PURE__ */ new Map();
+  for (const finding of findings) {
+    const family = broadBehavioralAuthFamily(finding);
+    if (!family) {
+      passThrough.push(finding);
+      continue;
+    }
+    const group = groups.get(family);
+    if (group) {
+      group.push(finding);
+    } else {
+      groups.set(family, [finding]);
+    }
+  }
+  const merged = [...passThrough];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      const only = group[0];
+      if (only)
+        merged.push(only);
+      continue;
+    }
+    merged.push(mergeFindingGroup(group, "same auth risk family"));
+  }
+  return merged;
+}
+function mergeHighBehavioralAuthSummary(findings) {
+  const authBehaviorals = findings.filter((finding) => finding.category === "behavioral" && finding.severity === "high" && isBrowserAuthOverlapCandidate(finding));
+  if (authBehaviorals.length <= 1)
+    return [...findings];
+  const primary = [...authBehaviorals].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  if (!primary)
+    return [...findings];
+  const mergedTitles = [...new Set(authBehaviorals.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
+  const mergedPrimary = {
+    ...primary,
+    title: cleanMergedTitle(primary.title),
+    description: `${primary.description}
+
+Merged additional behavioral auth/profile signals:
+- ${mergedTitles.join("\n- ")}`
+  };
+  const output = [];
+  let inserted = false;
+  for (const finding of findings) {
+    if (authBehaviorals.includes(finding)) {
+      if (!inserted && finding === primary) {
+        output.push(mergedPrimary);
+        inserted = true;
+      }
+      continue;
+    }
+    output.push(finding);
+  }
+  return output;
+}
+function compactMergedDescription(description) {
+  const match = description.match(/^([\s\S]*?)(?:\n\nMerged [\s\S]*)?$/);
+  const baseDescription = (match?.[1] ?? description).trimEnd();
+  const sectionRegex = /\n\n(Merged [^:\n]+):\n((?:- .*\n?)*)/g;
+  const mergedItems = [];
+  let sectionMatch;
+  while ((sectionMatch = sectionRegex.exec(description)) !== null) {
+    const heading = sectionMatch[1] ?? "Merged auth/profile context";
+    const bullets = (sectionMatch[2] ?? "").split("\n").map((line) => line.trim()).filter((line) => line.startsWith("- ")).map((line) => line.slice(2).trim()).filter(Boolean);
+    for (const bullet of bullets) {
+      mergedItems.push(`${heading.replace(/^Merged\s+/i, "")} \u2014 ${bullet}`);
+    }
+  }
+  const uniqueItems = [...new Set(mergedItems)];
+  if (uniqueItems.length === 0)
+    return description;
+  return `${baseDescription}
+
+Related auth/profile context:
+- ${uniqueItems.join("\n- ")}`;
+}
+function compactMergedDescriptions(findings) {
+  return findings.map((finding) => {
+    if (!finding.description.includes("\n\nMerged "))
+      return finding;
+    return {
+      ...finding,
+      description: compactMergedDescription(finding.description)
+    };
+  });
+}
+var TARGET_RENDERED_DUPLICATE_KEYS = /* @__PURE__ */ new Set([
+  "behavioral::browser content extraction detected",
+  "behavioral::ui state enumeration detected",
+  "behavioral::skill path discovery detected",
+  "behavioral::external instruction override file detected",
+  "behavioral::server lifecycle orchestration detected",
+  "behavioral::remote documentation ingestion detected",
+  "behavioral::host environment reconnaissance detected",
+  "behavioral::external tool bridge detected",
+  "behavioral::remote transport exposure detected",
+  "behavioral::unrestricted scope detected",
+  // Added in dedup pass 2
+  "behavioral::remote browser delegation detected",
+  "behavioral::remote task delegation detected",
+  "behavioral::secret parameter handling detected",
+  "behavioral::compound browser action chaining detected",
+  "behavioral::credential form automation detected",
+  "behavioral::opaque helper script execution detected",
+  "behavioral::os input automation detected",
+  "behavioral::external ai provider delegation detected",
+  "behavioral::prompt file ingestion detected",
+  "behavioral::temporary script execution detected",
+  "behavioral::dev server auto-detection detected",
+  "behavioral::container runtime control detected",
+  "behavioral::local service access detected",
+  "behavioral::package bootstrap execution detected",
+  "dependencies::unknown external reference",
+  "dependencies::local service url reference",
+  "dependencies::raw content url reference"
+]);
+function mergeSelectedRenderedDuplicates(findings) {
+  const passThrough = [];
+  const groups = /* @__PURE__ */ new Map();
+  for (const finding of findings) {
+    if (!MEDIUM_PLUS.has(finding.severity)) {
+      passThrough.push(finding);
+      continue;
+    }
+    const key = `${finding.category}::${normalizeAuthTitle(finding.title)}`;
+    if (!TARGET_RENDERED_DUPLICATE_KEYS.has(key)) {
+      passThrough.push(finding);
+      continue;
+    }
+    const group = groups.get(key);
+    if (group) {
+      group.push(finding);
+    } else {
+      groups.set(key, [finding]);
+    }
+  }
+  const merged = [...passThrough];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      const only = group[0];
+      if (only)
+        merged.push(only);
+      continue;
+    }
+    merged.push(mergeFindingGroup(group, "repeated finding family"));
+  }
+  return merged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+}
+function mergeOverlappingBrowserAuthFindings(findings) {
+  const passthrough = [];
+  const overlapGroups = /* @__PURE__ */ new Map();
+  for (const finding of findings) {
+    if (!isBrowserAuthOverlapCandidate(finding)) {
+      passthrough.push(finding);
+      continue;
+    }
+    const key = normalizeEvidence(finding.evidence);
+    const group = overlapGroups.get(key);
+    if (group) {
+      group.push(finding);
+    } else {
+      overlapGroups.set(key, [finding]);
+    }
+  }
+  const stageOne = [...passthrough];
+  for (const group of overlapGroups.values()) {
+    if (group.length === 1) {
+      const only = group[0];
+      if (only)
+        stageOne.push(only);
+      continue;
+    }
+    stageOne.push(mergeFindingGroup(group, "same local context"));
+  }
+  const finalPassThrough = [];
+  const familyGroups = /* @__PURE__ */ new Map();
+  for (const finding of stageOne) {
+    if (!isBrowserAuthOverlapCandidate(finding)) {
+      finalPassThrough.push(finding);
+      continue;
+    }
+    const familyKey = `${finding.category}::${normalizeAuthTitle(finding.title)}`;
+    const group = familyGroups.get(familyKey);
+    if (group) {
+      group.push(finding);
+    } else {
+      familyGroups.set(familyKey, [finding]);
+    }
+  }
+  const stageTwo = [...finalPassThrough];
+  for (const group of familyGroups.values()) {
+    if (group.length === 1) {
+      const only = group[0];
+      if (only)
+        stageTwo.push(only);
+      continue;
+    }
+    stageTwo.push(mergeFindingGroup(group, "repeated finding family"));
+  }
+  const finalMerged = [];
+  const familyPassThrough = [];
+  const authFamilies = /* @__PURE__ */ new Map();
+  for (const finding of stageTwo) {
+    if (!isBrowserAuthOverlapCandidate(finding)) {
+      familyPassThrough.push(finding);
+      continue;
+    }
+    const familyKey = authFamilyKey(finding);
+    if (!familyKey) {
+      familyPassThrough.push(finding);
+      continue;
+    }
+    const group = authFamilies.get(familyKey);
+    if (group) {
+      group.push(finding);
+    } else {
+      authFamilies.set(familyKey, [finding]);
+    }
+  }
+  finalMerged.push(...familyPassThrough);
+  for (const group of authFamilies.values()) {
+    if (group.length === 1) {
+      const only = group[0];
+      if (only)
+        finalMerged.push(only);
+      continue;
+    }
+    finalMerged.push(mergeFindingGroup(group, "same auth risk family"));
+  }
+  return finalMerged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+}
 function determineBadge(score, findings) {
   const hasCritical = findings.some((f) => f.severity === "critical");
   const highCount = findings.filter((f) => f.severity === "high").length;
@@ -2165,6 +5090,8 @@ function determineBadge(score, findings) {
   if (score < 50)
     return "rejected";
   if (score < 75)
+    return "suspicious";
+  if (hasConfigTamperFindings(findings))
     return "suspicious";
   if (score < 90 && highCount <= 2)
     return "conditional";
@@ -2177,19 +5104,38 @@ function determineBadge(score, findings) {
   return "certified";
 }
 function aggregateScores(categories, metadata) {
+  const preScanFindings = Object.values(categories).flatMap((cat) => cat.findings);
+  const hasCriticals = preScanFindings.some((f) => f.severity === "critical");
   let overall = 0;
-  for (const [category, score] of Object.entries(categories)) {
+  for (const [category, catScore] of Object.entries(categories)) {
     const weight = CATEGORY_WEIGHTS[category] ?? 0;
-    overall += score.score * weight;
+    const catCriticals = catScore.findings.some((f) => f.severity === "critical");
+    const effectiveScore = !hasCriticals && !catCriticals ? Math.max(catScore.score, 30) : catScore.score;
+    overall += effectiveScore * weight;
   }
+  const allCategoryFindings = Object.values(categories).flatMap((cat) => cat.findings);
+  const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
+  const highFindings = allCategoryFindings.filter((f) => f.severity === "high");
+  const threatCategories = /* @__PURE__ */ new Set(["injection"]);
+  const threatHighCount = highFindings.filter((f) => threatCategories.has(f.category) || f.title.includes("Concealment")).length;
+  const severityPenalty = Math.min(criticalCount * 8 + threatHighCount * 3, 50);
+  const categoryScores = Object.values(categories).map((c) => c.score);
+  const minCategoryScore = Math.min(...categoryScores);
+  const dragThreshold = criticalCount > 0 ? 60 : 0;
+  if (minCategoryScore < dragThreshold) {
+    const worstCategoryDrag = Math.round((dragThreshold - minCategoryScore) / 2);
+    overall -= worstCategoryDrag;
+  }
+  overall -= severityPenalty;
   overall = Math.round(Math.max(0, Math.min(100, overall)));
   const allFindings = Object.values(categories).flatMap((cat) => [...cat.findings]).sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
   const badge = determineBadge(overall, allFindings);
+  const reportFindings = mergeSelectedRenderedDuplicates(compactMergedDescriptions(mergeHighBehavioralAuthSummary(mergeBroadBehavioralAuthFamilies(mergeAuthPermissionIntoBehavior(mergeSpecificAuthDependenciesIntoBehavior(mergeGenericAuthDependencyFindings(mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)))))))));
   return {
     overall,
     badge,
     categories,
-    findings: allFindings,
+    findings: reportFindings,
     metadata
   };
 }
@@ -2678,7 +5624,7 @@ var ASST_CATEGORIES = {
   "ASST-10": "Obfuscation",
   "ASST-11": "Trigger Manipulation"
 };
-var SCANNER_VERSION = "0.4.0";
+var SCANNER_VERSION = "0.7.1";
 
 // dist/scanner/source.js
 var DEFAULT_HEADERS = {
@@ -2933,7 +5879,7 @@ function isBlockedIpv6(ipRaw) {
     return true;
   if (bytes.length !== 16)
     return true;
-  const b = (idx) => bytes[idx];
+  const b = (idx) => bytes[idx] ?? 0;
   if (isAllZero(bytes, 0, 16))
     return true;
   if (isAllZero(bytes, 0, 15) && b(15) === 1)
@@ -3283,12 +6229,13 @@ Domain reputation: trusted (confidence ${meta.confidence.toFixed(2)}). ${meta.ra
 async function scanSkill(content, options) {
   const startTime = Date.now();
   const skill = parseSkill(content);
-  const [permissions, injection, dependencies, behavioral, contentResult] = await Promise.all([
-    analyzePermissions(skill).catch((e) => fallbackScore("permissions", 0.25, e)),
-    analyzeInjection(skill).catch((e) => fallbackScore("injection", 0.3, e)),
-    analyzeDependencies(skill).catch((e) => fallbackScore("dependencies", 0.2, e)),
+  const [permissions, injection, dependencies, behavioral, contentResult, codeSafety] = await Promise.all([
+    analyzePermissions(skill).catch((e) => fallbackScore("permissions", 0.2, e)),
+    analyzeInjection(skill).catch((e) => fallbackScore("injection", 0.25, e)),
+    analyzeDependencies(skill).catch((e) => fallbackScore("dependencies", 0.15, e)),
     analyzeBehavioral(skill).catch((e) => fallbackScore("behavioral", 0.15, e)),
-    analyzeContent(skill).catch((e) => fallbackScore("content", 0.1, e))
+    analyzeContent(skill).catch((e) => fallbackScore("content", 0.1, e)),
+    analyzeCodeSafety(skill).catch((e) => fallbackScore("code-safety", 0.15, e))
   ]);
   const semanticOpts = resolveSemanticOptions(options);
   let semanticResult = null;
@@ -3324,7 +6271,8 @@ async function scanSkill(content, options) {
     injection: mergedInjection,
     dependencies: mergedDependencies,
     behavioral,
-    content: contentResult
+    content: contentResult,
+    "code-safety": codeSafety
   };
   return aggregateScores(categories, metadata);
 }
