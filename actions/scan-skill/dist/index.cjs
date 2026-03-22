@@ -7,6 +7,58 @@ var import_node_fs = require("node:fs");
 var import_promises4 = require("node:fs/promises");
 var import_node_path3 = require("node:path");
 
+// dist/scanner/setup-context.js
+var SETUP_HEADING_REGEX = /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/i;
+var SETUP_YAML_HINT_REGEX = /\b(?:install|command|compatibility|setup)\s*:/i;
+function getPrecedingWindow(content, matchIndex) {
+  return content.slice(Math.max(0, matchIndex - 1e3), matchIndex);
+}
+function hasSetupHeadingContext(content, matchIndex) {
+  const preceding = getPrecedingWindow(content, matchIndex);
+  const headings = preceding.match(/^#{1,4}\s+.+$/gm);
+  if (!headings || headings.length === 0)
+    return false;
+  const lastHeading = headings[headings.length - 1].toLowerCase();
+  return SETUP_HEADING_REGEX.test(lastHeading);
+}
+function hasSetupHeadingOrYamlContext(content, matchIndex) {
+  if (hasSetupHeadingContext(content, matchIndex))
+    return true;
+  const preceding = getPrecedingWindow(content, matchIndex);
+  const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
+  return SETUP_YAML_HINT_REGEX.test(nearbyLines);
+}
+
+// dist/scanner/url-risk.js
+var KNOWN_INSTALLER_DOMAIN_PATTERNS = [
+  /deno\.land/i,
+  /bun\.sh/i,
+  /rustup\.rs/i,
+  /get\.docker\.com/i,
+  /install\.python-poetry\.org/i,
+  /raw\.githubusercontent\.com\/nvm-sh/i,
+  /raw\.githubusercontent\.com\/Homebrew/i,
+  /raw\.githubusercontent\.com\/golangci/i,
+  /foundry\.paradigm\.xyz/i,
+  /tailscale\.com(?:\/install)?/i,
+  /opencode\.ai(?:\/install)?/i,
+  /sh\.rustup\.rs/i,
+  /get\.pnpm\.io/i,
+  /volta\.sh/i
+];
+function isKnownInstallerTarget(text) {
+  return KNOWN_INSTALLER_DOMAIN_PATTERNS.some((pattern) => pattern.test(text));
+}
+var HIGH_ABUSE_TLD_PATTERN = "(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)";
+var HIGH_ABUSE_TLD_HOST_REGEX = new RegExp(`\\.${HIGH_ABUSE_TLD_PATTERN}$`, "i");
+var HIGH_ABUSE_TLD_IN_TEXT_REGEX = new RegExp(`\\.${HIGH_ABUSE_TLD_PATTERN}(?:\\/|\\b)`, "i");
+function hasHighAbuseTldHost(hostname) {
+  return HIGH_ABUSE_TLD_HOST_REGEX.test(hostname);
+}
+function hasHighAbuseTldInText(text) {
+  return HIGH_ABUSE_TLD_IN_TEXT_REGEX.test(text);
+}
+
 // dist/scanner/analyzers/context.js
 function buildContentContext(content) {
   const codeBlocks = [];
@@ -287,7 +339,7 @@ Declared permission: ${match.kind} \u2014 ${match.justification}`
   });
 }
 
-// dist/scanner/analyzers/behavioral.js
+// dist/scanner/analyzers/behavioral-config.js
 var BEHAVIORAL_PATTERNS = [
   {
     name: "Unrestricted scope",
@@ -998,6 +1050,12 @@ var BEHAVIORAL_PATTERNS = [
     recommendation: "Financial actions should always require explicit user confirmation and should be clearly documented."
   }
 ];
+var PREREQUISITE_TRAP_PATTERNS = [
+  /curl\s+.*\|\s*(?:sh|bash|zsh)/i,
+  /curl\s+.*-[oO]\s+.*&&\s*(?:chmod|\.\/)/i
+];
+
+// dist/scanner/analyzers/behavioral.js
 function downgradeSeverity(severity) {
   if (severity === "high")
     return "medium";
@@ -1041,12 +1099,7 @@ async function analyzeBehavioral(skill) {
       }
     }
   }
-  const KNOWN_INSTALLERS = /(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
-  const prerequisiteTrapPatterns = [
-    /curl\s+.*\|\s*(?:sh|bash|zsh)/i,
-    /curl\s+.*-[oO]\s+.*&&\s*(?:chmod|\.\/)/i
-  ];
-  for (const trapRegex of prerequisiteTrapPatterns) {
+  for (const trapRegex of PREREQUISITE_TRAP_PATTERNS) {
     const globalTrap = new RegExp(trapRegex.source, `${trapRegex.flags.replace("g", "")}g`);
     let trapMatch;
     while ((trapMatch = globalTrap.exec(content)) !== null) {
@@ -1068,17 +1121,11 @@ async function analyzeBehavioral(skill) {
         });
         break;
       }
-      const isKnownInstaller = KNOWN_INSTALLERS.test(trapMatch[0]);
+      const isKnownInstaller = isKnownInstallerTarget(trapMatch[0]);
       const hasRawIp = /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(trapMatch[0]);
       const usesHttps = /https:\/\//.test(trapMatch[0]);
       const hasKnownTld = /\.(com|org|io|dev|sh|rs|land|cloud|app|ai|so|net|co)\//.test(trapMatch[0]);
-      const preceding = content.slice(Math.max(0, trapMatch.index - 1e3), trapMatch.index);
-      const headings = preceding.match(/^#{1,4}\s+.+$/gm);
-      const lastHeading = headings?.[headings.length - 1]?.toLowerCase() ?? "";
-      const isInSetupHeading = /\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading);
-      const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
-      const isInYamlInstall = /\b(?:install|command|compatibility|setup)\s*:/i.test(nearbyLines);
-      const isInSetupSection = !hasRawIp && usesHttps && hasKnownTld && (isInSetupHeading || isInYamlInstall);
+      const isInSetupSection = !hasRawIp && usesHttps && hasKnownTld && hasSetupHeadingOrYamlContext(content, trapMatch.index);
       if (isKnownInstaller || isInSetupSection) {
         findings.push({
           id: `BEH-PREREQ-TRAP-${findings.length + 1}`,
@@ -1094,7 +1141,7 @@ async function analyzeBehavioral(skill) {
         });
       } else {
         const lineNumber = content.slice(0, trapMatch.index).split("\n").length;
-        const isSuspiciousUrl = hasRawIp || !usesHttps || !hasKnownTld;
+        const isSuspiciousUrl = hasRawIp || !usesHttps || !hasKnownTld || hasHighAbuseTldInText(trapMatch[0]);
         const effectiveMultiplier = isSuspiciousUrl ? Math.max(severityMultiplier, 1) : severityMultiplier;
         const effectiveDeduction = Math.round(25 * effectiveMultiplier);
         score = Math.max(0, score - effectiveDeduction);
@@ -1326,7 +1373,6 @@ function isScannableLanguage(lang) {
 function truncateEvidence(evidence, maxLen = 120) {
   return evidence.length <= maxLen ? evidence : `${evidence.slice(0, maxLen)}\u2026`;
 }
-var KNOWN_INSTALLER_DOMAINS = /(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
 function scanCodeBlock(block, isDefenseSkill) {
   const findings = [];
   const source = block.content;
@@ -1347,8 +1393,8 @@ function scanCodeBlock(block, isDefenseSkill) {
         if (STANDARD_PORTS.has(port))
           continue;
       }
-      const isKnownInstaller = rule.id === "CS-CURL-PIPE-1" && KNOWN_INSTALLER_DOMAINS.test(line);
-      const isSuspiciousTarget = rule.id === "CS-CURL-PIPE-1" && (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(line) || /http:\/\//.test(line) && !/https:\/\//.test(line) || /\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)\//i.test(line));
+      const isKnownInstaller = rule.id === "CS-CURL-PIPE-1" && isKnownInstallerTarget(line);
+      const isSuspiciousTarget = rule.id === "CS-CURL-PIPE-1" && (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(line) || /http:\/\//.test(line) && !/https:\/\//.test(line) || hasHighAbuseTldInText(line));
       const isReducedContext = (block.isExample || isKnownInstaller) && !isSuspiciousTarget;
       if (isDefenseSkill && block.isExample)
         continue;
@@ -1971,22 +2017,6 @@ var DOWNLOAD_EXECUTE_PATTERNS = [
   /import\s+.*?from\s+['"]https?:\/\//i,
   /require\s*\(\s*['"]https?:\/\//i
 ];
-var KNOWN_INSTALLER_DOMAINS2 = [
-  /deno\.land/i,
-  /bun\.sh/i,
-  /rustup\.rs/i,
-  /get\.docker\.com/i,
-  /install\.python-poetry\.org/i,
-  /raw\.githubusercontent\.com\/nvm-sh/i,
-  /raw\.githubusercontent\.com\/Homebrew/i,
-  /raw\.githubusercontent\.com\/golangci/i,
-  /foundry\.paradigm\.xyz/i,
-  /tailscale\.com\/install/i,
-  /opencode\.ai\/install/i,
-  /sh\.rustup\.rs/i,
-  /get\.pnpm\.io/i,
-  /volta\.sh/i
-];
 var LIFECYCLE_SCRIPTS = /* @__PURE__ */ new Set([
   "preinstall",
   "install",
@@ -2155,29 +2185,15 @@ function isExampleDocumentationContext(content, offset) {
   return /\b(?:examples?|demo|output|sample|tutorial|documentation|docs)\b/i.test(lastHeading);
 }
 function isLegitimateInstaller(content, matchIndex, matchText) {
-  for (const domain of KNOWN_INSTALLER_DOMAINS2) {
-    if (domain.test(matchText))
-      return true;
-  }
+  if (isKnownInstallerTarget(matchText))
+    return true;
   if (/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(matchText))
     return false;
   const usesHttps = /https:\/\//.test(matchText);
   const hasKnownTld = /\.(com|org|io|dev|sh|rs|land|cloud|app|ai|so|net|co)\//.test(matchText);
   if (!usesHttps || !hasKnownTld)
     return false;
-  const preceding = content.slice(Math.max(0, matchIndex - 1e3), matchIndex);
-  const headings = preceding.match(/^#{1,4}\s+.+$/gm);
-  if (headings && headings.length > 0) {
-    const lastHeading = headings[headings.length - 1].toLowerCase();
-    if (/\b(?:prerequisit|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading)) {
-      return true;
-    }
-  }
-  const nearbyLines = preceding.split("\n").slice(-10).join("\n").toLowerCase();
-  if (/\b(?:install|command|compatibility|setup)\s*:/i.test(nearbyLines)) {
-    return true;
-  }
-  return false;
+  return hasSetupHeadingOrYamlContext(content, matchIndex);
 }
 function getHostname(url) {
   try {
@@ -2213,7 +2229,7 @@ function classifyUrl(url) {
       return { risk: "raw", deduction: 10 };
     }
   }
-  if (/\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu|cam|sbs)$/i.test(hostname)) {
+  if (hasHighAbuseTldHost(hostname)) {
     return { risk: "unknown", deduction: 10 };
   }
   return { risk: "unknown", deduction: 5 };
@@ -2572,7 +2588,7 @@ var INJECTION_PATTERNS = [
       /\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
       /\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
       /\b(?:concatenate|combine|collect|gather)\b.{0,60}\b(?:send|post|transmit|upload|forward)\s+(?:to|it\s+to)\s+https?:\/\//i,
-      /\b(?:send|transmit|upload|forward)\s+(?:them\s+)?(?:to|it\s+to)\s+https?:\/\/\S+\.(?:xyz|top|buzz|click|evil|collect|exfil)/i
+      new RegExp(`\\b(?:send|transmit|upload|forward)\\s+(?:them\\s+)?(?:to|it\\s+to)\\s+https?:\\/\\/\\S+\\.(?:${HIGH_ABUSE_TLD_PATTERN}|evil|collect|exfil)`, "i")
     ],
     severity: "critical",
     deduction: 40,
@@ -2607,7 +2623,7 @@ var INJECTION_PATTERNS = [
     name: "Suspicious download-and-execute",
     patterns: [
       /\b(?:curl|wget)\b[^\n]*(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
-      /\b(?:curl|wget)\b[^\n]*https?:\/\/[^\s]+\.(?:xyz|top|buzz|click|loan|gq|ml|cf|tk|pw|cc|icu)\b[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i
+      new RegExp(`\\b(?:curl|wget)\\b[^\\n]*https?:\\/\\/[^\\s]+\\.${HIGH_ABUSE_TLD_PATTERN}\\b[^\\n]*\\|\\s*(?:bash|sh|zsh|python)\\b`, "i")
     ],
     severity: "critical",
     deduction: 35,
@@ -2993,7 +3009,7 @@ async function analyzeInjection(skill) {
   };
 }
 
-// dist/scanner/analyzers/capability-contract.js
+// dist/scanner/analyzers/capability-contract-config.js
 var CAPABILITY_ORDER = [
   "credential_access",
   "credential_handoff",
@@ -3407,6 +3423,8 @@ var UI_STATE_ACCESS_PATTERNS = [
   /discovering\s+buttons,\s+links,\s+and\s+inputs/i,
   /identify\s+selectors?\s+from\s+(?:rendered\s+state|inspection\s+results)/i
 ];
+
+// dist/scanner/analyzers/capability-contract.js
 function tokenizeLower(input) {
   return input.toLowerCase().split(/[^a-z0-9]+/g).map((t) => t.trim()).filter(Boolean);
 }
@@ -3519,18 +3537,12 @@ function isInsideInlineCode(content, matchIndex) {
   const close = line.indexOf("`", open2 + 1);
   return close >= rel;
 }
-var KNOWN_INSTALLER_DOMAINS3 = /(?:deno\.land|bun\.sh|rustup\.rs|get\.docker\.com|install\.python-poetry\.org|nvm-sh|golangci|foundry\.paradigm\.xyz|tailscale\.com|opencode\.ai|sh\.rustup\.rs|get\.pnpm\.io|volta\.sh)/i;
 function isKnownInstallerInSetupSection(content, matchIndex, matchText) {
   if (!/\b(?:curl|wget)\b/i.test(matchText))
     return false;
-  if (!KNOWN_INSTALLER_DOMAINS3.test(matchText))
+  if (!isKnownInstallerTarget(matchText))
     return false;
-  const preceding = content.slice(Math.max(0, matchIndex - 1e3), matchIndex);
-  const headings = preceding.match(/^#{1,4}\s+.+$/gm);
-  if (!headings || headings.length === 0)
-    return false;
-  const lastHeading = headings[headings.length - 1].toLowerCase();
-  return /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/.test(lastHeading);
+  return hasSetupHeadingContext(content, matchIndex);
 }
 function firstPositiveMatch(content, patterns, _isDefenseSkill, allowCodeBlocks = false) {
   const ctx = buildContentContext(content);
@@ -4410,14 +4422,7 @@ function parseSkill(content) {
   };
 }
 
-// dist/scanner/scoring.js
-var SEVERITY_ORDER = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-  info: 4
-};
+// dist/scanner/report-shaping-keys.js
 var AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|token|vault|login)/i;
 var CATEGORY_PREFERENCE = {
   behavioral: 0,
@@ -4427,19 +4432,34 @@ var CATEGORY_PREFERENCE = {
   content: 4,
   "code-safety": 5
 };
-var MEDIUM_PLUS = /* @__PURE__ */ new Set(["medium", "high", "critical"]);
-var CATEGORY_WEIGHTS = {
-  permissions: 0.2,
-  injection: 0.25,
-  dependencies: 0.15,
-  behavioral: 0.15,
-  content: 0.1,
-  "code-safety": 0.15
-};
-var CONFIG_TAMPER_PREFIXES = ["BEH-CONFIG-TAMPER-", "CS-CONFIG-TAMPER-"];
-function hasConfigTamperFindings(findings) {
-  return findings.some((f) => CONFIG_TAMPER_PREFIXES.some((prefix) => f.id.startsWith(prefix)));
-}
+var TARGET_RENDERED_DUPLICATE_KEYS = /* @__PURE__ */ new Set([
+  "behavioral::browser content extraction detected",
+  "behavioral::ui state enumeration detected",
+  "behavioral::skill path discovery detected",
+  "behavioral::external instruction override file detected",
+  "behavioral::server lifecycle orchestration detected",
+  "behavioral::remote documentation ingestion detected",
+  "behavioral::host environment reconnaissance detected",
+  "behavioral::external tool bridge detected",
+  "behavioral::remote transport exposure detected",
+  "behavioral::unrestricted scope detected",
+  "behavioral::remote browser delegation detected",
+  "behavioral::remote task delegation detected",
+  "behavioral::secret parameter handling detected",
+  "behavioral::compound browser action chaining detected",
+  "behavioral::credential form automation detected",
+  "behavioral::opaque helper script execution detected",
+  "behavioral::os input automation detected",
+  "behavioral::external ai provider delegation detected",
+  "behavioral::temporary script execution detected",
+  "behavioral::dev server auto-detection detected",
+  "behavioral::container runtime control detected",
+  "behavioral::local service access detected",
+  "behavioral::package bootstrap execution detected",
+  "dependencies::unknown external reference",
+  "dependencies::local service url reference",
+  "dependencies::raw content url reference"
+]);
 function isBrowserAuthOverlapCandidate(finding) {
   if (finding.severity !== "high" && finding.severity !== "medium")
     return false;
@@ -4450,7 +4470,7 @@ ${finding.evidence}`);
 function normalizeEvidence(evidence) {
   return evidence.toLowerCase().replace(/https?:\/\/[^\s)\]]+/g, (url) => url.replace(/([?&][^=]+=)[^&#\s)\]]+/g, "$1<value>")).replace(/"[^"]+"|'[^']+'/g, '"<value>"').replace(/\b\d+\b/g, "#").replace(/<[^>]+>/g, "<value>").replace(/\s+/g, " ").trim();
 }
-function overlapPriority(finding) {
+function overlapPriority(finding, severityOrder) {
   let penalty = 0;
   if (finding.title.startsWith("Capability contract mismatch"))
     penalty += 20;
@@ -4460,7 +4480,7 @@ function overlapPriority(finding) {
     penalty += 10;
   if (finding.title.startsWith("External reference"))
     penalty += 10;
-  return (SEVERITY_ORDER[finding.severity] ?? 4) * 100 + (CATEGORY_PREFERENCE[finding.category] ?? 5) * 10 + penalty - Math.min(finding.deduction, 9);
+  return (severityOrder[finding.severity] ?? 4) * 100 + (CATEGORY_PREFERENCE[finding.category] ?? 5) * 10 + penalty - Math.min(finding.deduction, 9);
 }
 function normalizeAuthTitle(title) {
   return title.toLowerCase().replace(/\s*\(inside code block\)/g, "").replace(/\s*\(merged[^)]*\)/g, "").trim();
@@ -4510,8 +4530,73 @@ ${finding.evidence}`.toLowerCase();
   }
   return null;
 }
+function behavioralDependencyFamily(finding) {
+  const hay = `${cleanMergedTitle(finding.title)}
+${finding.description}
+${finding.evidence}`.toLowerCase();
+  if (/(credential-bearing url parameter|credential query-parameter transport)/i.test(hay)) {
+    return "cookie-handoff";
+  }
+  if (/reusable authenticated browser container/i.test(hay)) {
+    return "browser-container";
+  }
+  if (/persistent credential-state store/i.test(hay)) {
+    return "credential-store";
+  }
+  return null;
+}
+function behavioralAuthFamily(finding) {
+  if (finding.category !== "behavioral")
+    return null;
+  const hay = `${cleanMergedTitle(finding.title)}
+${finding.description}
+${finding.evidence}`.toLowerCase();
+  if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling)/i.test(hay)) {
+    return "cookie-handoff";
+  }
+  if (/(browser profile copy|full browser profile sync|browser session attachment|profile-backed session persistence|auth import from user browser|persistent session reuse|state file replay)/i.test(hay)) {
+    return "browser-container";
+  }
+  if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping|browser auth state handling)/i.test(hay)) {
+    return "credential-store";
+  }
+  return null;
+}
+function broadBehavioralAuthFamily(finding) {
+  if (finding.category !== "behavioral")
+    return null;
+  const hay = `${cleanMergedTitle(finding.title)}
+${finding.description}
+${finding.evidence}`.toLowerCase();
+  if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling|authentication integration surface)/i.test(hay)) {
+    return "behavioral::cookie-browser-auth";
+  }
+  if (/credential store persistence/i.test(hay) && /(auth_cookies|cookie)/i.test(hay)) {
+    return "behavioral::cookie-browser-auth";
+  }
+  if (/(browser profile copy|browser session attachment|profile-backed session persistence|persistent session reuse|auth import from user browser|state file replay)/i.test(hay)) {
+    return "behavioral::browser-container";
+  }
+  if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping)/i.test(hay)) {
+    return "behavioral::credential-store";
+  }
+  return null;
+}
+
+// dist/scanner/report-shaping.js
+var SEVERITY_ORDER = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+  info: 4
+};
+var MEDIUM_PLUS = /* @__PURE__ */ new Set(["medium", "high", "critical"]);
+function overlapPriority2(finding) {
+  return overlapPriority(finding, SEVERITY_ORDER);
+}
 function mergeFindingGroup(group, reason) {
-  const sortedGroup = [...group].sort((a, b) => overlapPriority(a) - overlapPriority(b));
+  const sortedGroup = [...group].sort((a, b) => overlapPriority2(a) - overlapPriority2(b));
   const primary = sortedGroup[0];
   const mergedSignals = [...new Set(sortedGroup.slice(1).map((f) => cleanMergedTitle(f.title)))].slice(0, 6);
   return {
@@ -4530,7 +4615,7 @@ function mergeAuthPermissionContractFindings(findings) {
   const contractFindings = findings.filter(isAuthPermissionContractFinding);
   if (contractFindings.length <= 1)
     return [...findings];
-  const primary = [...contractFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  const primary = [...contractFindings].sort((a, b) => overlapPriority2(a) - overlapPriority2(b))[0];
   const mergedTitles = [...new Set(contractFindings.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
   const mergedPrimary = {
     ...primary,
@@ -4569,7 +4654,7 @@ function mergeGenericAuthDependencyFindings(findings) {
   const specific = findings.filter(isSpecificAuthDependencyFinding);
   if (generic.length === 0 || specific.length === 0)
     return [...findings];
-  const primary = [...specific].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  const primary = [...specific].sort((a, b) => overlapPriority2(a) - overlapPriority2(b))[0];
   const mergedGenericTitles = [...new Set(generic.map((f) => cleanMergedTitle(f.title)))];
   const mergedDescription = `${primary.description}
 
@@ -4599,7 +4684,7 @@ function mergeAuthPermissionIntoBehavior(findings) {
   const behavioralFindings = findings.filter((finding) => finding.category === "behavioral" && isBrowserAuthOverlapCandidate(finding));
   if (permissionFindings.length === 0 || behavioralFindings.length === 0)
     return [...findings];
-  const primary = [...behavioralFindings].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  const primary = [...behavioralFindings].sort((a, b) => overlapPriority2(a) - overlapPriority2(b))[0];
   const mergedPermissionTitles = [
     ...new Set(permissionFindings.map((finding) => cleanMergedTitle(finding.title)))
   ];
@@ -4625,38 +4710,6 @@ Merged auth/session capability-contract context:
   }
   return output;
 }
-function behavioralDependencyFamily(finding) {
-  const hay = `${cleanMergedTitle(finding.title)}
-${finding.description}
-${finding.evidence}`.toLowerCase();
-  if (/(credential-bearing url parameter|credential query-parameter transport)/i.test(hay)) {
-    return "cookie-handoff";
-  }
-  if (/reusable authenticated browser container/i.test(hay)) {
-    return "browser-container";
-  }
-  if (/persistent credential-state store/i.test(hay)) {
-    return "credential-store";
-  }
-  return null;
-}
-function behavioralAuthFamily(finding) {
-  if (finding.category !== "behavioral")
-    return null;
-  const hay = `${cleanMergedTitle(finding.title)}
-${finding.description}
-${finding.evidence}`.toLowerCase();
-  if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling)/i.test(hay)) {
-    return "cookie-handoff";
-  }
-  if (/(browser profile copy|full browser profile sync|browser session attachment|profile-backed session persistence|auth import from user browser|persistent session reuse|state file replay)/i.test(hay)) {
-    return "browser-container";
-  }
-  if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping|browser auth state handling)/i.test(hay)) {
-    return "credential-store";
-  }
-  return null;
-}
 function mergeSpecificAuthDependenciesIntoBehavior(findings) {
   const behaviorals = findings.filter((finding) => behavioralAuthFamily(finding) !== null);
   const specificDependencies = findings.filter((finding) => finding.category === "dependencies" && behavioralDependencyFamily(finding) !== null);
@@ -4668,7 +4721,7 @@ function mergeSpecificAuthDependenciesIntoBehavior(findings) {
     const family = behavioralDependencyFamily(dependency);
     if (!family)
       continue;
-    const target = [...behaviorals].filter((finding) => behavioralAuthFamily(finding) === family).sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+    const target = [...behaviorals].filter((finding) => behavioralAuthFamily(finding) === family).sort((a, b) => overlapPriority2(a) - overlapPriority2(b))[0];
     if (!target)
       continue;
     consumed.add(dependency);
@@ -4690,26 +4743,6 @@ Merged related dependency context:
     output.push(replacement ?? finding);
   }
   return output;
-}
-function broadBehavioralAuthFamily(finding) {
-  if (finding.category !== "behavioral")
-    return null;
-  const hay = `${cleanMergedTitle(finding.title)}
-${finding.description}
-${finding.evidence}`.toLowerCase();
-  if (/(mcp-issued browser auth cookie|credential in query string|cookie bootstrap redirect|cookie header replay|browser auth state handling|authentication integration surface)/i.test(hay)) {
-    return "behavioral::cookie-browser-auth";
-  }
-  if (/credential store persistence/i.test(hay) && /(auth_cookies|cookie)/i.test(hay)) {
-    return "behavioral::cookie-browser-auth";
-  }
-  if (/(browser profile copy|browser session attachment|profile-backed session persistence|persistent session reuse|auth import from user browser|state file replay)/i.test(hay)) {
-    return "behavioral::browser-container";
-  }
-  if (/(credential vault enrollment|credential store persistence|federated auth flow|environment secret piping)/i.test(hay)) {
-    return "behavioral::credential-store";
-  }
-  return null;
 }
 function mergeBroadBehavioralAuthFamilies(findings) {
   const passThrough = [];
@@ -4741,7 +4774,7 @@ function mergeHighBehavioralAuthSummary(findings) {
   const authBehaviorals = findings.filter((finding) => finding.category === "behavioral" && finding.severity === "high" && isBrowserAuthOverlapCandidate(finding));
   if (authBehaviorals.length <= 1)
     return [...findings];
-  const primary = [...authBehaviorals].sort((a, b) => overlapPriority(a) - overlapPriority(b))[0];
+  const primary = [...authBehaviorals].sort((a, b) => overlapPriority2(a) - overlapPriority2(b))[0];
   const mergedTitles = [...new Set(authBehaviorals.filter((f) => f !== primary).map((f) => cleanMergedTitle(f.title)))];
   const mergedPrimary = {
     ...primary,
@@ -4796,35 +4829,6 @@ function compactMergedDescriptions(findings) {
     };
   });
 }
-var TARGET_RENDERED_DUPLICATE_KEYS = /* @__PURE__ */ new Set([
-  "behavioral::browser content extraction detected",
-  "behavioral::ui state enumeration detected",
-  "behavioral::skill path discovery detected",
-  "behavioral::external instruction override file detected",
-  "behavioral::server lifecycle orchestration detected",
-  "behavioral::remote documentation ingestion detected",
-  "behavioral::host environment reconnaissance detected",
-  "behavioral::external tool bridge detected",
-  "behavioral::remote transport exposure detected",
-  "behavioral::unrestricted scope detected",
-  // Added in dedup pass 2
-  "behavioral::remote browser delegation detected",
-  "behavioral::remote task delegation detected",
-  "behavioral::secret parameter handling detected",
-  "behavioral::compound browser action chaining detected",
-  "behavioral::credential form automation detected",
-  "behavioral::opaque helper script execution detected",
-  "behavioral::os input automation detected",
-  "behavioral::external ai provider delegation detected",
-  "behavioral::temporary script execution detected",
-  "behavioral::dev server auto-detection detected",
-  "behavioral::container runtime control detected",
-  "behavioral::local service access detected",
-  "behavioral::package bootstrap execution detected",
-  "dependencies::unknown external reference",
-  "dependencies::local service url reference",
-  "dependencies::raw content url reference"
-]);
 function mergeSelectedRenderedDuplicates(findings) {
   const passThrough = [];
   const groups = /* @__PURE__ */ new Map();
@@ -4853,7 +4857,7 @@ function mergeSelectedRenderedDuplicates(findings) {
     }
     merged.push(mergeFindingGroup(group, "repeated finding family"));
   }
-  return merged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+  return sortFindingsBySeverity(merged);
 }
 function mergeOverlappingBrowserAuthFindings(findings) {
   const passthrough = [];
@@ -4930,7 +4934,27 @@ function mergeOverlappingBrowserAuthFindings(findings) {
     }
     finalMerged.push(mergeFindingGroup(group, "same auth risk family"));
   }
-  return finalMerged.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+  return sortFindingsBySeverity(finalMerged);
+}
+function sortFindingsBySeverity(findings) {
+  return [...findings].sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+}
+function shapeReportFindings(findings) {
+  return mergeSelectedRenderedDuplicates(compactMergedDescriptions(mergeHighBehavioralAuthSummary(mergeBroadBehavioralAuthFamilies(mergeAuthPermissionIntoBehavior(mergeSpecificAuthDependenciesIntoBehavior(mergeGenericAuthDependencyFindings(mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(findings)))))))));
+}
+
+// dist/scanner/score-calibration.js
+var CATEGORY_WEIGHTS = {
+  permissions: 0.2,
+  injection: 0.25,
+  dependencies: 0.15,
+  behavioral: 0.15,
+  content: 0.1,
+  "code-safety": 0.15
+};
+var CONFIG_TAMPER_PREFIXES = ["BEH-CONFIG-TAMPER-", "CS-CONFIG-TAMPER-"];
+function hasConfigTamperFindings(findings) {
+  return findings.some((f) => CONFIG_TAMPER_PREFIXES.some((prefix) => f.id.startsWith(prefix)));
 }
 function determineBadge(score, findings) {
   const hasCritical = findings.some((f) => f.severity === "critical");
@@ -4953,7 +4977,7 @@ function determineBadge(score, findings) {
     return "conditional";
   return "certified";
 }
-function aggregateScores(categories, metadata) {
+function calculateWeightedOverall(categories) {
   const preScanFindings = Object.values(categories).flatMap((cat) => cat.findings);
   const hasCriticals = preScanFindings.some((f) => f.severity === "critical");
   let overall = 0;
@@ -4963,6 +4987,9 @@ function aggregateScores(categories, metadata) {
     const effectiveScore = !hasCriticals && !catCriticals ? Math.max(catScore.score, 30) : catScore.score;
     overall += effectiveScore * weight;
   }
+  return overall;
+}
+function applySeverityPenalty(overall, categories) {
   const allCategoryFindings = Object.values(categories).flatMap((cat) => cat.findings);
   const criticalCount = allCategoryFindings.filter((f) => f.severity === "critical").length;
   const highFindings = allCategoryFindings.filter((f) => f.severity === "high");
@@ -4976,11 +5003,20 @@ function aggregateScores(categories, metadata) {
     const worstCategoryDrag = Math.round((dragThreshold - minCategoryScore) / 2);
     overall -= worstCategoryDrag;
   }
-  overall -= severityPenalty;
-  overall = Math.round(Math.max(0, Math.min(100, overall)));
-  const allFindings = Object.values(categories).flatMap((cat) => [...cat.findings]).sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 4) - (SEVERITY_ORDER[b.severity] ?? 4));
+  return overall - severityPenalty;
+}
+function calculateOverallScore(categories) {
+  let overall = calculateWeightedOverall(categories);
+  overall = applySeverityPenalty(overall, categories);
+  return Math.round(Math.max(0, Math.min(100, overall)));
+}
+
+// dist/scanner/scoring.js
+function aggregateScores(categories, metadata) {
+  const overall = calculateOverallScore(categories);
+  const allFindings = sortFindingsBySeverity(Object.values(categories).flatMap((cat) => [...cat.findings]));
   const badge = determineBadge(overall, allFindings);
-  const reportFindings = mergeSelectedRenderedDuplicates(compactMergedDescriptions(mergeHighBehavioralAuthSummary(mergeBroadBehavioralAuthFamilies(mergeAuthPermissionIntoBehavior(mergeSpecificAuthDependenciesIntoBehavior(mergeGenericAuthDependencyFindings(mergeAuthPermissionContractFindings(mergeOverlappingBrowserAuthFindings(allFindings)))))))));
+  const reportFindings = shapeReportFindings(allFindings);
   return {
     overall,
     badge,
@@ -5474,7 +5510,7 @@ var ASST_CATEGORIES = {
   "ASST-10": "Obfuscation",
   "ASST-11": "Trigger Manipulation"
 };
-var SCANNER_VERSION = "0.7.0";
+var SCANNER_VERSION = "0.7.1";
 
 // dist/scanner/source.js
 var DEFAULT_HEADERS = {
