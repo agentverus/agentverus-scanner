@@ -41,6 +41,7 @@
 		"typecheck": "tsc --noEmit",
 		"scan": "tsx src/scanner/cli.ts",
 		"release:preflight": "tsx scripts/release-preflight.mts",
+		"release:sync-web": "tsx scripts/release-sync-web.mts",
 		"release:benchmark": "tsx scripts/benchmark-release-hardening.mts",
 		"prepublishOnly": "pnpm build"
 	},
