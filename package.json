@@ -40,6 +40,8 @@
 		"format": "biome format . --write",
 		"typecheck": "tsc --noEmit",
 		"scan": "tsx src/scanner/cli.ts",
+		"release:preflight": "tsx scripts/release-preflight.mts",
+		"release:benchmark": "tsx scripts/benchmark-release-hardening.mts",
 		"prepublishOnly": "pnpm build"
 	},
 	"packageManager": "pnpm@10.28.0",
