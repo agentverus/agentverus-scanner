@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -23,6 +24,10 @@ function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+export function computeContentHash(content: string): string {
+	return createHash("sha256").update(content).digest("hex").slice(0, 16);
+}
+
 function parsePackageVersion(packageJsonText: string): string | null {
 	try {
 		const parsed = JSON.parse(packageJsonText) as { version?: unknown };
@@ -43,6 +48,11 @@ function extractActionTagVersions(text: string): string[] {
 
 function extractFallbackVersions(configText: string): string[] {
 	return Array.from(configText.matchAll(/return(?:\s+parsed\.version\?\.trim\(\)\s*\|\|)?\s*"(\d+\.\d+\.\d+)";/g), (match) => match[1]);
+}
+
+function extractActionSourceHash(actionBundleText: string): string | null {
+	const match = actionBundleText.match(/ACTION_SOURCE_HASH:([a-f0-9]{16})/);
+	return match?.[1] ?? null;
 }
 
 function hasReleaseHeading(changelogText: string, version: string): boolean {
@@ -100,6 +110,16 @@ export function findScannerReleaseIssues(snapshot: ScannerReleaseSnapshot): stri
 		issues.push("scanner action bundle is missing an embedded SCANNER_VERSION");
 	} else if (bundleVersion !== expectedVersion) {
 		issues.push(`scanner action bundle version ${bundleVersion} does not match release ${expectedVersion}`);
+	}
+
+	const actionSourceHash = computeContentHash(snapshot.actionSourceText);
+	const bundledActionSourceHash = extractActionSourceHash(snapshot.actionBundleText);
+	if (!bundledActionSourceHash) {
+		issues.push("scanner action bundle is missing ACTION_SOURCE_HASH metadata");
+	} else if (bundledActionSourceHash !== actionSourceHash) {
+		issues.push(
+			`scanner action bundle source hash ${bundledActionSourceHash} does not match action source ${actionSourceHash}`,
+		);
 	}
 
 	return issues;

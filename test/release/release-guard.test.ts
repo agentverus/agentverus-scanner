@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	computeContentHash,
 	findScannerReleaseIssues,
 	findWebReleaseIssues,
 	type ScannerReleaseSnapshot,
@@ -8,6 +9,8 @@ import {
 } from "../../scripts/release-guard.mts";
 
 function createScannerSnapshot(): ScannerReleaseSnapshot {
+	const actionSourceText = "console.log('scan');\n";
+	const actionSourceHash = computeContentHash(actionSourceText);
 	return {
 		packageJsonText: JSON.stringify({ version: "1.2.3" }),
 		scannerTypesText: 'export const SCANNER_VERSION = "1.2.3";\n',
@@ -15,8 +18,8 @@ function createScannerSnapshot(): ScannerReleaseSnapshot {
 			"- uses: agentverus/agentverus-scanner/actions/scan-skill@v1.2.3\n",
 		changelogText:
 			"## [Unreleased]\n\n## [1.2.3] - 2026-03-22\n\n[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v1.2.3...HEAD\n[1.2.3]: https://github.com/agentverus/agentverus-scanner/compare/v1.2.2...v1.2.3\n",
-		actionBundleText: 'var SCANNER_VERSION = "1.2.3";\n',
-		actionSourceText: "console.log('scan');\n",
+		actionBundleText: `/* ACTION_SOURCE_HASH:${actionSourceHash} */\nvar SCANNER_VERSION = "1.2.3";\n`,
+		actionSourceText,
 	};
 }
 

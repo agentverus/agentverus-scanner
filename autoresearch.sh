@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+pnpm build:actions
 pnpm release:preflight
 pnpm test --reporter=dot 2>&1 | tail -3
 TEST_EXIT=${PIPESTATUS[0]}

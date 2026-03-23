@@ -1,3 +1,4 @@
+/* ACTION_SOURCE_HASH:2b59a5878be821f0 */
 "use strict";
 
 // actions/scan-skill/src/index.ts
