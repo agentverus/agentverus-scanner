@@ -206,6 +206,18 @@ const scenarios: readonly Scenario[] = [
 		}),
 	},
 	{
+		name: "web vendored README action tag mismatch",
+		target: "web",
+		mutate: (_scannerSnapshot, webSnapshot) => ({
+			...webSnapshot,
+			vendoredReadmeText: replaceOnce(
+				webSnapshot.vendoredReadmeText,
+				`actions/scan-skill@v${currentWebVersion}`,
+				`actions/scan-skill@v${previousWebVersion}`,
+			),
+		}),
+	},
+	{
 		name: "web fallback version mismatch",
 		target: "web",
 		mutate: (_scannerSnapshot, webSnapshot) => ({
