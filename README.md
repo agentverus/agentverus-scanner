@@ -10,6 +10,22 @@ Open-source security and behavioral trust scanner for AI agent skills (`SKILL.md
   <img src="assets/social-preview.png" alt="AgentVerus Scanner — detecting hidden threats in AI agent skill files" width="800" />
 </p>
 
+## What’s New in 0.7.x
+
+Recent releases (`v0.7.0` and `v0.7.1`) focused on tighter trust-boundary detection and better signal quality:
+
+- Broader high-risk workflow coverage across browser/session reuse, local file input, remote documentation ingestion, local-service exposure, package bootstrap, media handoff, payment, and environment/config-control signals.
+- Earlier prefix-scan detection for risky local references (auth-state files, reference bundles, script paths, browser profiles, media inputs, config indirection, and local-service hints).
+- More aggressive capability-contract severity calibration for undeclared browser automation, network access, content extraction, server exposure, local-service access, file read, and session-management behavior.
+- Refined content/dependency severity calibration for trust-boundary risks such as broad activation triggers, missing safety boundaries, raw/unknown documentation references, local transports, exposed ports, and service healthchecks.
+- Public-corpus quality improvements from `v0.7.0`: fewer false positives, stronger safe-vs-malicious score separation, and stronger evasion resilience.
+
+### Why upgrade from 0.6.2?
+
+- Better precision: safe fixtures dropped from 22 medium+ findings to 4.
+- Better separation: worst-safe vs best-malicious score gap increased from 16 to 80.
+- Better adversarial resistance: tracked evasion fixtures now consistently land in `rejected`.
+
 ## What It Does
 
 Scans agent skill files and produces structured trust reports covering:
@@ -219,6 +235,8 @@ AgentVerus compares **declared capability intent** to **inferred runtime behavio
 If high-risk behavior is inferred but undeclared, the scanner adds explicit `PERM-CONTRACT-MISSING-*`
 findings. This makes declaration drift visible during review and CI.
 
+**0.7.x calibration note:** undeclared privileged capability patterns (browser/network/file/session/server behaviors) are intentionally scored more aggressively than in earlier releases.
+
 ## SBOM Output
 
 `--sbom` writes a CycloneDX 1.5 JSON document with:
@@ -259,7 +277,10 @@ console.log(sbom.bomFormat, sbom.components.length);
 
 ## Trust Score
 
-Overall score is a weighted average of category scores:
+Overall score is a weighted average of category scores.
+
+> Note: Starting in `v0.7.x`, severity calibration was tightened for several trust-boundary signals, so historical scores are not always directly comparable release-to-release.
+
 
 | Category | Weight |
 |----------|--------|
