@@ -5,6 +5,7 @@ import { analyzeDependencies, extractSelfBaseDomains } from "./analyzers/depende
 import { analyzeInjection } from "./analyzers/injection.js";
 import { analyzePermissions } from "./analyzers/permissions.js";
 import { analyzeDomainTrust, analyzeSemantic } from "./analyzers/semantic.js";
+import { applyCompanionCodeFindingsInFiles } from "./companion-code.js";
 import { parseSkill } from "./parser.js";
 import { aggregateScores } from "./scoring.js";
 import { fetchSkillContentFromUrl } from "./source.js";
@@ -217,8 +218,11 @@ export async function scanSkill(content: string, options?: ScanOptions): Promise
  * Fetches the content first, then runs the scanner.
  */
 export async function scanSkillFromUrl(url: string, options?: ScanOptions): Promise<TrustReport> {
-	const { content } = await fetchSkillContentFromUrl(url, options);
-	return scanSkill(content, options);
+	const { content, companionFiles } = await fetchSkillContentFromUrl(url, options);
+	const report = await scanSkill(content, options);
+	if (!companionFiles || companionFiles.length === 0) return report;
+	const skill = parseSkill(content);
+	return applyCompanionCodeFindingsInFiles(report, skill, "remote-bundle", companionFiles);
 }
 
 export { parseSkill } from "./parser.js";

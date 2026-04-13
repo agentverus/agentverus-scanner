@@ -3,6 +3,7 @@ import { isIP } from "node:net";
 
 import { unzipSync } from "fflate";
 
+import type { CompanionTextFile } from "./companion-code.js";
 import type { ScanOptions } from "./types.js";
 import { SCANNER_VERSION } from "./types.js";
 
@@ -23,6 +24,10 @@ const MAX_ZIP_ENTRIES = 2_000;
 const MAX_ZIP_SKILL_CANDIDATES = 10;
 const MAX_SKILL_MD_BYTES = 2_000_000; // 2MB
 const MAX_TOTAL_UNZIPPED_BYTES = 5_000_000; // 5MB across extracted candidates
+const MAX_COMPANION_TEXT_FILE_BYTES = 256 * 1024;
+const MAX_COMPANION_TEXT_FILES = 12;
+const MAX_GITHUB_COMPANION_DIRS = 12;
+const COMPANION_TEXT_EXTENSIONS = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".sh", ".bash"]);
 
 function normalizeGithubUrl(url: URL): string {
 	if (url.hostname !== "github.com") return url.toString();
@@ -126,6 +131,94 @@ function isClawHubDownloadUrl(url: string): boolean {
 	} catch {
 		return false;
 	}
+}
+
+function isCompanionTextPath(path: string): boolean {
+	const base = path.split("/").pop() ?? path;
+	const lower = base.toLowerCase();
+	if (lower === "skill.md" || lower === "skills.md") return false;
+	const ext = lower.includes(".") ? `.${lower.split(".").pop()}` : "";
+	return COMPANION_TEXT_EXTENSIONS.has(ext);
+}
+
+function parseRawGithubSkillUrl(rawUrl: string): {
+	readonly owner: string;
+	readonly repo: string;
+	readonly branch: string;
+	readonly skillPath: string;
+	readonly skillDir: string;
+} | null {
+	let parsed: URL;
+	try {
+		parsed = new URL(rawUrl);
+	} catch {
+		return null;
+	}
+	if (parsed.hostname !== "raw.githubusercontent.com") return null;
+	const parts = parsed.pathname.split("/").filter(Boolean);
+	if (parts.length < 4) return null;
+	const owner = parts[0] ?? "";
+	const repo = parts[1] ?? "";
+	const branch = parts[2] ?? "";
+	const skillPath = parts.slice(3).join("/");
+	if (!owner || !repo || !branch || !skillPath) return null;
+	const skillDir = skillPath.includes("/") ? skillPath.slice(0, skillPath.lastIndexOf("/")) : "";
+	return { owner, repo, branch, skillPath, skillDir };
+}
+
+async function fetchGithubCompanionFiles(
+	rawUrl: string,
+	init: Readonly<{ readonly headers: Readonly<Record<string, string>>; readonly signal?: AbortSignal }>,
+): Promise<readonly CompanionTextFile[]> {
+	const parsed = parseRawGithubSkillUrl(rawUrl);
+	if (!parsed) return [];
+
+	const encodeDir = (dir: string): string =>
+		dir
+			.split("/")
+			.filter(Boolean)
+			.map((part) => encodeURIComponent(part))
+			.join("/");
+	const buildApiUrl = (dir: string): string =>
+		`https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}/contents${dir ? `/${encodeDir(dir)}` : ""}?ref=${encodeURIComponent(parsed.branch)}`;
+
+	const files: CompanionTextFile[] = [];
+	const queue = [parsed.skillDir];
+	const visited = new Set<string>();
+
+	while (queue.length > 0 && visited.size < MAX_GITHUB_COMPANION_DIRS && files.length < MAX_COMPANION_TEXT_FILES) {
+		const dir = queue.shift() ?? "";
+		if (visited.has(dir)) continue;
+		visited.add(dir);
+
+		const { response } = await fetchWithRedirectValidation(buildApiUrl(dir), init);
+		if (!response.ok) continue;
+		const text = await response.text();
+		const entries = JSON.parse(text) as Array<{
+			readonly type?: string;
+			readonly path?: string;
+			readonly download_url?: string | null;
+		}>;
+		if (!Array.isArray(entries)) continue;
+
+		for (const entry of entries) {
+			if (!entry.path) continue;
+			if (entry.type === "dir") {
+				if (entry.path.startsWith(dir ? `${dir}/` : "") && !visited.has(entry.path)) {
+					queue.push(entry.path);
+				}
+				continue;
+			}
+			if (entry.type !== "file" || !entry.download_url || !isCompanionTextPath(entry.path)) continue;
+			const { response: fileResponse } = await fetchWithRedirectValidation(entry.download_url, init);
+			if (!fileResponse.ok) continue;
+			const bytes = await readResponseBytesWithLimit(fileResponse, MAX_COMPANION_TEXT_FILE_BYTES);
+			const content = new TextDecoder("utf-8").decode(bytes);
+			files.push({ path: entry.path, content });
+			if (files.length >= MAX_COMPANION_TEXT_FILES) break;
+		}
+	}
+	return files;
 }
 
 function pickSkillMdPath(filePaths: readonly string[]): string | null {
@@ -287,7 +380,7 @@ function isBlockedIpv6(ipRaw: string): boolean {
 	const bytes = parseIpv6ToBytes(ipRaw);
 	if (!bytes) return true;
 	if (bytes.length !== 16) return true;
-	const b = (idx: number): number => bytes[idx]!;
+	const b = (idx: number): number => bytes[idx] ?? 0;
 
 	// Unspecified ::/128
 	if (isAllZero(bytes, 0, 16)) return true;
@@ -518,7 +611,11 @@ async function readResponseBytesWithLimit(response: Response, maxBytes: number):
 	return out;
 }
 
-function extractSkillMdFromZip(zipBytes: Uint8Array): { readonly content: string; readonly path: string } {
+function extractSkillMdFromZip(zipBytes: Uint8Array): {
+	readonly content: string;
+	readonly path: string;
+	readonly companionFiles: readonly CompanionTextFile[];
+} {
 	let entryCount = 0;
 	let candidateCount = 0;
 	let totalUnzipped = 0;
@@ -534,21 +631,23 @@ function extractSkillMdFromZip(zipBytes: Uint8Array): { readonly content: string
 
 			const base = file.name.split("/").pop() ?? file.name;
 			const lower = base.toLowerCase();
-			const isCandidate = lower === "skill.md" || lower === "skills.md";
-			if (!isCandidate) return false;
+			const ext = lower.includes(".") ? `.${lower.split(".").pop()}` : "";
+			const isSkillCandidate = lower === "skill.md" || lower === "skills.md";
+			const isCompanionCandidate = COMPANION_TEXT_EXTENSIONS.has(ext);
+			if (!isSkillCandidate && !isCompanionCandidate) return false;
 
-			candidateCount += 1;
-			if (candidateCount > MAX_ZIP_SKILL_CANDIDATES) {
-				throw new Error(
-					`Zip contains too many SKILL.md candidates (> ${MAX_ZIP_SKILL_CANDIDATES}).`,
-				);
-			}
-
-			// fflate provides both compressed size (`size`) and declared originalSize.
-			if (file.originalSize > MAX_SKILL_MD_BYTES) {
-				throw new Error(
-					`SKILL.md is too large (${file.originalSize} bytes > ${MAX_SKILL_MD_BYTES} bytes).`,
-				);
+			if (isSkillCandidate) {
+				candidateCount += 1;
+				if (candidateCount > MAX_ZIP_SKILL_CANDIDATES) {
+					throw new Error(
+						`Zip contains too many SKILL.md candidates (> ${MAX_ZIP_SKILL_CANDIDATES}).`,
+					);
+				}
+				if (file.originalSize > MAX_SKILL_MD_BYTES) {
+					throw new Error(
+						`SKILL.md is too large (${file.originalSize} bytes > ${MAX_SKILL_MD_BYTES} bytes).`,
+					);
+				}
 			}
 
 			totalUnzipped += file.originalSize;
@@ -572,13 +671,33 @@ function extractSkillMdFromZip(zipBytes: Uint8Array): { readonly content: string
 	}
 
 	const decoder = new TextDecoder("utf-8");
-	return { content: decoder.decode(files[skillMdPath]), path: skillMdPath };
+	const skillDir = skillMdPath.includes("/") ? skillMdPath.slice(0, skillMdPath.lastIndexOf("/")) : "";
+	const companionPrefix = skillDir ? `${skillDir}/` : "";
+	const companionFiles = paths
+		.filter((path) => {
+			if (path === skillMdPath) return false;
+			const base = path.split("/").pop() ?? path;
+			const lower = base.toLowerCase();
+			if (lower === "skill.md" || lower === "skills.md") return false;
+			const ext = lower.includes(".") ? `.${lower.split(".").pop()}` : "";
+			if (!COMPANION_TEXT_EXTENSIONS.has(ext)) return false;
+			return companionPrefix ? path.startsWith(companionPrefix) : !path.includes("/");
+		})
+		.sort((a, b) => a.localeCompare(b))
+		.slice(0, MAX_COMPANION_TEXT_FILES)
+		.map((path) => ({ path, content: decoder.decode(files[path] ?? new Uint8Array()) }));
+
+	return { content: decoder.decode(files[skillMdPath]), path: skillMdPath, companionFiles };
 }
 
 export async function fetchSkillContentFromUrl(
 	inputUrl: string,
 	options?: ScanOptions,
-): Promise<{ readonly content: string; readonly sourceUrl: string }> {
+): Promise<{
+	readonly content: string;
+	readonly sourceUrl: string;
+	readonly companionFiles?: readonly CompanionTextFile[];
+}> {
 	const sourceUrl = normalizeSkillUrl(inputUrl);
 
 	const retries = Math.max(0, options?.retries ?? 2);
@@ -624,12 +743,16 @@ export async function fetchSkillContentFromUrl(
 			if (isZipResponse(contentType, finalUrl)) {
 				const zipBytes = await readResponseBytesWithLimit(response, MAX_ZIP_BYTES);
 				const extracted = extractSkillMdFromZip(zipBytes);
-				return { content: extracted.content, sourceUrl: finalUrl };
+				return { content: extracted.content, sourceUrl: finalUrl, companionFiles: extracted.companionFiles };
 			}
 
 			const bytes = await readResponseBytesWithLimit(response, MAX_TEXT_BYTES);
 			const text = new TextDecoder("utf-8").decode(bytes);
-			return { content: text, sourceUrl: finalUrl };
+			const companionFiles = await fetchGithubCompanionFiles(finalUrl, {
+				headers: DEFAULT_HEADERS,
+				signal: timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : undefined,
+			}).catch(() => [] as const);
+			return { content: text, sourceUrl: finalUrl, companionFiles };
 		} catch (err) {
 			lastError = err;
 			if (attempt < retries && isRetryableError(err)) {
