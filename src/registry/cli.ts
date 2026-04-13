@@ -7,8 +7,8 @@ import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 
-import { scanSkill } from "../scanner/index.js";
-import { fetchSkillContentFromUrl, normalizeSkillUrl } from "../scanner/source.js";
+import { scanSkill, scanSkillFromUrl as scanSkillFromRemoteSource } from "../scanner/index.js";
+import { normalizeSkillUrl } from "../scanner/source.js";
 import { SCANNER_VERSION } from "../scanner/types.js";
 import type { ScanOptions, TrustReport } from "../scanner/types.js";
 import { batchScanRegistry } from "./batch-scanner.js";
@@ -309,8 +309,7 @@ async function listGithubSkillFiles(
 }
 
 async function scanSkillFromUrl(url: string, opts: ScanOptions): Promise<TrustReport> {
-	const { content } = await fetchSkillContentFromUrl(url, opts);
-	return scanSkill(content);
+	return scanSkillFromRemoteSource(url, opts);
 }
 
 async function scanGithubRepo(
@@ -714,7 +713,7 @@ export async function handleRegistryScan(args: string[]): Promise<number> {
 	});
 
 	// Clear progress line
-	process.stdout.write("\r" + " ".repeat(120) + "\r");
+	process.stdout.write(`\r${" ".repeat(120)}\r`);
 
 	console.log(`\n${C.bold}Scan Complete${C.reset}`);
 	console.log("─".repeat(60));
@@ -724,10 +723,10 @@ export async function handleRegistryScan(args: string[]): Promise<number> {
 	console.log(`  Avg Score:   ${summary.averageScore}`);
 	console.log(`  Median:      ${summary.medianScore}`);
 	console.log();
-	console.log(`  ${C.green}🟢 Certified:   ${summary.badges["certified"] ?? 0}${C.reset}`);
-	console.log(`  ${C.yellow}🟡 Conditional: ${summary.badges["conditional"] ?? 0}${C.reset}`);
-	console.log(`  🟠 Suspicious: ${summary.badges["suspicious"] ?? 0}`);
-	console.log(`  ${C.red}🔴 Rejected:    ${summary.badges["rejected"] ?? 0}${C.reset}`);
+	console.log(`  ${C.green}🟢 Certified:   ${summary.badges.certified ?? 0}${C.reset}`);
+	console.log(`  ${C.yellow}🟡 Conditional: ${summary.badges.conditional ?? 0}${C.reset}`);
+	console.log(`  🟠 Suspicious: ${summary.badges.suspicious ?? 0}`);
+	console.log(`  ${C.red}🔴 Rejected:    ${summary.badges.rejected ?? 0}${C.reset}`);
 	console.log();
 	console.log(`  VT-blind threats: ${summary.vtGapSkills.length} skills`);
 	console.log();
@@ -884,10 +883,10 @@ export async function handleSkillsShScan(args: string[]): Promise<number> {
 	console.log(`  Avg Score:   ${summary.averageScore}`);
 	console.log(`  Median:      ${summary.medianScore}`);
 	console.log();
-	console.log(`  ${C.green}🟢 Certified:   ${summary.badges["certified"] ?? 0}${C.reset}`);
-	console.log(`  ${C.yellow}🟡 Conditional: ${summary.badges["conditional"] ?? 0}${C.reset}`);
-	console.log(`  🟠 Suspicious: ${summary.badges["suspicious"] ?? 0}`);
-	console.log(`  ${C.red}🔴 Rejected:    ${summary.badges["rejected"] ?? 0}${C.reset}`);
+	console.log(`  ${C.green}🟢 Certified:   ${summary.badges.certified ?? 0}${C.reset}`);
+	console.log(`  ${C.yellow}🟡 Conditional: ${summary.badges.conditional ?? 0}${C.reset}`);
+	console.log(`  🟠 Suspicious: ${summary.badges.suspicious ?? 0}`);
+	console.log(`  ${C.red}🔴 Rejected:    ${summary.badges.rejected ?? 0}${C.reset}`);
 	console.log();
 	console.log(`  VT-blind threats: ${summary.vtGapSkills.length} skills`);
 	console.log();
