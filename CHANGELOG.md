@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-26
+
+### Added
+
+- **Companion code correlation for local skill packages**: the scanner now analyzes nearby JS/TS/Python/shell source files shipped alongside `SKILL.md` and correlates them with the skill’s documented behavior.
+- **Remote companion code correlation**: the same analysis now applies to remote zip bundles, raw GitHub skill URLs, and GitHub shorthand `check owner/repo` flows when companion files are available.
+- **Companion secret leak sink coverage**: detects secrets printed through `console.log`, `console.error`, `console.warn`, `print`, `stdout.write`, `stderr.write`, and shell `printf ... >&2` patterns in companion source files.
+- **Companion exfiltration detection**: flags companion code that combines secret access with outbound transmission, suspicious webhook/exfiltration endpoints, or credential-file reads followed by network sends.
+- **Nested remote companion support**: bundled archives and GitHub directory traversal now retain descendant companion files under the skill directory rather than only same-directory siblings.
+
+### Changed
+
+- **Trust analysis now extends beyond markdown-only review**: hidden credential access, secret logging, undeclared privilege, and deceptive scope mismatches in companion code now materially affect the final trust report.
+- **User-facing GitHub checks preserve remote companion context**: `agentverus check owner/repo` now routes through the remote-aware scan path so companion-file findings are preserved end-to-end.
+- **README release guidance refreshed**: top-level documentation now highlights companion-code analysis as the main `0.8.0` upgrade story and updates the pinned GitHub Action example to `v0.8.0`.
+- **Version metadata sync**: package metadata and `SCANNER_VERSION` are now aligned for the 0.8.0 release.
+
+### Tests
+
+- Added `test/scanner/companion-code.test.ts` for local companion package coverage, including benign auth flows and multiple leak/exfiltration sink variants.
+- Added `test/scanner/remote-companion.test.ts` and `test/scanner/remote-github-companion.test.ts` for remote bundle and raw GitHub companion correlation, including nested-directory coverage.
+
 ## [0.7.1] - 2026-03-19
 
 ### Added
@@ -297,7 +319,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenClaw, Claude Code, and generic skill format auto-detection.
 - ClawHub zip download support and GitHub URL normalization.
 
-[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/agentverus/agentverus-scanner/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.7.1...v0.8.0
 [0.7.1]: https://github.com/agentverus/agentverus-scanner/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/agentverus/agentverus-scanner/compare/v0.6.1...v0.6.2

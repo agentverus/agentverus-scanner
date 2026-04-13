@@ -10,21 +10,22 @@ Open-source security and behavioral trust scanner for AI agent skills (`SKILL.md
   <img src="assets/social-preview.png" alt="AgentVerus Scanner — detecting hidden threats in AI agent skill files" width="800" />
 </p>
 
-## What’s New in 0.7.x
+## What’s New in 0.8.0
 
-Recent releases (`v0.7.0` and `v0.7.1`) focused on tighter trust-boundary detection and better signal quality:
+`v0.8.0` expands AgentVerus from skill-markdown analysis into **skill package trust analysis** by correlating a skill’s documented behavior with nearby companion source files.
 
-- Broader high-risk workflow coverage across browser/session reuse, local file input, remote documentation ingestion, local-service exposure, package bootstrap, media handoff, payment, and environment/config-control signals.
-- Earlier prefix-scan detection for risky local references (auth-state files, reference bundles, script paths, browser profiles, media inputs, config indirection, and local-service hints).
-- More aggressive capability-contract severity calibration for undeclared browser automation, network access, content extraction, server exposure, local-service access, file read, and session-management behavior.
-- Refined content/dependency severity calibration for trust-boundary risks such as broad activation triggers, missing safety boundaries, raw/unknown documentation references, local transports, exposed ports, and service healthchecks.
-- Public-corpus quality improvements from `v0.7.0`: fewer false positives, stronger safe-vs-malicious score separation, and stronger evasion resilience.
+- **Companion code correlation for local packages**: detects risky behavior in nearby JS/TS/Python/shell source files shipped alongside `SKILL.md`.
+- **Secret leak sink coverage**: catches secrets printed through `console.log`, `console.error`, `console.warn`, `print`, `stdout.write`, `stderr.write`, and shell `printf ... >&2` patterns.
+- **Companion exfiltration detection**: flags companion code that combines secret access with outbound transmission or suspicious webhook/exfiltration endpoints.
+- **Description ↔ code mismatch detection**: surfaces cases where a skill claims a benign purpose but companion code accesses credentials or performs hidden sensitive behavior.
+- **Remote companion correlation**: applies the same analysis to remote zip bundles, raw GitHub skill URLs, and GitHub shorthand `check owner/repo` flows when companion files are available.
+- **Nested remote companion support**: retains descendant companion files under the skill directory for bundled archives and GitHub directory traversal.
 
-### Why upgrade from 0.6.2?
+### Why upgrade from 0.7.1?
 
-- Better precision: safe fixtures dropped from 22 medium+ findings to 4.
-- Better separation: worst-safe vs best-malicious score gap increased from 16 to 80.
-- Better adversarial resistance: tracked evasion fixtures now consistently land in `rejected`.
+- Better package-level trust review: skills are no longer evaluated only by their markdown instructions when nearby shipped code is available.
+- Better remote parity: local and remote skill sources now share the same companion-code risk checks in the main GitHub and bundle flows.
+- Better deception resistance: hidden credential access, secret logging, and undeclared exfiltration in companion code now materially affect trust outcomes.
 
 ## What It Does
 
@@ -148,7 +149,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Pin to a release tag or SHA for supply-chain safety and reproducibility.
-      - uses: agentverus/agentverus-scanner/actions/scan-skill@v0.7.1
+      - uses: agentverus/agentverus-scanner/actions/scan-skill@v0.8.0
         with:
           target: .
           fail_on_severity: high
