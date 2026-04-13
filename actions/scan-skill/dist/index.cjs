@@ -4,8 +4,8 @@
 var import_node_fs = require("node:fs");
 
 // dist/scanner/runner.js
-var import_promises4 = require("node:fs/promises");
-var import_node_path3 = require("node:path");
+var import_promises5 = require("node:fs/promises");
+var import_node_path4 = require("node:path");
 
 // dist/scanner/setup-context.js
 var SETUP_HEADING_REGEX = /\b(?:prerequisit(?:es?)?|install|setup|getting\s+started|requirements?|dependencies)\b/i;
@@ -3432,92 +3432,92 @@ function normalizeCapability(rawKind) {
   const tokens = tokenizeLower(rawKind);
   if (tokens.length === 0)
     return null;
-  const hasAny = (values) => values.some((v) => tokens.includes(v));
-  if (hasAny(["credential", "credentials", "secret", "secrets", "token", "password", "env_access"])) {
+  const hasAny2 = (values) => values.some((v) => tokens.includes(v));
+  if (hasAny2(["credential", "credentials", "secret", "secrets", "token", "password", "env_access"])) {
     return "credential_access";
   }
-  if (hasAny(["credential_handoff", "cookie_bootstrap", "browser_cookie"])) {
+  if (hasAny2(["credential_handoff", "cookie_bootstrap", "browser_cookie"])) {
     return "credential_handoff";
   }
-  if (hasAny(["credential_storage", "vault", "auth_cookies"])) {
+  if (hasAny2(["credential_storage", "vault", "auth_cookies"])) {
     return "credential_storage";
   }
-  if (hasAny(["auth_state_management", "auth_state", "cookie_state"])) {
+  if (hasAny2(["auth_state_management", "auth_state", "cookie_state"])) {
     return "auth_state_management";
   }
-  if (hasAny(["configuration_override", "extend_md", "preferences_file"])) {
+  if (hasAny2(["configuration_override", "extend_md", "preferences_file"])) {
     return "configuration_override";
   }
-  if (hasAny(["credential_form", "password_form", "login_form"])) {
+  if (hasAny2(["credential_form", "password_form", "login_form"])) {
     return "credential_form_automation";
   }
-  if (hasAny(["exec", "execute", "shell", "command", "spawn", "process"])) {
+  if (hasAny2(["exec", "execute", "shell", "command", "spawn", "process"])) {
     return "exec";
   }
-  if (hasAny(["system_modification", "system", "sudo", "admin", "root"])) {
+  if (hasAny2(["system_modification", "system", "sudo", "admin", "root"])) {
     return "system_modification";
   }
-  if (tokens.includes("file_write") || tokens.includes("file") && hasAny(["write", "modify", "delete", "append", "create", "persist", "save", "store"])) {
+  if (tokens.includes("file_write") || tokens.includes("file") && hasAny2(["write", "modify", "delete", "append", "create", "persist", "save", "store"])) {
     return "file_write";
   }
-  if (tokens.includes("file_read") || tokens.includes("read") || tokens.includes("file") && hasAny(["read", "open", "load"])) {
+  if (tokens.includes("file_read") || tokens.includes("read") || tokens.includes("file") && hasAny2(["read", "open", "load"])) {
     return "file_read";
   }
-  if (hasAny(["filesystem_discovery", "path_discovery", "basedir"])) {
+  if (hasAny2(["filesystem_discovery", "path_discovery", "basedir"])) {
     return "filesystem_discovery";
   }
-  if (hasAny(["network", "http", "https", "fetch", "url", "webhook", "api"])) {
+  if (hasAny2(["network", "http", "https", "fetch", "url", "webhook", "api"])) {
     return "network";
   }
-  if (hasAny(["browser", "playwright", "cdp", "chromium", "chrome", "webapp", "snapshot"])) {
+  if (hasAny2(["browser", "playwright", "cdp", "chromium", "chrome", "webapp", "snapshot"])) {
     return "browser_automation";
   }
-  if (hasAny(["browser_session_attachment", "cdp_attach", "profile_sync"])) {
+  if (hasAny2(["browser_session_attachment", "cdp_attach", "profile_sync"])) {
     return "browser_session_attachment";
   }
-  if (hasAny(["remote_delegation", "remote_task", "cloud_browser", "streamable_http"])) {
+  if (hasAny2(["remote_delegation", "remote_task", "cloud_browser", "streamable_http"])) {
     return "remote_delegation";
   }
-  if (hasAny(["remote_task_management", "task_status", "async_runner"])) {
+  if (hasAny2(["remote_task_management", "task_status", "async_runner"])) {
     return "remote_task_management";
   }
-  if (hasAny(["server_exposure", "mcp_server", "mcp_endpoint"])) {
+  if (hasAny2(["server_exposure", "mcp_server", "mcp_endpoint"])) {
     return "server_exposure";
   }
-  if (hasAny(["local_service_access", "localhost", "loopback", "port_probe"])) {
+  if (hasAny2(["local_service_access", "localhost", "loopback", "port_probe"])) {
     return "local_service_access";
   }
-  if (hasAny(["session", "session_name", "profile", "state", "cookie_store"])) {
+  if (hasAny2(["session", "session_name", "profile", "state", "cookie_store"])) {
     return "session_management";
   }
-  if (hasAny(["extract", "scrape", "screenshot", "html", "text", "dom"])) {
+  if (hasAny2(["extract", "scrape", "screenshot", "html", "text", "dom"])) {
     return "content_extraction";
   }
-  if (hasAny(["documentation_ingestion", "webfetch", "remote_docs"])) {
+  if (hasAny2(["documentation_ingestion", "webfetch", "remote_docs"])) {
     return "documentation_ingestion";
   }
-  if (hasAny(["local_input_control", "clipboard", "paste_keystroke"])) {
+  if (hasAny2(["local_input_control", "clipboard", "paste_keystroke"])) {
     return "local_input_control";
   }
-  if (hasAny(["external_tool_bridge", "tool_bridge", "mcp_integration"])) {
+  if (hasAny2(["external_tool_bridge", "tool_bridge", "mcp_integration"])) {
     return "external_tool_bridge";
   }
-  if (hasAny(["package_bootstrap", "npx", "bunx", "pnpm_dlx"])) {
+  if (hasAny2(["package_bootstrap", "npx", "bunx", "pnpm_dlx"])) {
     return "package_bootstrap";
   }
-  if (hasAny(["environment_configuration", "env_var", "encryption_key"])) {
+  if (hasAny2(["environment_configuration", "env_var", "encryption_key"])) {
     return "environment_configuration";
   }
-  if (hasAny(["payment_processing", "payments", "premium_actions"])) {
+  if (hasAny2(["payment_processing", "payments", "premium_actions"])) {
     return "payment_processing";
   }
-  if (hasAny(["unrestricted_scope", "no_restrictions", "proactive"])) {
+  if (hasAny2(["unrestricted_scope", "no_restrictions", "proactive"])) {
     return "unrestricted_scope";
   }
-  if (hasAny(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
+  if (hasAny2(["orchestration", "orchestrate", "server_lifecycle", "docker_control"])) {
     return "process_orchestration";
   }
-  if (hasAny(["ui_state", "snapshot", "selector", "dom_snapshot"])) {
+  if (hasAny2(["ui_state", "snapshot", "selector", "dom_snapshot"])) {
     return "ui_state_access";
   }
   return null;
@@ -4226,201 +4226,9 @@ async function analyzeSemantic(skill, options) {
   };
 }
 
-// dist/scanner/parser.js
-var URL_REGEX = /https?:\/\/[^\s"'<>\])+,;]+/gi;
-function parseFrontmatter(content) {
-  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
-  if (!match?.[1])
-    return null;
-  const data = {};
-  let currentKey = "";
-  let inArray = false;
-  const arrayItems = [];
-  for (const line of match[1].split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#"))
-      continue;
-    if (inArray) {
-      if (trimmed.startsWith("- ")) {
-        arrayItems.push(trimmed.slice(2).trim().replace(/^["']|["']$/g, ""));
-        continue;
-      }
-      data[currentKey] = [...arrayItems];
-      arrayItems.length = 0;
-      inArray = false;
-    }
-    const kvMatch = trimmed.match(/^(\w[\w-]*):\s*(.*)/);
-    if (kvMatch) {
-      currentKey = kvMatch[1] ?? "";
-      const value = kvMatch[2]?.trim() ?? "";
-      if (value === "" || value === "|" || value === ">") {
-        inArray = value === "";
-        if (!inArray) {
-          data[currentKey] = "";
-        }
-      } else if (value.startsWith("[") && value.endsWith("]")) {
-        data[currentKey] = value.slice(1, -1).split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
-      } else {
-        data[currentKey] = value.replace(/^["']|["']$/g, "");
-      }
-    }
-  }
-  if (inArray && currentKey) {
-    data[currentKey] = [...arrayItems];
-  }
-  return data;
-}
-function extractSections(content) {
-  const sections = {};
-  const lines = content.split("\n");
-  let currentHeading = "";
-  let currentContent = [];
-  for (const line of lines) {
-    const headingMatch = line.match(/^#{1,3}\s+(.+)/);
-    if (headingMatch) {
-      if (currentHeading) {
-        sections[currentHeading] = currentContent.join("\n").trim();
-      }
-      currentHeading = headingMatch[1]?.trim() ?? "";
-      currentContent = [];
-    } else {
-      currentContent.push(line);
-    }
-  }
-  if (currentHeading) {
-    sections[currentHeading] = currentContent.join("\n").trim();
-  }
-  return sections;
-}
-function extractUrls(content) {
-  const matches = content.match(URL_REGEX);
-  if (!matches)
-    return [];
-  return [...new Set(matches.map((u) => u.replace(/[.)]+$/, "")))];
-}
-function extractListItems(text) {
-  const items = [];
-  for (const line of text.split("\n")) {
-    const match = line.match(/^[-*]\s+`?(\w[\w._-]*)`?/);
-    if (match?.[1]) {
-      items.push(match[1]);
-    }
-  }
-  return items;
-}
-function parseDeclaredPermissions(content) {
-  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
-  if (!match?.[1])
-    return [];
-  const lines = match[1].split("\n");
-  const permissions = [];
-  let inPermissions = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (/^permissions:\s*$/.test(trimmed)) {
-      inPermissions = true;
-      continue;
-    }
-    if (inPermissions && /^\w[\w-]*:/.test(trimmed) && !trimmed.startsWith("- ")) {
-      break;
-    }
-    if (inPermissions && trimmed.startsWith("- ")) {
-      const entryMatch = trimmed.match(/^-\s+(\w[\w_-]*):\s*["']?(.+?)["']?\s*$/);
-      if (entryMatch?.[1] && entryMatch[2]) {
-        permissions.push({
-          kind: entryMatch[1],
-          justification: entryMatch[2]
-        });
-      }
-    }
-  }
-  return permissions;
-}
-function detectFormat(content) {
-  const hasFrontmatter = /^---\s*\n[\s\S]*?\n---/.test(content);
-  if (hasFrontmatter) {
-    const fm = parseFrontmatter(content);
-    if (fm && ("name" in fm || "tools" in fm)) {
-      return "openclaw";
-    }
-  }
-  const lowerContent = content.toLowerCase();
-  const hasClaudeHeadings = /^##\s+(tools|instructions|description)/im.test(content) || lowerContent.includes("claude") || lowerContent.includes("anthropic");
-  if (hasClaudeHeadings)
-    return "claude";
-  return "generic";
-}
-function toStringArray(val) {
-  if (!val)
-    return [];
-  if (Array.isArray(val))
-    return val;
-  return val.split(",").map((s) => s.trim()).filter(Boolean);
-}
-function parseSkill(content) {
-  const warnings = [];
-  const format = detectFormat(content);
-  const sections = extractSections(content);
-  const urls = extractUrls(content);
-  let name = "";
-  let description = "";
-  let instructions = "";
-  let tools = [];
-  let permissions = [];
-  let dependencies = [];
-  const declaredPermissions = parseDeclaredPermissions(content);
-  if (format === "openclaw") {
-    const fm = parseFrontmatter(content);
-    if (fm) {
-      name = (typeof fm.name === "string" ? fm.name : fm.name?.[0]) ?? "";
-      description = (typeof fm.description === "string" ? fm.description : fm.description?.[0]) ?? "";
-      tools = toStringArray(fm.tools);
-      permissions = toStringArray(fm.permissions).filter((p) => !/^\s*\w[\w_-]*\s*:/.test(p));
-      dependencies = toStringArray(fm.dependencies);
-    }
-    const bodyMatch = content.match(/^---\s*\n[\s\S]*?\n---\s*\n([\s\S]*)/);
-    instructions = bodyMatch?.[1]?.trim() ?? "";
-  } else if (format === "claude") {
-    name = sections["Description"] ? "" : Object.keys(sections)[0] ?? "";
-    description = sections["Description"] ?? sections["description"] ?? "";
-    instructions = sections["Instructions"] ?? sections["instructions"] ?? "";
-    const toolsSection = sections["Tools"] ?? sections["tools"] ?? "";
-    tools = extractListItems(toolsSection);
-    const permsSection = sections["Permissions"] ?? sections["permissions"] ?? "";
-    permissions = extractListItems(permsSection);
-  } else {
-    const firstHeading = Object.keys(sections)[0];
-    name = firstHeading ?? "";
-    description = sections["Description"] ?? sections["About"] ?? Object.values(sections)[0] ?? "";
-    instructions = content;
-  }
-  if (!name) {
-    const headingMatch = content.match(/^#\s+(.+)/m);
-    if (headingMatch?.[1]) {
-      name = headingMatch[1].trim();
-    } else {
-      const firstLine = content.split("\n").find((l) => l.trim().length > 0);
-      name = firstLine?.trim().slice(0, 100) ?? "Unknown Skill";
-    }
-  }
-  if (!description || description.trim().length < 10) {
-    warnings.push("No description found in skill file");
-  }
-  return {
-    name,
-    description,
-    instructions,
-    tools,
-    permissions,
-    declaredPermissions,
-    dependencies,
-    urls,
-    rawSections: sections,
-    rawContent: content,
-    format,
-    warnings
-  };
-}
+// dist/scanner/companion-code.js
+var import_promises = require("node:fs/promises");
+var import_node_path = require("node:path");
 
 // dist/scanner/report-shaping-keys.js
 var AUTH_PROFILE_RELATED = /(auth|cookie|profile|session|token|vault|login)/i;
@@ -5026,8 +4834,431 @@ function aggregateScores(categories, metadata) {
   };
 }
 
+// dist/scanner/companion-code.js
+var DEFAULT_IGNORED_DIRS = /* @__PURE__ */ new Set([
+  ".git",
+  "node_modules",
+  "dist",
+  "build",
+  "coverage",
+  ".next",
+  ".turbo"
+]);
+var TEXT_SOURCE_EXTENSIONS = /* @__PURE__ */ new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".sh", ".bash"]);
+var MAX_FILE_BYTES = 256 * 1024;
+var MAX_SOURCE_FILES = 12;
+var SENSITIVE_DISCLOSURE = /\b(?:credential|credentials|token|secret|api[_ -]?key|password|auth|oauth|cookie|session|login|webhook|environment variable|process\.env|\.env)\b/i;
+var SECRET_SOURCE_PATTERNS = [
+  /process\.env\.[A-Z0-9_]+/i,
+  /process\.env\[['"][A-Z0-9_]+['"]\]/i,
+  /os\.environ\[['"][A-Z0-9_]+['"]\]/i,
+  /os\.getenv\(['"][A-Z0-9_]+['"]\)/i,
+  /getenv\(['"][A-Z0-9_]+['"]\)/i,
+  /~\/\.(?:aws\/credentials|ssh\/id_rsa|ssh\/id_ed25519)/i,
+  /\.aws\/credentials/i,
+  /\.ssh\/(?:id_rsa|id_ed25519|authorized_keys)/i,
+  /\b(?:API[_-]?KEY|ACCESS[_-]?TOKEN|SECRET|PASSWORD|AUTH[_-]?TOKEN|OPENAI_API_KEY)\b/i,
+  /\b[A-Z0-9_]*(?:TOKEN|API[_-]?KEY|SECRET|PASSWORD|COOKIE)\b/i
+];
+var LOG_PATTERNS = [
+  /\bconsole\.(?:log|error|warn)\s*\(/i,
+  /\bprint\s*\(/i,
+  /\bprocess\.(?:stdout|stderr)\.write\s*\(/i,
+  /\bstdout\.write\s*\(/i,
+  /\bstderr\.write\s*\(/i,
+  /\bprintf\b[^\n]{0,160}(?:>&2|1>&2|2>|>>)/i,
+  /\becho\s+["'$]/i,
+  /\blogger\.(?:info|debug|warning)\s*\(/i
+];
+var NETWORK_PATTERNS2 = [
+  /\bfetch\s*\(/i,
+  /\baxios\.(?:post|get|request)\s*\(/i,
+  /\brequests\.(?:post|get|request)\s*\(/i,
+  /\bhttpx\.(?:post|get|request)\s*\(/i,
+  /\burllib\.request\b/i,
+  /\baiohttp\b/i,
+  /\bwebhook\b/i,
+  /\bcurl\b.{0,80}https?:\/\//i,
+  /https?:\/\//i
+];
+var SECRET_TO_NETWORK_PATTERNS = [
+  /(?:body|json)\s*[:=]\s*(?:JSON\.stringify\()?[^\n]{0,180}\b(?:api[_-]?key|token|secret|credentials?|cookie|auth)\b/i,
+  /(?:fetch|axios\.(?:post|get|request)|requests\.(?:post|get|request)|httpx\.(?:post|get|request))\([^\n]{0,180}\b(?:webhook|exfil|collector|pastebin|requestbin|discord|slack|evil)\b/i
+];
+var SUSPICIOUS_ENDPOINT_PATTERNS = [
+  /https?:\/\/[^\s"')]+(?:evil|exfil|webhook|collector|pastebin|requestbin|discord|slack)[^\s"')]*/i,
+  /\b(?:webhook|exfiltrat(?:e|ion)|collector)\b/i
+];
+var CREDENTIAL_FILE_READ = [
+  /open\([^\n]{0,120}(?:\.aws\/credentials|\.ssh\/(?:id_rsa|id_ed25519)|\.env)/i,
+  /readFile(?:Sync)?\([^\n]{0,120}(?:\.aws\/credentials|\.ssh\/(?:id_rsa|id_ed25519)|\.env)/i,
+  /cat\s+[^\n]{0,80}(?:\.aws\/credentials|\.ssh\/(?:id_rsa|id_ed25519)|\.env)/i
+];
+async function collectCompanionSourceFiles(dir, out) {
+  if (out.length >= MAX_SOURCE_FILES)
+    return;
+  const entries = await (0, import_promises.readdir)(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (out.length >= MAX_SOURCE_FILES)
+      break;
+    const full = (0, import_node_path.join)(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (DEFAULT_IGNORED_DIRS.has(entry.name))
+        continue;
+      await collectCompanionSourceFiles(full, out);
+      continue;
+    }
+    if (!entry.isFile())
+      continue;
+    const ext = (0, import_node_path.extname)(entry.name).toLowerCase();
+    if (!TEXT_SOURCE_EXTENSIONS.has(ext))
+      continue;
+    if (entry.name.toLowerCase() === "skill.md" || entry.name.toLowerCase() === "skills.md")
+      continue;
+    const fileStat = await (0, import_promises.stat)(full).catch(() => null);
+    if (!fileStat?.isFile() || fileStat.size > MAX_FILE_BYTES)
+      continue;
+    out.push(full);
+  }
+}
+function findEvidence(text, patterns) {
+  const lines = text.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    if (!patterns.some((pattern) => pattern.test(line)))
+      continue;
+    return { path: "", line: line.trim().slice(0, 240), lineNumber: index + 1 };
+  }
+  return null;
+}
+function hasAny(text, patterns) {
+  return patterns.some((pattern) => pattern.test(text));
+}
+function buildEvidence(baseDir, filePath, evidence) {
+  const rel = (0, import_node_path.relative)(baseDir, filePath) || filePath;
+  return `${rel}:${evidence.lineNumber ?? "?"} ${evidence.line}`.trim();
+}
+function addFinding(findings, finding) {
+  if (findings.some((existing) => existing.id === finding.id))
+    return;
+  findings.push(finding);
+}
+function buildCompanionFindings(skill, baseDir, filePath, text, index) {
+  const findings = [];
+  const secretSource = hasAny(text, SECRET_SOURCE_PATTERNS);
+  const networkSink = hasAny(text, NETWORK_PATTERNS2);
+  const secretToNetwork = hasAny(text, SECRET_TO_NETWORK_PATTERNS);
+  const credentialFileRead = hasAny(text, CREDENTIAL_FILE_READ);
+  const suspiciousEndpoint = hasAny(text, SUSPICIOUS_ENDPOINT_PATTERNS);
+  const logSink = hasAny(text, LOG_PATTERNS);
+  const secretEvidence = findEvidence(text, SECRET_SOURCE_PATTERNS) ?? findEvidence(text, CREDENTIAL_FILE_READ);
+  const logEvidence = findEvidence(text, LOG_PATTERNS);
+  const networkEvidence = findEvidence(text, NETWORK_PATTERNS2);
+  const documentedSensitive = SENSITIVE_DISCLOSURE.test(skill.rawContent) || skill.permissions.some((perm) => /(?:network|env|credential|secret|auth|cookie|session|file_read)/i.test(perm)) || skill.declaredPermissions.some((declared) => /(?:network|credential|secret|auth|cookie|session|file_read)/i.test(`${declared.kind} ${declared.justification}`));
+  if (secretSource && logSink && secretEvidence) {
+    addFinding(findings, {
+      id: `COMP-CODE-SECRET-LOG-${index}`,
+      category: "code-safety",
+      severity: "critical",
+      title: "Companion code logs secrets to stdout",
+      description: "A companion source file appears to read credentials or environment secrets and print them to stdout/log output. Agent frameworks commonly capture stdout into context, which can expose secrets during normal execution without any additional exploit.",
+      evidence: buildEvidence(baseDir, filePath, logEvidence ?? secretEvidence),
+      lineNumber: (logEvidence ?? secretEvidence).lineNumber,
+      deduction: 30,
+      recommendation: "Remove secret-bearing debug output. Never print environment variables, tokens, cookies, or credential file contents to stdout/stderr during agent execution.",
+      owaspCategory: "ASST-05"
+    });
+  }
+  if (secretSource && networkSink && secretEvidence && (credentialFileRead || secretToNetwork)) {
+    const isCriticalExfil = credentialFileRead || suspiciousEndpoint;
+    addFinding(findings, {
+      id: `COMP-CODE-SECRET-EXFIL-${index}`,
+      category: "code-safety",
+      severity: isCriticalExfil ? "critical" : "high",
+      title: credentialFileRead ? "Companion code reads credential files and sends them over the network" : isCriticalExfil ? "Companion code sends secrets to a suspicious external endpoint" : "Companion code combines secret access with outbound network transmission",
+      description: credentialFileRead ? "A companion source file appears to read local credential material (for example ~/.aws/credentials or .env) and transmit it over the network." : isCriticalExfil ? "A companion source file appears to access secrets or environment credentials and send them to a suspicious webhook or explicit exfiltration endpoint." : "A companion source file appears to access secrets or environment credentials and send data to a remote endpoint, which is consistent with credential exfiltration.",
+      evidence: buildEvidence(baseDir, filePath, networkEvidence ?? secretEvidence),
+      lineNumber: (networkEvidence ?? secretEvidence).lineNumber,
+      deduction: isCriticalExfil ? 30 : 22,
+      recommendation: "Remove outbound transmission of secrets and credential material. Keep sensitive tokens and credential files out of request bodies, logs, and webhooks.",
+      owaspCategory: isCriticalExfil ? "ASST-02" : "ASST-05"
+    });
+  }
+  if (!documentedSensitive && findings.length > 0) {
+    const hasCriticalCompanion = findings.some((finding) => finding.severity === "critical");
+    const mismatchEvidence = secretEvidence ?? networkEvidence ?? { path: filePath, line: "companion source file", lineNumber: void 0 };
+    addFinding(findings, {
+      id: `COMP-MISMATCH-${index}`,
+      category: "behavioral",
+      severity: hasCriticalCompanion ? "critical" : "high",
+      title: "Companion code behavior exceeds the skill's documented scope",
+      description: "The skill's description and instructions do not clearly disclose credential handling or sensitive outbound behavior, but a companion source file contains those behaviors. This creates a trust gap between what the skill says and what the shipped code appears to do.",
+      evidence: buildEvidence(baseDir, filePath, mismatchEvidence),
+      lineNumber: secretEvidence?.lineNumber ?? networkEvidence?.lineNumber,
+      deduction: hasCriticalCompanion ? 18 : 12,
+      recommendation: "Document sensitive capabilities explicitly, remove undeclared credential/network behavior, and align companion code with the skill's stated purpose before distribution.",
+      owaspCategory: "ASST-07"
+    });
+    addFinding(findings, {
+      id: `COMP-PERM-${index}`,
+      category: "permissions",
+      severity: hasCriticalCompanion ? "critical" : "medium",
+      title: credentialFileRead ? "Companion code implies undeclared credential and file access" : "Companion code implies undeclared credential access",
+      description: credentialFileRead ? "A companion source file appears to access credential material and local credential files that are not clearly disclosed by the skill's documented permissions or instructions." : "A companion source file appears to access credentials or environment secrets that are not clearly disclosed by the skill's documented permissions or instructions.",
+      evidence: buildEvidence(baseDir, filePath, mismatchEvidence),
+      lineNumber: mismatchEvidence.lineNumber,
+      deduction: hasCriticalCompanion ? 18 : 8,
+      recommendation: "Declare sensitive companion-code capabilities explicitly and remove credential access that is not essential to the skill's documented purpose.",
+      owaspCategory: "ASST-03"
+    });
+  }
+  return findings;
+}
+async function findCompanionCodeFindings(skill, baseDir) {
+  const files = [];
+  await collectCompanionSourceFiles(baseDir, files).catch(() => void 0);
+  const findings = [];
+  let fileIndex = 1;
+  for (const filePath of files) {
+    const text = await (0, import_promises.readFile)(filePath, "utf-8").catch(() => null);
+    if (!text)
+      continue;
+    findings.push(...buildCompanionFindings(skill, baseDir, filePath, text, fileIndex));
+    fileIndex += 1;
+  }
+  return findings;
+}
+function findCompanionCodeFindingsInFiles(skill, baseDir, files) {
+  const findings = [];
+  let fileIndex = 1;
+  for (const file of files.slice(0, MAX_SOURCE_FILES)) {
+    findings.push(...buildCompanionFindings(skill, baseDir, file.path, file.content, fileIndex));
+    fileIndex += 1;
+  }
+  return findings;
+}
+function applyFindingsToReport(report, findings) {
+  if (findings.length === 0)
+    return report;
+  const updatedCategories = { ...report.categories };
+  for (const finding of findings) {
+    const category = updatedCategories[finding.category];
+    updatedCategories[finding.category] = {
+      ...category,
+      score: Math.max(0, category.score - finding.deduction),
+      findings: [...category.findings, finding],
+      summary: `${category.summary} Companion code finding: ${finding.title}.`
+    };
+  }
+  return aggregateScores(updatedCategories, report.metadata);
+}
+async function applyCompanionCodeFindings(report, skill, baseDir) {
+  const findings = await findCompanionCodeFindings(skill, baseDir);
+  return applyFindingsToReport(report, findings);
+}
+function applyCompanionCodeFindingsInFiles(report, skill, baseDir, files) {
+  const findings = findCompanionCodeFindingsInFiles(skill, baseDir, files);
+  return applyFindingsToReport(report, findings);
+}
+
+// dist/scanner/parser.js
+var URL_REGEX = /https?:\/\/[^\s"'<>\])+,;]+/gi;
+function parseFrontmatter(content) {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!match?.[1])
+    return null;
+  const data = {};
+  let currentKey = "";
+  let inArray = false;
+  const arrayItems = [];
+  for (const line of match[1].split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#"))
+      continue;
+    if (inArray) {
+      if (trimmed.startsWith("- ")) {
+        arrayItems.push(trimmed.slice(2).trim().replace(/^["']|["']$/g, ""));
+        continue;
+      }
+      data[currentKey] = [...arrayItems];
+      arrayItems.length = 0;
+      inArray = false;
+    }
+    const kvMatch = trimmed.match(/^(\w[\w-]*):\s*(.*)/);
+    if (kvMatch) {
+      currentKey = kvMatch[1] ?? "";
+      const value = kvMatch[2]?.trim() ?? "";
+      if (value === "" || value === "|" || value === ">") {
+        inArray = value === "";
+        if (!inArray) {
+          data[currentKey] = "";
+        }
+      } else if (value.startsWith("[") && value.endsWith("]")) {
+        data[currentKey] = value.slice(1, -1).split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      } else {
+        data[currentKey] = value.replace(/^["']|["']$/g, "");
+      }
+    }
+  }
+  if (inArray && currentKey) {
+    data[currentKey] = [...arrayItems];
+  }
+  return data;
+}
+function extractSections(content) {
+  const sections = {};
+  const lines = content.split("\n");
+  let currentHeading = "";
+  let currentContent = [];
+  for (const line of lines) {
+    const headingMatch = line.match(/^#{1,3}\s+(.+)/);
+    if (headingMatch) {
+      if (currentHeading) {
+        sections[currentHeading] = currentContent.join("\n").trim();
+      }
+      currentHeading = headingMatch[1]?.trim() ?? "";
+      currentContent = [];
+    } else {
+      currentContent.push(line);
+    }
+  }
+  if (currentHeading) {
+    sections[currentHeading] = currentContent.join("\n").trim();
+  }
+  return sections;
+}
+function extractUrls(content) {
+  const matches = content.match(URL_REGEX);
+  if (!matches)
+    return [];
+  return [...new Set(matches.map((u) => u.replace(/[.)]+$/, "")))];
+}
+function extractListItems(text) {
+  const items = [];
+  for (const line of text.split("\n")) {
+    const match = line.match(/^[-*]\s+`?(\w[\w._-]*)`?/);
+    if (match?.[1]) {
+      items.push(match[1]);
+    }
+  }
+  return items;
+}
+function parseDeclaredPermissions(content) {
+  const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (!match?.[1])
+    return [];
+  const lines = match[1].split("\n");
+  const permissions = [];
+  let inPermissions = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (/^permissions:\s*$/.test(trimmed)) {
+      inPermissions = true;
+      continue;
+    }
+    if (inPermissions && /^\w[\w-]*:/.test(trimmed) && !trimmed.startsWith("- ")) {
+      break;
+    }
+    if (inPermissions && trimmed.startsWith("- ")) {
+      const entryMatch = trimmed.match(/^-\s+(\w[\w_-]*):\s*["']?(.+?)["']?\s*$/);
+      if (entryMatch?.[1] && entryMatch[2]) {
+        permissions.push({
+          kind: entryMatch[1],
+          justification: entryMatch[2]
+        });
+      }
+    }
+  }
+  return permissions;
+}
+function detectFormat(content) {
+  const hasFrontmatter = /^---\s*\n[\s\S]*?\n---/.test(content);
+  if (hasFrontmatter) {
+    const fm = parseFrontmatter(content);
+    if (fm && ("name" in fm || "tools" in fm)) {
+      return "openclaw";
+    }
+  }
+  const lowerContent = content.toLowerCase();
+  const hasClaudeHeadings = /^##\s+(tools|instructions|description)/im.test(content) || lowerContent.includes("claude") || lowerContent.includes("anthropic");
+  if (hasClaudeHeadings)
+    return "claude";
+  return "generic";
+}
+function toStringArray(val) {
+  if (!val)
+    return [];
+  if (Array.isArray(val))
+    return val;
+  return val.split(",").map((s) => s.trim()).filter(Boolean);
+}
+function parseSkill(content) {
+  const warnings = [];
+  const format = detectFormat(content);
+  const sections = extractSections(content);
+  const urls = extractUrls(content);
+  let name = "";
+  let description = "";
+  let instructions = "";
+  let tools = [];
+  let permissions = [];
+  let dependencies = [];
+  const declaredPermissions = parseDeclaredPermissions(content);
+  if (format === "openclaw") {
+    const fm = parseFrontmatter(content);
+    if (fm) {
+      name = (typeof fm.name === "string" ? fm.name : fm.name?.[0]) ?? "";
+      description = (typeof fm.description === "string" ? fm.description : fm.description?.[0]) ?? "";
+      tools = toStringArray(fm.tools);
+      permissions = toStringArray(fm.permissions).filter((p) => !/^\s*\w[\w_-]*\s*:/.test(p));
+      dependencies = toStringArray(fm.dependencies);
+    }
+    const bodyMatch = content.match(/^---\s*\n[\s\S]*?\n---\s*\n([\s\S]*)/);
+    instructions = bodyMatch?.[1]?.trim() ?? "";
+  } else if (format === "claude") {
+    name = sections["Description"] ? "" : Object.keys(sections)[0] ?? "";
+    description = sections["Description"] ?? sections["description"] ?? "";
+    instructions = sections["Instructions"] ?? sections["instructions"] ?? "";
+    const toolsSection = sections["Tools"] ?? sections["tools"] ?? "";
+    tools = extractListItems(toolsSection);
+    const permsSection = sections["Permissions"] ?? sections["permissions"] ?? "";
+    permissions = extractListItems(permsSection);
+  } else {
+    const firstHeading = Object.keys(sections)[0];
+    name = firstHeading ?? "";
+    description = sections["Description"] ?? sections["About"] ?? Object.values(sections)[0] ?? "";
+    instructions = content;
+  }
+  if (!name) {
+    const headingMatch = content.match(/^#\s+(.+)/m);
+    if (headingMatch?.[1]) {
+      name = headingMatch[1].trim();
+    } else {
+      const firstLine = content.split("\n").find((l) => l.trim().length > 0);
+      name = firstLine?.trim().slice(0, 100) ?? "Unknown Skill";
+    }
+  }
+  if (!description || description.trim().length < 10) {
+    warnings.push("No description found in skill file");
+  }
+  return {
+    name,
+    description,
+    instructions,
+    tools,
+    permissions,
+    declaredPermissions,
+    dependencies,
+    urls,
+    rawSections: sections,
+    rawContent: content,
+    format,
+    warnings
+  };
+}
+
 // dist/scanner/source.js
-var import_promises = require("node:dns/promises");
+var import_promises2 = require("node:dns/promises");
 var import_node_net = require("node:net");
 
 // node_modules/.pnpm/fflate@0.8.2/node_modules/fflate/esm/index.mjs
@@ -5510,7 +5741,7 @@ var ASST_CATEGORIES = {
   "ASST-10": "Obfuscation",
   "ASST-11": "Trigger Manipulation"
 };
-var SCANNER_VERSION = "0.7.1";
+var SCANNER_VERSION = "0.8.0";
 
 // dist/scanner/source.js
 var DEFAULT_HEADERS = {
@@ -5526,6 +5757,10 @@ var MAX_ZIP_ENTRIES = 2e3;
 var MAX_ZIP_SKILL_CANDIDATES = 10;
 var MAX_SKILL_MD_BYTES = 2e6;
 var MAX_TOTAL_UNZIPPED_BYTES = 5e6;
+var MAX_COMPANION_TEXT_FILE_BYTES = 256 * 1024;
+var MAX_COMPANION_TEXT_FILES = 12;
+var MAX_GITHUB_COMPANION_DIRS = 12;
+var COMPANION_TEXT_EXTENSIONS = /* @__PURE__ */ new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".py", ".sh", ".bash"]);
 function normalizeGithubUrl(url) {
   if (url.hostname !== "github.com")
     return url.toString();
@@ -5598,6 +5833,79 @@ function isClawHubDownloadUrl(url) {
   } catch {
     return false;
   }
+}
+function isCompanionTextPath(path) {
+  const base = path.split("/").pop() ?? path;
+  const lower = base.toLowerCase();
+  if (lower === "skill.md" || lower === "skills.md")
+    return false;
+  const ext = lower.includes(".") ? `.${lower.split(".").pop()}` : "";
+  return COMPANION_TEXT_EXTENSIONS.has(ext);
+}
+function parseRawGithubSkillUrl(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return null;
+  }
+  if (parsed.hostname !== "raw.githubusercontent.com")
+    return null;
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  if (parts.length < 4)
+    return null;
+  const owner = parts[0] ?? "";
+  const repo = parts[1] ?? "";
+  const branch = parts[2] ?? "";
+  const skillPath = parts.slice(3).join("/");
+  if (!owner || !repo || !branch || !skillPath)
+    return null;
+  const skillDir = skillPath.includes("/") ? skillPath.slice(0, skillPath.lastIndexOf("/")) : "";
+  return { owner, repo, branch, skillPath, skillDir };
+}
+async function fetchGithubCompanionFiles(rawUrl, init) {
+  const parsed = parseRawGithubSkillUrl(rawUrl);
+  if (!parsed)
+    return [];
+  const encodeDir = (dir) => dir.split("/").filter(Boolean).map((part) => encodeURIComponent(part)).join("/");
+  const buildApiUrl = (dir) => `https://api.github.com/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}/contents${dir ? `/${encodeDir(dir)}` : ""}?ref=${encodeURIComponent(parsed.branch)}`;
+  const files = [];
+  const queue = [parsed.skillDir];
+  const visited = /* @__PURE__ */ new Set();
+  while (queue.length > 0 && visited.size < MAX_GITHUB_COMPANION_DIRS && files.length < MAX_COMPANION_TEXT_FILES) {
+    const dir = queue.shift() ?? "";
+    if (visited.has(dir))
+      continue;
+    visited.add(dir);
+    const { response } = await fetchWithRedirectValidation(buildApiUrl(dir), init);
+    if (!response.ok)
+      continue;
+    const text = await response.text();
+    const entries = JSON.parse(text);
+    if (!Array.isArray(entries))
+      continue;
+    for (const entry of entries) {
+      if (!entry.path)
+        continue;
+      if (entry.type === "dir") {
+        if (entry.path.startsWith(dir ? `${dir}/` : "") && !visited.has(entry.path)) {
+          queue.push(entry.path);
+        }
+        continue;
+      }
+      if (entry.type !== "file" || !entry.download_url || !isCompanionTextPath(entry.path))
+        continue;
+      const { response: fileResponse } = await fetchWithRedirectValidation(entry.download_url, init);
+      if (!fileResponse.ok)
+        continue;
+      const bytes = await readResponseBytesWithLimit(fileResponse, MAX_COMPANION_TEXT_FILE_BYTES);
+      const content = new TextDecoder("utf-8").decode(bytes);
+      files.push({ path: entry.path, content });
+      if (files.length >= MAX_COMPANION_TEXT_FILES)
+        break;
+    }
+  }
+  return files;
 }
 function pickSkillMdPath(filePaths) {
   const candidates = filePaths.filter((p) => {
@@ -5765,7 +6073,7 @@ function isBlockedIpv6(ipRaw) {
     return true;
   if (bytes.length !== 16)
     return true;
-  const b = (idx) => bytes[idx];
+  const b = (idx) => bytes[idx] ?? 0;
   if (isAllZero(bytes, 0, 16))
     return true;
   if (isAllZero(bytes, 0, 15) && b(15) === 1)
@@ -5840,7 +6148,7 @@ async function assertUrlAllowed(url) {
   }
   let records;
   try {
-    records = await (0, import_promises.lookup)(hostname, { all: true, verbatim: true });
+    records = await (0, import_promises2.lookup)(hostname, { all: true, verbatim: true });
   } catch {
     throw new Error(`Unable to resolve hostname: ${hostname}`);
   }
@@ -5932,15 +6240,19 @@ function extractSkillMdFromZip(zipBytes) {
       }
       const base = file.name.split("/").pop() ?? file.name;
       const lower = base.toLowerCase();
-      const isCandidate = lower === "skill.md" || lower === "skills.md";
-      if (!isCandidate)
+      const ext = lower.includes(".") ? `.${lower.split(".").pop()}` : "";
+      const isSkillCandidate = lower === "skill.md" || lower === "skills.md";
+      const isCompanionCandidate = COMPANION_TEXT_EXTENSIONS.has(ext);
+      if (!isSkillCandidate && !isCompanionCandidate)
         return false;
-      candidateCount += 1;
-      if (candidateCount > MAX_ZIP_SKILL_CANDIDATES) {
-        throw new Error(`Zip contains too many SKILL.md candidates (> ${MAX_ZIP_SKILL_CANDIDATES}).`);
-      }
-      if (file.originalSize > MAX_SKILL_MD_BYTES) {
-        throw new Error(`SKILL.md is too large (${file.originalSize} bytes > ${MAX_SKILL_MD_BYTES} bytes).`);
+      if (isSkillCandidate) {
+        candidateCount += 1;
+        if (candidateCount > MAX_ZIP_SKILL_CANDIDATES) {
+          throw new Error(`Zip contains too many SKILL.md candidates (> ${MAX_ZIP_SKILL_CANDIDATES}).`);
+        }
+        if (file.originalSize > MAX_SKILL_MD_BYTES) {
+          throw new Error(`SKILL.md is too large (${file.originalSize} bytes > ${MAX_SKILL_MD_BYTES} bytes).`);
+        }
       }
       totalUnzipped += file.originalSize;
       if (totalUnzipped > MAX_TOTAL_UNZIPPED_BYTES) {
@@ -5956,7 +6268,21 @@ function extractSkillMdFromZip(zipBytes) {
     throw new Error(`Zip did not contain SKILL.md (found ${entryCount} entries). First entries: ${preview}`);
   }
   const decoder = new TextDecoder("utf-8");
-  return { content: decoder.decode(files[skillMdPath]), path: skillMdPath };
+  const skillDir = skillMdPath.includes("/") ? skillMdPath.slice(0, skillMdPath.lastIndexOf("/")) : "";
+  const companionPrefix = skillDir ? `${skillDir}/` : "";
+  const companionFiles = paths.filter((path) => {
+    if (path === skillMdPath)
+      return false;
+    const base = path.split("/").pop() ?? path;
+    const lower = base.toLowerCase();
+    if (lower === "skill.md" || lower === "skills.md")
+      return false;
+    const ext = lower.includes(".") ? `.${lower.split(".").pop()}` : "";
+    if (!COMPANION_TEXT_EXTENSIONS.has(ext))
+      return false;
+    return companionPrefix ? path.startsWith(companionPrefix) : !path.includes("/");
+  }).sort((a, b) => a.localeCompare(b)).slice(0, MAX_COMPANION_TEXT_FILES).map((path) => ({ path, content: decoder.decode(files[path] ?? new Uint8Array()) }));
+  return { content: decoder.decode(files[skillMdPath]), path: skillMdPath, companionFiles };
 }
 async function fetchSkillContentFromUrl(inputUrl, options) {
   const sourceUrl = normalizeSkillUrl(inputUrl);
@@ -5992,11 +6318,15 @@ async function fetchSkillContentFromUrl(inputUrl, options) {
       if (isZipResponse(contentType, finalUrl)) {
         const zipBytes = await readResponseBytesWithLimit(response, MAX_ZIP_BYTES);
         const extracted = extractSkillMdFromZip(zipBytes);
-        return { content: extracted.content, sourceUrl: finalUrl };
+        return { content: extracted.content, sourceUrl: finalUrl, companionFiles: extracted.companionFiles };
       }
       const bytes = await readResponseBytesWithLimit(response, MAX_TEXT_BYTES);
       const text = new TextDecoder("utf-8").decode(bytes);
-      return { content: text, sourceUrl: finalUrl };
+      const companionFiles = await fetchGithubCompanionFiles(finalUrl, {
+        headers: DEFAULT_HEADERS,
+        signal: timeoutMs > 0 ? AbortSignal.timeout(timeoutMs) : void 0
+      }).catch(() => []);
+      return { content: text, sourceUrl: finalUrl, companionFiles };
     } catch (err2) {
       lastError = err2;
       if (attempt < retries && isRetryableError(err2)) {
@@ -6163,14 +6493,18 @@ async function scanSkill(content, options) {
   return aggregateScores(categories, metadata);
 }
 async function scanSkillFromUrl(url, options) {
-  const { content } = await fetchSkillContentFromUrl(url, options);
-  return scanSkill(content, options);
+  const { content, companionFiles } = await fetchSkillContentFromUrl(url, options);
+  const report = await scanSkill(content, options);
+  if (!companionFiles || companionFiles.length === 0)
+    return report;
+  const skill = parseSkill(content);
+  return applyCompanionCodeFindingsInFiles(report, skill, "remote-bundle", companionFiles);
 }
 
 // dist/scanner/binary.js
-var import_promises2 = require("node:fs/promises");
-var import_node_path = require("node:path");
-var DEFAULT_IGNORED_DIRS = /* @__PURE__ */ new Set([
+var import_promises3 = require("node:fs/promises");
+var import_node_path2 = require("node:path");
+var DEFAULT_IGNORED_DIRS2 = /* @__PURE__ */ new Set([
   ".git",
   "node_modules",
   "dist",
@@ -6190,12 +6524,12 @@ var MACHO_MAGICS = /* @__PURE__ */ new Set([
 ]);
 async function readMagicBytes(path) {
   try {
-    const s = await (0, import_promises2.stat)(path);
+    const s = await (0, import_promises3.stat)(path);
     if (!s.isFile())
       return null;
     if (s.size < 4)
       return null;
-    const fh = await (0, import_promises2.open)(path, "r");
+    const fh = await (0, import_promises3.open)(path, "r");
     try {
       const buf = Buffer.alloc(4);
       await fh.read(buf, 0, 4, 0);
@@ -6208,7 +6542,7 @@ async function readMagicBytes(path) {
   }
 }
 async function isExecutableBinary(path) {
-  const ext = (0, import_node_path.extname)(path).toLowerCase();
+  const ext = (0, import_node_path2.extname)(path).toLowerCase();
   const extSuspicious = EXECUTABLE_EXTENSIONS.has(ext);
   const magic = await readMagicBytes(path);
   if (!magic)
@@ -6226,13 +6560,13 @@ async function isExecutableBinary(path) {
 async function walkForExecutableBinaries(dir, out, maxResults) {
   if (out.length >= maxResults)
     return;
-  const entries = await (0, import_promises2.readdir)(dir, { withFileTypes: true });
+  const entries = await (0, import_promises3.readdir)(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (out.length >= maxResults)
       break;
-    const full = (0, import_node_path.join)(dir, entry.name);
+    const full = (0, import_node_path2.join)(dir, entry.name);
     if (entry.isDirectory()) {
-      if (DEFAULT_IGNORED_DIRS.has(entry.name))
+      if (DEFAULT_IGNORED_DIRS2.has(entry.name))
         continue;
       await walkForExecutableBinaries(full, out, maxResults);
       continue;
@@ -6251,10 +6585,10 @@ async function findExecutableBinaries(rootDir, opts) {
 }
 
 // dist/scanner/targets.js
-var import_promises3 = require("node:fs/promises");
-var import_node_path2 = require("node:path");
+var import_promises4 = require("node:fs/promises");
+var import_node_path3 = require("node:path");
 var SKILL_BASENAMES = /* @__PURE__ */ new Set(["skill.md", "skills.md"]);
-var DEFAULT_IGNORED_DIRS2 = /* @__PURE__ */ new Set([
+var DEFAULT_IGNORED_DIRS3 = /* @__PURE__ */ new Set([
   ".git",
   "node_modules",
   "dist",
@@ -6267,11 +6601,11 @@ function isUrlTarget(target) {
   return target.startsWith("http://") || target.startsWith("https://");
 }
 async function walkForSkills(dir, out) {
-  const entries = await (0, import_promises3.readdir)(dir, { withFileTypes: true });
+  const entries = await (0, import_promises4.readdir)(dir, { withFileTypes: true });
   for (const entry of entries) {
-    const full = (0, import_node_path2.join)(dir, entry.name);
+    const full = (0, import_node_path3.join)(dir, entry.name);
     if (entry.isDirectory()) {
-      if (DEFAULT_IGNORED_DIRS2.has(entry.name))
+      if (DEFAULT_IGNORED_DIRS3.has(entry.name))
         continue;
       await walkForSkills(full, out);
       continue;
@@ -6292,7 +6626,7 @@ async function expandScanTargets(inputs) {
     }
     let s;
     try {
-      s = await (0, import_promises3.stat)(input);
+      s = await (0, import_promises4.stat)(input);
     } catch {
       throw new Error(`Target not found: ${input}`);
     }
@@ -6321,8 +6655,8 @@ function applyBinaryArtifacts(report, target, binaries) {
   if (binaries.length === 0)
     return report;
   const deps = report.categories.dependencies;
-  const baseDir = (0, import_node_path3.dirname)(target);
-  const evidenceList = binaries.slice(0, 3).map((p) => (0, import_node_path3.relative)(baseDir, p)).join(", ");
+  const baseDir = (0, import_node_path4.dirname)(target);
+  const evidenceList = binaries.slice(0, 3).map((p) => (0, import_node_path4.relative)(baseDir, p)).join(", ");
   const evidence = evidenceList + (binaries.length > 3 ? ` (+${binaries.length - 3} more)` : "");
   const finding = {
     id: `DEP-BINARY-${binaries.length}`,
@@ -6352,10 +6686,12 @@ async function scanTarget(target, options) {
     const report2 = await scanSkillFromUrl(target, options);
     return { target, report: report2 };
   }
-  const content = await (0, import_promises4.readFile)(target, "utf-8");
+  const content = await (0, import_promises5.readFile)(target, "utf-8");
+  const skill = parseSkill(content);
   const baseReport = await scanSkill(content, options);
-  const binaries = await getBinariesForDir((0, import_node_path3.dirname)(target));
-  const report = applyBinaryArtifacts(baseReport, target, binaries);
+  const binaries = await getBinariesForDir((0, import_node_path4.dirname)(target));
+  const withBinaries = applyBinaryArtifacts(baseReport, target, binaries);
+  const report = await applyCompanionCodeFindings(withBinaries, skill, (0, import_node_path4.dirname)(target));
   return { target, report };
 }
 async function scanTargetsBatch(targets, options) {
