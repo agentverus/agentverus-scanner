@@ -3,6 +3,8 @@ import { dirname, relative } from "node:path";
 
 import { scanSkill, scanSkillFromUrl } from "./index.js";
 import { findExecutableBinaries } from "./binary.js";
+import { applyCompanionCodeFindings } from "./companion-code.js";
+import { parseSkill } from "./parser.js";
 import { aggregateScores } from "./scoring.js";
 import type { Finding, ScanOptions, TrustReport } from "./types.js";
 import { isUrlTarget } from "./targets.js";
@@ -74,11 +76,13 @@ export async function scanTarget(target: string, options?: ScanOptions): Promise
 	}
 
 	const content = await readFile(target, "utf-8");
+	const skill = parseSkill(content);
 	const baseReport = await scanSkill(content, options);
 
 	// Local-only: best-effort scan for packaged executable binaries.
 	const binaries = await getBinariesForDir(dirname(target));
-	const report = applyBinaryArtifacts(baseReport, target, binaries);
+	const withBinaries = applyBinaryArtifacts(baseReport, target, binaries);
+	const report = await applyCompanionCodeFindings(withBinaries, skill, dirname(target));
 
 	return { target, report };
 }
