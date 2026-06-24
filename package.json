@@ -43,6 +43,18 @@
 		"prepublishOnly": "pnpm build"
 	},
 	"packageManager": "pnpm@10.28.0",
+	"pnpm": {
+		"overrides": {
+			"@hono/node-server@<1.19.13": "^1.19.13",
+			"hono@<4.12.25": "^4.12.25",
+			"fast-uri@<3.1.2": "^3.1.2",
+			"ajv@<8.20.0": "^8.20.0",
+			"path-to-regexp@<8.4.2": "^8.4.2",
+			"express-rate-limit@<8.5.2": "^8.5.2",
+			"qs@<6.15.2": "^6.15.2",
+			"ip-address@<10.2.0": "^10.2.0"
+		}
+	},
 	"dependencies": {
 		"fflate": "^0.8.2"
 	},

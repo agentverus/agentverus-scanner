@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -13,7 +14,8 @@ function toJsonText(value: unknown): string {
 	return JSON.stringify(value, null, 2);
 }
 
-async function main(): Promise<void> {
+/** Build the MCP server with all tools registered (no transport connected). Exported for tests. */
+export function createServer(): McpServer {
 	const server = new McpServer({
 		name: "AgentVerus Scanner MCP",
 		version: SCANNER_VERSION,
@@ -93,13 +95,23 @@ async function main(): Promise<void> {
 		},
 	);
 
+	return server;
+}
+
+async function main(): Promise<void> {
+	const server = createServer();
 	const transport = new StdioServerTransport();
 	await server.connect(transport);
 }
 
-main().catch((err) => {
-	const message = err instanceof Error ? err.message : String(err);
-	console.error(message);
-	process.exit(1);
-});
+// Only start the stdio server when executed directly (the bin entry), not when
+// imported by a test or another module.
+const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url);
+if (isDirectRun) {
+	main().catch((err) => {
+		const message = err instanceof Error ? err.message : String(err);
+		console.error(message);
+		process.exit(1);
+	});
+}
 
