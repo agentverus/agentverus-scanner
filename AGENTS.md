@@ -43,7 +43,8 @@ src/
 │   │   ├── semantic.ts      # LLM-assisted deep analysis (optional)
 │   │   ├── context.ts       # Cross-analyzer context enrichment
 │   │   └── declared-match.ts # Permission declaration matching
-│   ├── scoring.ts           # Weighted score aggregation
+│   ├── scoring.ts           # Per-analyzer weighted score aggregation
+│   ├── score-calibration.ts # Overall-score calibration + badge-tier rules
 │   ├── runner.ts            # Batch scan orchestration
 │   ├── targets.ts           # Target expansion (files, dirs, URLs, globs)
 │   ├── sarif.ts             # SARIF 2.1.0 output formatter
@@ -75,7 +76,7 @@ Input (file/URL/content)
   → parser.ts (detect format, extract sections)
   → ParsedSkill
   → analyzers/* (each runs independently, returns CategoryScore)
-  → scoring.ts (weighted aggregation → overall score + badge tier)
+  → scoring.ts (weighted aggregation) → score-calibration.ts (overall score + badge tier)
   → TrustReport
   → Output (JSON / SARIF / CLI table)
 ```

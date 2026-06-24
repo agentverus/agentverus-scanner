@@ -118,7 +118,7 @@ npx agentverus registry site --title "ClawHub Security Analysis"
 ```
 
 Registry scan options:
-- `--urls <path>` — Path to skill URL list (default: `data/skill-urls.txt`)
+- `--urls <path>` — Path to skill URL list (default: `data/skill-urls.txt`, which is gitignored; copy the committed `data/skill-urls.example.txt` to create it, or pass any path)
 - `--out <dir>` — Output directory (default: `data/scan-results`)
 - `--concurrency <n>` — Parallel downloads (default: 25)
 - `--limit <n>` — Scan only first N skills (for testing)
