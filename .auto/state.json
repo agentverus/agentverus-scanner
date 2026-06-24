@@ -1,7 +1,7 @@
 {
-  "name": "detection-f1",
+  "name": "detection-f1-full",
   "metricName": "f1",
   "metricUnit": "",
   "direction": "higher",
-  "segment": 0
+  "segment": 1
 }

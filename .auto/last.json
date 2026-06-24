@@ -1,1 +1,1 @@
-{"ok":true,"metric":0.9714,"metrics":{"f1":0.9714,"precision":1,"recall":0.9444,"specificity":1,"category_recall":0.9167},"checksPassed":true,"seconds":0.585,"ts":"2026-06-24T14:33:52.630Z"}
+{"ok":true,"metric":0.7798,"metrics":{"f1":0.7798,"holdout_f1":0.7885,"external_recall":0.5833,"precision":0.7883,"recall":0.7714,"specificity":0.6548,"category_recall":0.8684},"checksPassed":true,"seconds":0.938,"ts":"2026-06-24T14:43:42.392Z"}
