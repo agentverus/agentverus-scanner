@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "schema": "file -> {label: malicious|benign, expected_categories: [agentverus category ids], source: how the label was established}",
+    "predicted_malicious_badges": ["rejected", "suspicious"],
+    "predicted_benign_badges": ["certified", "conditional"],
+    "note": "Seed corpus = 27 existing test fixtures. Loop Phase-1 expands toward ~250 via injection + agentshield external holdout. Labels for 11 files are asserted by test/scanner/integration.test.ts (source=test); the rest are by-name/by-content judgment (source=judgment)."
+  },
+  "samples": [
+    { "file": "safe-basic.md", "label": "benign", "expected_categories": [], "source": "test" },
+    { "file": "safe-complex.md", "label": "benign", "expected_categories": [], "source": "test" },
+    { "file": "openclaw-format.md", "label": "benign", "expected_categories": [], "source": "test" },
+    { "file": "declared-permissions.md", "label": "benign", "expected_categories": [], "source": "test" },
+    { "file": "config-tampering-safe.md", "label": "benign", "expected_categories": [], "source": "judgment" },
+    { "file": "evasion-context-safe.md", "label": "benign", "expected_categories": [], "source": "judgment" },
+    { "file": "evasion-negation-safe.md", "label": "benign", "expected_categories": [], "source": "judgment" },
+    { "file": "legit-curl-install.md", "label": "benign", "expected_categories": [], "source": "judgment" },
+    { "file": "legit-security-skill.md", "label": "benign", "expected_categories": [], "source": "judgment" },
+
+    { "file": "malicious-injection.md", "label": "malicious", "expected_categories": ["injection"], "source": "test" },
+    { "file": "malicious-exfiltration.md", "label": "malicious", "expected_categories": ["behavioral", "code-safety"], "source": "test" },
+    { "file": "malicious-escalation.md", "label": "malicious", "expected_categories": ["permissions", "behavioral"], "source": "test" },
+    { "file": "excessive-permissions.md", "label": "malicious", "expected_categories": ["permissions"], "source": "test" },
+    { "file": "suspicious-urls.md", "label": "malicious", "expected_categories": ["content"], "source": "test-borderline" },
+    { "file": "browser-session-risk.md", "label": "malicious", "expected_categories": ["behavioral", "content"], "source": "test" },
+    { "file": "obfuscated-skill.md", "label": "malicious", "expected_categories": ["content"], "source": "test" },
+    { "file": "concealment-skill.md", "label": "malicious", "expected_categories": ["injection", "content"], "source": "test" },
+    { "file": "undeclared-permissions.md", "label": "malicious", "expected_categories": ["permissions"], "source": "test" },
+    { "file": "config-tampering.md", "label": "malicious", "expected_categories": ["behavioral"], "source": "judgment" },
+    { "file": "lifecycle-scripts.md", "label": "malicious", "expected_categories": ["dependencies", "code-safety"], "source": "judgment" },
+    { "file": "evasion-curl-setup-section.md", "label": "malicious", "expected_categories": ["behavioral", "code-safety"], "source": "judgment" },
+    { "file": "evasion-fake-security-skill.md", "label": "malicious", "expected_categories": ["injection"], "source": "judgment" },
+    { "file": "evasion-hidden-in-codeblock.md", "label": "malicious", "expected_categories": ["injection"], "source": "judgment" },
+    { "file": "evasion-indirect-exfiltration.md", "label": "malicious", "expected_categories": ["behavioral"], "source": "judgment" },
+    { "file": "evasion-negation-disguise.md", "label": "malicious", "expected_categories": ["injection"], "source": "judgment" },
+    { "file": "evasion-rephrased-jailbreak.md", "label": "malicious", "expected_categories": ["injection"], "source": "judgment" },
+    { "file": "evasion-threat-table-injection.md", "label": "malicious", "expected_categories": ["injection"], "source": "judgment" }
+  ]
+}

@@ -1,0 +1,1112 @@
+{
+  "_meta": {
+    "generator": "scripts/gen-corpus.mjs",
+    "note": "malicious=injected (train), external=agentshield-derived holdout"
+  },
+  "samples": [
+    {
+      "file": "malicious/mal-privkey-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-privkey-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "privkey"
+    },
+    {
+      "file": "malicious/mal-credfile-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-credfile-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "credfile"
+    },
+    {
+      "file": "malicious/mal-promptinj-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-promptinj-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "promptinj"
+    },
+    {
+      "file": "malicious/mal-downloadrun-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-downloadrun-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "downloadrun"
+    },
+    {
+      "file": "malicious/mal-configtamper-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-configtamper-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "configtamper"
+    },
+    {
+      "file": "malicious/mal-concealment-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-concealment-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "concealment"
+    },
+    {
+      "file": "malicious/mal-exfil-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-exfil-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "injected",
+      "attack": "exfil"
+    },
+    {
+      "file": "malicious/mal-revshell-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-revshell-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "code-safety"
+      ],
+      "source": "injected",
+      "attack": "revshell"
+    },
+    {
+      "file": "malicious/mal-secretcollect-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-secretcollect-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "secretcollect"
+    },
+    {
+      "file": "malicious/mal-coercetool-git-helper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-web-scraper.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-image-gen.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-test-runner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-db-migrate.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-slack-poster.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-csv-cleaner.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-docs-search.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-k8s-deploy.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-email-draft.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "malicious/mal-coercetool-browser-nav.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "injected",
+      "attack": "coercetool"
+    },
+    {
+      "file": "external/ext-secrets-everywhere.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-secrets-everywhere"
+    },
+    {
+      "file": "external/ext-wildcard-permissions.md",
+      "label": "malicious",
+      "expected_categories": [
+        "permissions"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-wildcard-permissions"
+    },
+    {
+      "file": "external/ext-malicious-hooks.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral",
+        "code-safety"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-malicious-hooks"
+    },
+    {
+      "file": "external/ext-mcp-hijacking.md",
+      "label": "malicious",
+      "expected_categories": [
+        "dependencies",
+        "behavioral"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-mcp-hijacking"
+    },
+    {
+      "file": "external/ext-prompt-injection.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-prompt-injection"
+    },
+    {
+      "file": "external/ext-supply-chain.md",
+      "label": "malicious",
+      "expected_categories": [
+        "dependencies"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-supply-chain"
+    },
+    {
+      "file": "external/ext-privilege-escalation.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral",
+        "code-safety"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-privilege-escalation"
+    },
+    {
+      "file": "external/ext-data-harvesting.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-data-harvesting"
+    },
+    {
+      "file": "external/ext-persistence.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral",
+        "code-safety"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-persistence"
+    },
+    {
+      "file": "external/ext-stealth-config.md",
+      "label": "malicious",
+      "expected_categories": [
+        "injection",
+        "behavioral"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-stealth-config"
+    },
+    {
+      "file": "external/ext-env-proxy-hijack.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-env-proxy-hijack"
+    },
+    {
+      "file": "external/ext-keylogger.md",
+      "label": "malicious",
+      "expected_categories": [
+        "behavioral",
+        "code-safety"
+      ],
+      "source": "external-agentshield",
+      "attack": "ext-keylogger"
+    }
+  ]
+}
