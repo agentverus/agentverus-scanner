@@ -5697,7 +5697,7 @@ var ASST_CATEGORIES = {
   "ASST-10": "Obfuscation",
   "ASST-11": "Trigger Manipulation"
 };
-var SCANNER_VERSION = "0.8.0";
+var SCANNER_VERSION = "0.8.1";
 
 // dist/scanner/source.js
 var DEFAULT_HEADERS = {
