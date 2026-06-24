@@ -20,6 +20,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Build dist/ first: the MCP smoke test imports the built `agentverus-scanner`
+      # package (resolves to dist/), so tests need it present on a fresh checkout.
+      - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
