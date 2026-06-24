@@ -8,3 +8,6 @@ packages/*/*.tsbuildinfo
 coverage/
 .cache/
 data/
+
+# autoresearch session scratch
+.auto/
