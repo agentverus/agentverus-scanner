@@ -96,6 +96,19 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			"Remove download-and-execute patterns targeting suspicious domains or IP addresses. These are strong indicators of supply chain attacks.",
 	},
 	{
+		name: "Private key material access",
+		patterns: [
+			/(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}(?:~\/)?\.ssh\/(?:id_rsa|id_ed25519|id_ecdsa)\b/i,
+			/(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}\bid_(?:rsa|ed25519|ecdsa)\b/i,
+			/(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}\.aws\/credentials\b/i,
+		],
+		severity: "critical",
+		deduction: 35,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Skills must never read private key material (~/.ssh/id_rsa, id_ed25519, id_ecdsa) or cloud credential files (~/.aws/credentials). Reading private keys is a near-certain credential-exfiltration indicator.",
+	},
+	{
 		name: "Credential access",
 		patterns: [
 			/(?:read|access|get|cat|echo)\s+.*?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
