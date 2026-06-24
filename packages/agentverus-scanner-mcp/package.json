@@ -26,7 +26,7 @@
 		"prepublishOnly": "pnpm build"
 	},
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.26.0",
+		"@modelcontextprotocol/sdk": "^1.29.0",
 		"agentverus-scanner": "workspace:^",
 		"zod": "^4.3.6"
 	},
