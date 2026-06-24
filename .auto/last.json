@@ -1,1 +1,1 @@
-{"ok":true,"metric":0.8304,"metrics":{"f1":0.8304,"holdout_f1":0.8333,"external_recall":0.6667,"precision":0.8054,"recall":0.8571,"specificity":0.6548,"category_recall":0.8684},"checksPassed":true,"seconds":0.916,"ts":"2026-06-24T14:44:31.097Z"}
+{"ok":true,"metric":0.8345,"metrics":{"f1":0.8345,"holdout_f1":0.844,"external_recall":0.75,"precision":0.8067,"recall":0.8643,"specificity":0.6548,"category_recall":0.8684},"checksPassed":true,"seconds":0.929,"ts":"2026-06-24T15:04:46.905Z"}

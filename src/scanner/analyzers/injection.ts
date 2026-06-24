@@ -109,6 +109,24 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			"Skills must never read private key material (~/.ssh/id_rsa, id_ed25519, id_ecdsa) or cloud credential files (~/.aws/credentials). Reading private keys is a near-certain credential-exfiltration indicator.",
 	},
 	{
+		name: "Hardcoded credential literal",
+		patterns: [
+			/\bsk-ant-[A-Za-z0-9_-]{20,}/,
+			/\bsk-proj-[A-Za-z0-9_-]{20,}/,
+			/\bAKIA[0-9A-Z]{16}\b/,
+			/\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b/,
+			/\bgithub_pat_[A-Za-z0-9_]{60,}/,
+			/\bAIza[0-9A-Za-z_-]{35}\b/,
+			/\bxox[baprs]-[A-Za-z0-9-]{10,}/,
+			/-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/,
+		],
+		severity: "critical",
+		deduction: 35,
+		owaspCategory: "ASST-05",
+		recommendation:
+			"Remove hardcoded credential literals (API keys, tokens, private keys) from the skill. Shipping a live secret in a skill file is a credential leak; load secrets from the environment or a secret store at runtime.",
+	},
+	{
 		name: "Reverse shell / backconnect",
 		patterns: [
 			/\bbash\s+-i\b[^\n]*\/dev\/tcp\//i,
