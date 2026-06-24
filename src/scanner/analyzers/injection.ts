@@ -109,6 +109,19 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			"Skills must never read private key material (~/.ssh/id_rsa, id_ed25519, id_ecdsa) or cloud credential files (~/.aws/credentials). Reading private keys is a near-certain credential-exfiltration indicator.",
 	},
 	{
+		name: "Command-substitution remote execution",
+		patterns: [
+			/(?:sh|bash|zsh|eval)\s+(?:-c\s+)?["']?\$\(\s*(?:curl|wget)\b[^)]*https?:\/\//i,
+			/\$\(\s*(?:curl|wget)\b[^)]*https?:\/\/[^)]*\)/i,
+			/`\s*(?:curl|wget)\b[^`]*https?:\/\/[^`]*`/i,
+		],
+		severity: "critical",
+		deduction: 35,
+		owaspCategory: "ASST-04",
+		recommendation:
+			"Remove command-substitution remote execution ($(curl http://…), `wget …`). Fetching and executing remote content as a command is remote code execution and a supply-chain compromise vector.",
+	},
+	{
 		name: "Hardcoded credential literal",
 		patterns: [
 			/\bsk-ant-[A-Za-z0-9_-]{20,}/,
