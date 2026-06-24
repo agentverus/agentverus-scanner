@@ -74,7 +74,7 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		name: "Comprehensive secret collection",
 		patterns: [
 			/\b(?:all|every|comprehensive|complete)\s+(?:\w+\s+){0,3}(?:settings|tokens?|keys?|secrets?|credentials?|passwords?|api[_-]?keys?)\b/i,
-			/\b(?:extract|collect|gather|enumerate|list|build\s+a\s+(?:comprehensive|complete)\s+(?:summary|list|inventory))\s+(?:\w+\s+){0,4}(?:tokens?|keys?|secrets?|credentials?|endpoints?|passwords?)\b/i,
+			/\b(?:extract|collect|gather|enumerate|list|build\s+a\s+(?:comprehensive|complete)\s+(?:summary|list|inventory))\s+(?:\w+\s+){0,4}(?:tokens?|keys?|secrets?|credentials?|passwords?)\b/i,
 			/\b(?:environment\s+files?|connection\s+strings?|authentication\s+parameters?)\s+are\s+(?:especially\s+)?important\b/i,
 		],
 		severity: "high",
