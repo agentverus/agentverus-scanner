@@ -20,23 +20,28 @@ filename hash; external bucket is always holdout.
 
 | metric | seed (27) | full baseline | **best** | Δ |
 |---|---|---|---|---|
-| F1 (primary) | 0.94 | 0.7798 | **0.8304** | **+6.5%** |
-| holdout_f1 | — | 0.7885 | 0.8333 | +4.5% |
-| external_recall | — | 0.5833 | 0.6667 | +8.3pts |
-| precision | 1.00 | 0.7883 | 0.8054 | +1.7pts |
-| recall | 0.94 | 0.7714 | 0.8571 | +8.6pts |
+| F1 (primary) | 0.94 | 0.7798 | **0.8385** | **+7.5%** |
+| holdout_f1 | — | 0.7885 | 0.8545 | +6.6pts |
+| external_recall | — | 0.5833 | **0.8333** | +25pts (7/12→10/12) |
+| precision | 1.00 | 0.7883 | 0.8079 | +2.0pts |
+| recall | 0.94 | 0.7714 | 0.8714 | +10pts |
 | specificity | 1.00 | 0.6548 | 0.6548 | — |
 
-All wins improved holdout **and** external (not overfit to the synthetic train set).
-243 product tests pass at every kept commit.
+Every win improved holdout **and** external (not overfit to the synthetic train set).
+243 product tests pass at every kept commit. Precision rose despite a pure-recall push
+(the new detectors added true positives without new benign false positives).
 
 ## Kept improvements
-1. **`@e4e1f0a` Private-key reads → critical.** Reading `id_rsa`/`id_ed25519`/`id_ecdsa`/
+1. **Private-key reads → critical.** Reading `id_rsa`/`id_ed25519`/`id_ecdsa`/
    `~/.aws/credentials` now scores `critical` (→ rejected), not `high` (→ conditional).
    Fixed the `undeclared-permissions` false-negative; generalizes.
-2. **`@12eee2f` Reverse-shell / backconnect detection.** `bash -i >& /dev/tcp/…`, `nc -e`,
+2. **Reverse-shell / backconnect detection.** `bash -i >& /dev/tcp/…`, `nc -e`,
    `socket`+`pty.spawn` now `critical`. These scored **CERTIFIED** before — a total gap.
    Biggest single F1 mover (recall 0.77→0.86), zero benign cost.
+3. **Hardcoded credential literals.** `sk-ant-`/`sk-proj-`/`AKIA…`/`ghp_…`/`AIza…`/`xox…`/
+   PEM private keys now `critical`. agentshield had 10 such rules; agentverus had **none**.
+4. **Command-substitution remote execution.** `sh -c "$(curl http://…)"`, backtick-curl
+   now `critical` — caught the MCP-hijack vector the `curl|bash` rule missed.
 
 ## Discarded (with learning)
 - **`#4` Cap PERM-CONTRACT-MISSING high→medium.** F1 0.83→0.70. The contract-mismatch
@@ -54,8 +59,16 @@ All wins improved holdout **and** external (not overfit to the synthetic train s
   intended) may show much of this "FP gap" is defensible review behavior, not error.
 
 ## vs agentshield (measured)
-On the 12 ported agentshield scenarios, agentverus@best catches **8/12** (was 7/12).
-Misses: data-harvesting, keylogger (now partly caught), secrets-everywhere (hardcoded
-`sk-ant-`/`AKIA` only reach conditional), mcp-hijacking, env-proxy-hijack — i.e.
-agentshield's supply-chain/MCP/hardcoded-secret coverage is still ahead. These are the
-next concrete detector targets if pursuing parity.
+On the 12 ported agentshield scenarios, agentverus@best now catches **10/12** (was 7/12
+at full baseline). Newly caught this run: keylogger, secrets-everywhere, mcp-hijacking.
+Remaining 2 misses — **data-harvesting** and **env-proxy-hijack** — are NOT missing
+patterns: the malicious payload sits inside inline-code backticks, and `context.ts`
+deliberately downgrades code-block matches (severity ×0.3) to suppress documentation
+false-positives. Catching them means revisiting that downgrade, which is precision-
+coupled (risks re-introducing benign FPs) — deferred as a separate, careful change.
+
+## Discarded #2 (with learning)
+- **`#7` Broaden credential verbs (collect/gather) + widen window.** Metric no-op. The
+  edit DID fire the finding, but the code-block severity downgrade (above) kept it at
+  `high`→`conditional`. Confirms the last 2 external misses are gated by the context
+  downgrade, not by pattern coverage.
