@@ -1,6 +1,7 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
 import { adjustForContext, buildContentContext } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
+import { recomputeScore } from "./score-util.js";
 
 /** Harmful content patterns */
 const HARMFUL_PATTERNS = [
@@ -428,14 +429,14 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 	// Apply declared permissions — downgrade matching findings
 	const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
 
-	// Recalculate score: start at base, add bonuses, subtract adjusted deductions
-	let adjustedScore = 80;
-	if (hasSafetyBoundaries) adjustedScore = Math.min(100, adjustedScore + 10);
-	if (hasOutputConstraints) adjustedScore = Math.min(100, adjustedScore + 5);
-	if (hasErrorHandling) adjustedScore = Math.min(100, adjustedScore + 5);
-	for (const f of adjustedFindings) {
-		adjustedScore = Math.max(0, adjustedScore - f.deduction);
-	}
+	// Recalculate score: start at the content baseline of 80 ("skills must earn the
+	// top 20"), add bonuses for safety boundaries / output constraints / error
+	// handling, then subtract adjusted deductions.
+	let base = 80;
+	if (hasSafetyBoundaries) base = Math.min(100, base + 10);
+	if (hasOutputConstraints) base = Math.min(100, base + 5);
+	if (hasErrorHandling) base = Math.min(100, base + 5);
+	const adjustedScore = recomputeScore(adjustedFindings, base);
 
 	const summary =
 		adjustedFindings.filter((f) => f.severity !== "info").length === 0

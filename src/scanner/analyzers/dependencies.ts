@@ -3,6 +3,7 @@ import { hasSetupHeadingOrYamlContext } from "../setup-context.js";
 import { hasHighAbuseTldHost, isKnownInstallerTarget } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInsideCodeBlock, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
+import { recomputeScore } from "./score-util.js";
 
 /** Trusted domain patterns */
 const TRUSTED_DOMAINS = [
@@ -838,10 +839,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 	const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
 
 	// Recalculate score based on adjusted deductions
-	let adjustedScore = 100;
-	for (const f of adjustedFindings) {
-		adjustedScore = Math.max(0, adjustedScore - f.deduction);
-	}
+	const adjustedScore = recomputeScore(adjustedFindings);
 
 	const summary =
 		adjustedFindings.length === 0

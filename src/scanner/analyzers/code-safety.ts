@@ -18,6 +18,7 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
 import { hasHighAbuseTldInText, isKnownInstallerTarget } from "../url-risk.js";
 import { isSecurityDefenseSkill } from "./context.js";
+import { downgradeSeverity as downgrade } from "./score-util.js";
 
 // ---------------------------------------------------------------------------
 // Line-level detection rules (patterns checked per line of code)
@@ -383,19 +384,6 @@ function scanCodeBlock(block: CodeBlock, isDefenseSkill: boolean): Finding[] {
 	}
 
 	return findings;
-}
-
-/**
- * Downgrade severity by one level (for example/documentation context).
- */
-function downgrade(severity: Finding["severity"]): Finding["severity"] {
-	switch (severity) {
-		case "critical": return "high";
-		case "high": return "medium";
-		case "medium": return "low";
-		case "low": return "info";
-		case "info": return "info";
-	}
 }
 
 // ---------------------------------------------------------------------------

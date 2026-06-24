@@ -1,6 +1,7 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
 import { analyzeCapabilityContract } from "./capability-contract.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
+import { recomputeScore } from "./score-util.js";
 
 /** Permission risk tiers */
 const CRITICAL_PERMISSIONS = ["exec", "shell", "sudo", "admin"] as const;
@@ -197,10 +198,7 @@ export async function analyzePermissions(skill: ParsedSkill): Promise<CategorySc
 	const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
 
 	// Recalculate score based on adjusted deductions
-	let adjustedScore = 100;
-	for (const f of adjustedFindings) {
-		adjustedScore = Math.max(0, adjustedScore - f.deduction);
-	}
+	const adjustedScore = recomputeScore(adjustedFindings);
 
 	const summary =
 		adjustedFindings.length === 0

@@ -2,6 +2,7 @@ import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js"
 import { HIGH_ABUSE_TLD_PATTERN } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
+import { downgradeSeverity, recomputeScore } from "./score-util.js";
 
 /** Pattern definitions for injection detection */
 interface InjectionPattern {
@@ -503,13 +504,6 @@ function detectUnicodeObfuscation(content: string): Finding[] {
 	return findings;
 }
 
-/** Downgrade a severity level by one tier */
-function downgradeSeverity(severity: "critical" | "high" | "medium"): Severity {
-	if (severity === "critical") return "high";
-	if (severity === "high") return "medium";
-	return "low";
-}
-
 /** Analyze skill for instruction injection patterns */
 export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScore> {
 	const findings: Finding[] = [];
@@ -630,10 +624,7 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 	const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
 
 	// Recalculate score based on adjusted deductions
-	let adjustedScore = 100;
-	for (const f of adjustedFindings) {
-		adjustedScore = Math.max(0, adjustedScore - f.deduction);
-	}
+	const adjustedScore = recomputeScore(adjustedFindings);
 
 	const hasCritical = adjustedFindings.some((f) => f.severity === "critical");
 	const summary =

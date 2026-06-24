@@ -1,16 +1,10 @@
-import type { CategoryScore, Finding, ParsedSkill, Severity } from "../types.js";
+import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
 import { hasSetupHeadingOrYamlContext } from "../setup-context.js";
 import { hasHighAbuseTldInText, isKnownInstallerTarget } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
 import { BEHAVIORAL_PATTERNS, PREREQUISITE_TRAP_PATTERNS } from "./behavioral-config.js";
-
-/** Downgrade a severity level by one tier */
-function downgradeSeverity(severity: "high" | "medium" | "low"): Severity {
-	if (severity === "high") return "medium";
-	if (severity === "medium") return "low";
-	return "info";
-}
+import { downgradeSeverity, recomputeScore } from "./score-util.js";
 
 /** Analyze behavioral risk profile */
 export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategoryScore> {
@@ -173,10 +167,7 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 	const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
 
 	// Recalculate score based on adjusted deductions
-	let adjustedScore = 100;
-	for (const f of adjustedFindings) {
-		adjustedScore = Math.max(0, adjustedScore - f.deduction);
-	}
+	const adjustedScore = recomputeScore(adjustedFindings);
 
 	const summary =
 		adjustedFindings.length === 0
