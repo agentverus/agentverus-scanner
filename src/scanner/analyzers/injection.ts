@@ -109,6 +109,21 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 			"Skills must never read private key material (~/.ssh/id_rsa, id_ed25519, id_ecdsa) or cloud credential files (~/.aws/credentials). Reading private keys is a near-certain credential-exfiltration indicator.",
 	},
 	{
+		name: "Reverse shell / backconnect",
+		patterns: [
+			/\bbash\s+-i\b[^\n]*\/dev\/tcp\//i,
+			/\/dev\/tcp\/(?:\d{1,3}(?:\.\d{1,3}){3}|[\w.-]+)\/\d+/i,
+			/\b(?:nc|ncat|netcat)\b[^\n]{0,40}\s-[a-z]*e[a-z]*\b[^\n]*(?:\/bin\/)?(?:bash|sh)\b/i,
+			/\b(?:0>&1|>&\s*\/dev\/tcp)\b/i,
+			/python[0-9]?\b[^\n]*socket[^\n]*(?:pty\.spawn|subprocess|exec\()/i,
+		],
+		severity: "critical",
+		deduction: 40,
+		owaspCategory: "ASST-04",
+		recommendation:
+			"Remove reverse-shell / backconnect patterns (bash -i >& /dev/tcp, nc -e, socket+pty.spawn). These establish remote interactive control and are unambiguous compromise indicators.",
+	},
+	{
 		name: "Credential access",
 		patterns: [
 			/(?:read|access|get|cat|echo)\s+.*?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
