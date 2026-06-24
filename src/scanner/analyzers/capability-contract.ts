@@ -54,7 +54,7 @@ import {
 function tokenizeLower(input: string): string[] {
 	return input
 		.toLowerCase()
-		.split(/[^a-z0-9]+/g)
+		.split(/[^a-z0-9]{1,512}/g)
 		.map((t) => t.trim())
 		.filter(Boolean);
 }

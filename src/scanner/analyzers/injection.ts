@@ -44,9 +44,14 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		name: "Data exfiltration instruction",
 		patterns: [
 			/(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:data|content|files?|information|keys?|secrets?|credentials?|tokens?|variables?)\s+(?:to|at|via)\s+https?:\/\//i,
-			/curl\s+.*?-d\s+.*?https?:\/\//i,
-			/wget\s+.*?--post-data/i,
-			/cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
+			// Line-confined bounded windows ([^\n]{0,512}?), NOT an unbounded lazy
+			// dot-scan: real exfil one-liners are short and single-line, and an
+			// unbounded lazy scan backtracks O(n^2) on a long no-match input (a 2MB
+			// "curl x curl x …" skill took ~104s before this bound). 512 chars covers
+			// realistic commands with headers/flags. See regex-redos.test.ts.
+			/curl\s+[^\n]{0,512}?-d\s+[^\n]{0,512}?https?:\/\//i,
+			/wget\s+[^\n]{0,512}?--post-data/i,
+			/cat\s+[^\n]{0,512}?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
 			/\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
 			/\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
 			/\b(?:concatenate|combine|collect|gather)\b.{0,60}\b(?:send|post|transmit|upload|forward)\s+(?:to|it\s+to)\s+https?:\/\//i,
@@ -62,8 +67,8 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		name: "URL-parameter data exfiltration",
 		patterns: [
 			/(?:encode|embed|include|pack)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:as|into|in)\s+(?:a\s+)?(?:URL|query|parameter|string)\b/i,
-			/\?(?:data|payload|report|summary|info|content|result)=\{[^}]*(?:encoded|summary|data|payload)/i,
-			/https?:\/\/[^\s]+\?[^\s]*\{[^\s}]*(?:summary|encoded|data|content|payload)/i,
+			/\?(?:data|payload|report|summary|info|content|result)=\{[^}]{0,512}(?:encoded|summary|data|payload)/i,
+			/https?:\/\/[^\s]{1,512}\?[^\s]{0,512}\{[^\s}]{0,512}(?:summary|encoded|data|content|payload)/i,
 		],
 		severity: "critical",
 		deduction: 40,
@@ -87,8 +92,8 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Suspicious download-and-execute",
 		patterns: [
-			/\b(?:curl|wget)\b[^\n]*(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
-			new RegExp(`\\b(?:curl|wget)\\b[^\\n]*https?:\\/\\/[^\\s]+\\.${HIGH_ABUSE_TLD_PATTERN}\\b[^\\n]*\\|\\s*(?:bash|sh|zsh|python)\\b`, "i"),
+			/\b(?:curl|wget)\b[^\n]{0,512}(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]{0,512}\|\s*(?:bash|sh|zsh|python)\b/i,
+			new RegExp(`\\b(?:curl|wget)\\b[^\\n]{0,512}https?:\\/\\/[^\\s]{1,512}\\.${HIGH_ABUSE_TLD_PATTERN}\\b[^\\n]{0,512}\\|\\s*(?:bash|sh|zsh|python)\\b`, "i"),
 		],
 		severity: "critical",
 		deduction: 35,
@@ -112,9 +117,9 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Command-substitution remote execution",
 		patterns: [
-			/(?:sh|bash|zsh|eval)\s+(?:-c\s+)?["']?\$\(\s*(?:curl|wget)\b[^)]*https?:\/\//i,
-			/\$\(\s*(?:curl|wget)\b[^)]*https?:\/\/[^)]*\)/i,
-			/`\s*(?:curl|wget)\b[^`]*https?:\/\/[^`]*`/i,
+			/(?:sh|bash|zsh|eval)\s+(?:-c\s+)?["']?\$\(\s*(?:curl|wget)\b[^)]{0,512}https?:\/\//i,
+			/\$\(\s*(?:curl|wget)\b[^)]{0,512}https?:\/\/[^)]{0,512}\)/i,
+			/`\s*(?:curl|wget)\b[^`]{0,512}https?:\/\/[^`]{0,512}`/i,
 		],
 		severity: "critical",
 		deduction: 35,
@@ -143,11 +148,11 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Reverse shell / backconnect",
 		patterns: [
-			/\bbash\s+-i\b[^\n]*\/dev\/tcp\//i,
+			/\bbash\s+-i\b[^\n]{0,512}\/dev\/tcp\//i,
 			/\/dev\/tcp\/(?:\d{1,3}(?:\.\d{1,3}){3}|[\w.-]+)\/\d+/i,
-			/\b(?:nc|ncat|netcat)\b[^\n]{0,40}\s-[a-z]*e[a-z]*\b[^\n]*(?:\/bin\/)?(?:bash|sh)\b/i,
+			/\b(?:nc|ncat|netcat)\b[^\n]{0,40}\s-[a-z]*e[a-z]*\b[^\n]{0,512}(?:\/bin\/)?(?:bash|sh)\b/i,
 			/\b(?:0>&1|>&\s*\/dev\/tcp)\b/i,
-			/python[0-9]?\b[^\n]*socket[^\n]*(?:pty\.spawn|subprocess|exec\()/i,
+			/python[0-9]?\b[^\n]{0,512}socket[^\n]{0,512}(?:pty\.spawn|subprocess|exec\()/i,
 		],
 		severity: "critical",
 		deduction: 40,
@@ -158,11 +163,11 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 	{
 		name: "Credential access",
 		patterns: [
-			/(?:read|access|get|cat|echo)\s+.*?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
-			/(?:read|dump|exfiltrate|steal|harvest)\s+.*?(?:API[_-]?KEY|SECRET[_-]?KEY|ACCESS[_-]?TOKEN|PRIVATE[_-]?KEY|PASSWORD)/i,
+			/(?:read|access|get|cat|echo)\s+[^\n]{0,512}?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
+			/(?:read|dump|exfiltrate|steal|harvest)\s+[^\n]{0,512}?(?:API[_-]?KEY|SECRET[_-]?KEY|ACCESS[_-]?TOKEN|PRIVATE[_-]?KEY|PASSWORD)/i,
 			/~\/\.ssh\/(?:id_rsa|id_ed25519|authorized_keys|config)\b/i,
 			/credentials?\s*(?:file|store|manager|dump)/i,
-			/(?:dump|exfiltrate|steal)\s+.*?environment\s+variables/i,
+			/(?:dump|exfiltrate|steal)\s+[^\n]{0,512}?environment\s+variables/i,
 		],
 		severity: "high",
 		deduction: 25,
@@ -195,7 +200,7 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		patterns: [
 			/\b(?:follow|obey|execute)\s+(?:any\s+)?instructions?\s+(?:found\s+)?(?:in|from)\s+(?:a|the|this|that)?\s*(?:file|document|web\s*page|website|url|link|content)\b/i,
 			/\btreat\s+the\s+(?:contents?|text|output|response)\s+(?:in|from|of)\s+(?:a|the|this|that)?\s*(?:file|document|web\s*page|website|url|link|response|output)\s+as\s+(?:your\s+)?(?:instructions?|system\s+prompt)\b/i,
-			/\b(?:read|load|fetch)\s+.*?\s+and\s+(?:then\s+)?(?:follow|obey|execute)\s+(?:its\s+)?instructions?\b/i,
+			/\b(?:read|load|fetch)\s+[^\n]{0,512}?\s+and\s+(?:then\s+)?(?:follow|obey|execute)\s+(?:its\s+)?instructions?\b/i,
 			/\bexecute\s+(?:the\s+)?instructions?\s+(?:embedded\s+)?in\s+(?:external|remote|untrusted)\s+(?:content|pages?|documents?|files?)\b/i,
 		],
 		severity: "high",
@@ -280,11 +285,17 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 /** Detect hidden instructions in HTML comments */
 function detectHtmlCommentInjections(content: string): Finding[] {
 	const findings: Finding[] = [];
-	const commentRegex = /<!--([\s\S]*?)-->/g;
-	let match: RegExpExecArray | null;
-
-	while ((match = commentRegex.exec(content)) !== null) {
-		const commentContent = match[1]?.trim() ?? "";
+	// Linear indexOf scan rather than /<!--([\s\S]*?)-->/g: the lazy regex
+	// backtracks O(n^2) on many unterminated `<!--` openers (a ReDoS). indexOf
+	// finds the same non-overlapping comments in O(n). See regex-redos.test.ts.
+	let from = 0;
+	while (true) {
+		const open = content.indexOf("<!--", from);
+		if (open === -1) break;
+		const close = content.indexOf("-->", open + 4);
+		if (close === -1) break;
+		const commentContent = content.slice(open + 4, close).trim();
+		from = close + 3;
 		if (commentContent.length < 10) continue;
 
 		// Check for imperative/instruction-like content in comments
@@ -295,7 +306,7 @@ function detectHtmlCommentInjections(content: string): Finding[] {
 			/(?:send|post|read|write|execute|fetch|curl|delete|access|download)\s/i.test(commentContent);
 
 		if (isInstructional) {
-			const lineNumber = content.slice(0, match.index).split("\n").length;
+			const lineNumber = content.slice(0, open).split("\n").length;
 			findings.push({
 				id: `INJ-COMMENT-${findings.length + 1}`,
 				category: "injection",

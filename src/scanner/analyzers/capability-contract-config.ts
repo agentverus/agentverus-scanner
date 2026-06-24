@@ -176,7 +176,7 @@ export const CREDENTIAL_PATTERNS: readonly RegExp[] = [
 	/~\/\.ssh\/(?:id_rsa|id_ed25519|authorized_keys|config)\b/i,
 	/(?:api[_-]?key|access[_-]?token|private[_-]?key|secret(?:s)?|password)\b.{0,80}\b(?:read|dump|exfiltrate|steal|harvest)/i,
 	/(?:auth(?:entication)?\s+cookie|http-?only\s+cookie|session\s+tokens?\s+in\s+plaintext|cookies?\s+(?:export|import|get|set|clear)\b|state\s+(?:save|load)\s+\S*auth\.json|profile\s+sync\b|actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
-	/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|browser\s+session\s+is\s+authenticated|cookies?\s+and\s+localStorage|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile|full\s+profile\s+sync|sync\s+ALL\s+cookies|entire\s+browser\s+state|--secret\s+[^\s=]+=[^\s]+)/i,
+	/(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|browser\s+session\s+is\s+authenticated|cookies?\s+and\s+localStorage|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile|full\s+profile\s+sync|sync\s+ALL\s+cookies|entire\s+browser\s+state|--secret\s+[^\s=]{1,512}=[^\s]{1,512})/i,
 ] as const;
 
 export const EXEC_PATTERNS: readonly RegExp[] = [
@@ -195,9 +195,9 @@ export const FILE_WRITE_PATTERNS: readonly RegExp[] = [
 	/\b(?:write|save|store|persist)\b.{0,40}\b(?:database|cache|state)\b/i,
 	/\bset\s+up\s+project\s+structure\b/i,
 	/\bproject\s+structure,\s*package\.json,\s*tsconfig\.json\b/i,
-	/\bcreate\s+`[^`\n]+(?:\.[a-z0-9]+|\/[a-z0-9._-]+)`/i,
+	/\bcreate\s+`[^`\n]{1,512}(?:\.[a-z0-9]+|\/[a-z0-9._-]+)`/i,
 	/\bscreenshot\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
-	/\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]+\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
+	/\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]{1,512}\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
 	/--image\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
 	/\bsaved\s+to\s+\/tmp\//i,
 ] as const;
@@ -265,7 +265,7 @@ export const AUTH_STATE_MANAGEMENT_PATTERNS: readonly RegExp[] = [
 ] as const;
 
 export const NETWORK_PATTERNS: readonly RegExp[] = [
-	/https?:\/\/[^\s`"'<>()[\]{}]+/i,
+	/https?:\/\/[^\s`"'<>()[\]{}]{1,512}/i,
 	/\b(?:fetch|curl|wget|webhook|network_unrestricted|network_restricted|api\s+(?:endpoint|request)|post\s+to\s+https?:\/\/|HEALTHCHECK|EXPOSE\s+\d{2,5})\b/i,
 ] as const;
 
@@ -395,8 +395,8 @@ export const DOCUMENTATION_INGESTION_PATTERNS: readonly RegExp[] = [
 	/web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
 	/fetch\s+specific\s+pages\s+with\s+`?\.md/i,
 	/For\s+more\s+information,\s+see/i,
-	/For\s+full\s+.+\s+details:/i,
-	/For\s+deeper\s+.+\s+familiarity,\s+see/i,
+	/For\s+full\s+[^\n]{1,512}\s+details:/i,
+	/For\s+deeper\s+[^\n]{1,512}\s+familiarity,\s+see/i,
 	/Reference\s+implementation/i,
 	/See\s+\[references?\//i,
 	/\breferences?\//i,
@@ -449,7 +449,7 @@ export const CREDENTIAL_FORM_AUTOMATION_PATTERNS: readonly RegExp[] = [
 ] as const;
 
 export const PACKAGE_BOOTSTRAP_PATTERNS: readonly RegExp[] = [
-	/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+	/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']{1,512}/i,
 	/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
 	/\bpackage(?:\*|)\.json\b/i,
 ] as const;

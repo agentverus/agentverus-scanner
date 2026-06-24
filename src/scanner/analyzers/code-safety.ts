@@ -87,7 +87,7 @@ const LINE_RULES: readonly LineRule[] = [
 		title: "WebSocket connection to non-standard port",
 		description:
 			"WebSocket connection to an unusual port detected. Could indicate C2 communication, data tunneling, or connection to unauthorized services.",
-		pattern: /new\s+WebSocket\s*\(\s*["']wss?:\/\/[^"']*:(\d+)/,
+		pattern: /new\s+WebSocket\s*\(\s*["']wss?:\/\/[^"']{0,512}:(\d+)/,
 		owaspCategory: "ASST-02",
 		deduction: 10,
 	},
@@ -97,7 +97,7 @@ const LINE_RULES: readonly LineRule[] = [
 		title: "Download-and-execute pattern (curl|wget pipe to shell)",
 		description:
 			"Piping a downloaded script directly to a shell interpreter. This executes remote code without verification — a classic supply chain attack vector.",
-		pattern: /\b(curl|wget)\b.*\|\s*(bash|sh|zsh|node|python|perl)\b/,
+		pattern: /\b(curl|wget)\b[^\n]{0,512}\|\s*(bash|sh|zsh|node|python|perl)\b/,
 		owaspCategory: "ASST-04",
 		deduction: 20,
 	},
@@ -118,7 +118,7 @@ const LINE_RULES: readonly LineRule[] = [
 		title: "Write to workspace trust-boundary file (AGENTS/TOOLS/CLAUDE.md)",
 		description:
 			"Code writes to a core workspace configuration file (AGENTS.md, TOOLS.md, or CLAUDE.md). These files define the agent's trust boundaries — modifying them can escalate privileges, disable safety rules, or inject persistent malicious instructions.",
-		pattern: /(?:writeFileSync|appendFileSync|>>|>)\s*.*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)/i,
+		pattern: /(?:writeFileSync|appendFileSync|>>|>)\s*[^\n]{0,512}(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)/i,
 		owaspCategory: "ASST-03",
 		deduction: 30,
 	},
@@ -128,7 +128,7 @@ const LINE_RULES: readonly LineRule[] = [
 		title: "Write to .claude/ policy directory",
 		description:
 			"Code writes to the .claude/ directory, which contains workspace policies and safety configuration. Modifying these files can disable safety checks, override policy boundaries, or inject persistent instructions.",
-		pattern: /(?:writeFileSync|appendFileSync|>>|>|mkdir)\s*.*\.claude\//i,
+		pattern: /(?:writeFileSync|appendFileSync|>>|>|mkdir)\s*[^\n]{0,512}\.claude\//i,
 		owaspCategory: "ASST-03",
 		deduction: 20,
 	},
@@ -212,7 +212,7 @@ function extractCodeBlocks(rawContent: string): CodeBlock[] {
 		const line = lines[i] as string;
 
 		// Track headings for context
-		const headingMatch = line.match(/^#{1,4}\s+(.+)/);
+		const headingMatch = line.match(/^#{1,4}\s+([^\n]{1,512})/);
 		if (headingMatch) {
 			lastHeading = headingMatch[1] ?? "";
 		}

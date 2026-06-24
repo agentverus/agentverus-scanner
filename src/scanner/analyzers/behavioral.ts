@@ -144,8 +144,8 @@ export async function analyzeBehavioral(skill: ParsedSkill): Promise<CategorySco
 	// Combined exfiltration flow — credential access + suspicious network exfiltration
 	// Only flag when the skill actively reads credentials AND sends them to suspicious endpoints
 	// (not just mentioning API keys in setup docs with normal API URLs)
-	const activeCredentialAccess = /(?:cat|read|dump|exfiltrate|steal|harvest)\s+.*?(?:\.env|\.ssh|id_rsa|credentials|secrets)/i;
-	const suspiciousExfiltration = /(?:webhook\.site|requests\.post\s*\(|curl\s+-X\s+POST\s+.*?(?:\$|secret|key|token|password|credential))/i;
+	const activeCredentialAccess = /(?:cat|read|dump|exfiltrate|steal|harvest)\s+[^\n]{0,512}?(?:\.env|\.ssh|id_rsa|credentials|secrets)/i;
+	const suspiciousExfiltration = /(?:webhook\.site|requests\.post\s*\(|curl\s+-X\s+POST\s+[^\n]{0,512}?(?:\$|secret|key|token|password|credential))/i;
 	if (activeCredentialAccess.test(content) && suspiciousExfiltration.test(content)) {
 		score = Math.max(0, score - 25);
 		findings.push({
