@@ -84,6 +84,9 @@ async function main() {
   // only wrongly BLOCKING a benign skill, or ALLOWing a malicious one, is).
   const tri = (b: string) => (b === "rejected" ? "BLOCK" : b === "suspicious" || b === "conditional" ? "REVIEW" : "ALLOW");
   let benignBlocked = 0, malBlocked = 0, malAllowed = 0;
+  // Calibration quality (Goal D): overall scores per class for AUC + separation.
+  const benignScores: number[] = [];
+  const malScores: number[] = [];
 
   for (const s of samples) {
     const report: any = await scanSkill(readFileSync(s.path, "utf8"));
@@ -107,6 +110,7 @@ async function main() {
     if (!actualMal && verdict === "BLOCK") benignBlocked++;
     if (actualMal && verdict === "BLOCK") malBlocked++;
     if (actualMal && verdict === "ALLOW") malAllowed++;
+    if (actualMal) malScores.push(Number(report.overall)); else benignScores.push(Number(report.overall));
 
     if (s.bucket === "external") {
       extTotal++;
@@ -143,6 +147,15 @@ async function main() {
   console.log(`METRIC block_precision=${f(blockPrecision)}`);
   console.log(`METRIC allow_leak=${malAllowed}`);
   console.log(`METRIC benign_blocked=${benignBlocked}`);
+
+  // Calibration quality: AUC = P(random benign scores higher than random malicious).
+  // Threshold-free; 1.0 = perfect class separation. Plus raw mean separation.
+  let concordant = 0, pairs = 0;
+  for (const b of benignScores) for (const m of malScores) { pairs++; concordant += b > m ? 1 : b === m ? 0.5 : 0; }
+  const auc = pairs === 0 ? 0 : concordant / pairs;
+  const mean = (a: number[]) => (a.length === 0 ? 0 : a.reduce((s, x) => s + x, 0) / a.length);
+  console.log(`METRIC auc=${f(auc)}`);
+  console.log(`METRIC score_separation=${f(mean(benignScores) - mean(malScores))}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
