@@ -100,7 +100,7 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
 		patterns: [
 			/(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}(?:~\/)?\.ssh\/(?:id_rsa|id_ed25519|id_ecdsa)\b/i,
 			/(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}\bid_(?:rsa|ed25519|ecdsa)\b/i,
-			/(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}\.aws\/credentials\b/i,
+			/(?:read|access|get|cat|echo|dump|copy|collect|gather|exfiltrate|steal|harvest)\b[^\n]{0,80}\.aws\/credentials\b/i,
 		],
 		severity: "critical",
 		deduction: 35,
@@ -538,6 +538,10 @@ export async function analyzeInjection(skill: ParsedSkill): Promise<CategoryScor
 					"URL-parameter data exfiltration",
 					"Comprehensive secret collection",
 					"Suspicious download-and-execute",
+					"Private key material access",
+					"Reverse shell / backconnect",
+					"Hardcoded credential literal",
+					"Command-substitution remote execution",
 				]);
 
 				// Context-aware adjustment
