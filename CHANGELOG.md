@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-06-24
+
+Security and hardening release from an internal adversarial audit. No detection-behavior
+changes — the same skills produce the same trust reports.
+
+### Security
+
+- **Fixed a ReDoS (regular-expression denial-of-service) vulnerability class in the analyzers.**
+  An unbounded lazy quantifier let a crafted 2 MB skill take ~104 seconds to scan (O(n²)
+  catastrophic backtracking). Bounded ~90 open-ended regex scans to fixed line windows,
+  rewrote the HTML-comment detector to a linear scan, and added a structural guard against
+  reintroduction. Detection is unchanged; the flagged patterns now complete in <180 ms.
+- **Patched the shipped dependency tree** (MCP `@modelcontextprotocol/sdk` bump + transitive
+  advisories); `pnpm audit --prod` is now 0 high / 0 critical.
+
+### Added
+
+- **CI pipeline** (`.github/workflows/ci.yml`): typecheck, lint, test, action-bundle-diff,
+  and `pnpm audit --prod` gates on every PR, plus a version-matched tag-anchored publish job.
+- **Direct verdict-path, SSRF (IPv4/hostname/DNS), golden-fixture, and ReDoS regression
+  tests** (308 → 314 tests).
+
+### Changed
+
+- **Behavior-preserving refactors:** shared scoring helper (`score-util.ts`, dedupes the
+  per-analyzer recompute loop + unifies `downgradeSeverity`), data-driven `inferCapabilities`.
+
+### Fixed
+
+- Repo hygiene: documented `score-calibration.ts` in `AGENTS.md`, shipped
+  `data/skill-urls.example.txt` so the registry `--urls` default works on a fresh clone,
+  removed stale planning docs.
+
 ## [0.8.0] - 2026-03-26
 
 ### Added
