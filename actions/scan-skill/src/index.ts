@@ -31,16 +31,20 @@ function parseOptionalInt(value: string | undefined): number | undefined {
 
 function parseFailOnSeverity(value: string | undefined): FailOnSeverity {
 	const v = (value ?? "high").trim().toLowerCase();
-	if (v === "none" || v === "critical" || v === "high" || v === "medium" || v === "low" || v === "info") {
+	if (
+		v === "none" ||
+		v === "critical" ||
+		v === "high" ||
+		v === "medium" ||
+		v === "low" ||
+		v === "info"
+	) {
 		return v;
 	}
 	return "high";
 }
 
-function shouldFailOnSeverity(
-	reports: readonly unknown[],
-	threshold: FailOnSeverity,
-): boolean {
+function shouldFailOnSeverity(reports: readonly unknown[], threshold: FailOnSeverity): boolean {
 	if (threshold === "none") return false;
 	const limit = SEVERITY_RANK[threshold] ?? 99;
 	for (const item of reports) {
@@ -94,7 +98,8 @@ function countSeverities(items: readonly unknown[]): Record<string, number> {
 
 async function main(): Promise<void> {
 	const rawTargetInput = process.env.INPUT_TARGET ?? ".";
-	const sarifPath = (process.env.INPUT_SARIF ?? "agentverus-scanner.sarif").trim() || "agentverus-scanner.sarif";
+	const sarifPath =
+		(process.env.INPUT_SARIF ?? "agentverus-scanner.sarif").trim() || "agentverus-scanner.sarif";
 	const failOnSeverity = parseFailOnSeverity(process.env.INPUT_FAIL_ON_SEVERITY);
 
 	const timeout = parseOptionalInt(process.env.INPUT_TIMEOUT);
