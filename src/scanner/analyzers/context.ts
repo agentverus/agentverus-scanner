@@ -43,7 +43,7 @@ export function buildContentContext(content: string): ContentContext {
 	}
 
 	// Find fenced code blocks (``` or ~~~)
-	const fenceRegex = /^(```|~~~).*$/gm;
+	const fenceRegex = /^(```|~~~)[^\n]{0,512}$/gm;
 	let fenceOpen: number | null = null;
 	let match: RegExpExecArray | null;
 	while ((match = fenceRegex.exec(content)) !== null) {
@@ -56,7 +56,7 @@ export function buildContentContext(content: string): ContentContext {
 	}
 
 	// Find inline code spans (backtick-delimited)
-	const inlineCodeRegex = /`[^`\n]+`/g;
+	const inlineCodeRegex = /`[^`\n]{1,512}`/g;
 	while ((match = inlineCodeRegex.exec(content)) !== null) {
 		codeBlocks.push({ start: match.index, end: match.index + match[0].length });
 	}
@@ -167,7 +167,7 @@ export function isSecurityDefenseSkill(skill: ParsedSkill): boolean {
 	const abuseCtx = buildContentContext(skill.rawContent);
 	const credAbusePatterns = [
 		/\b(?:read|cat|dump)\b.{0,80}(?:~\/\.ssh|\.aws\/credentials|\.env\b|id_rsa|id_ed25519)/gi,
-		/\b(?:all\s+environment\s+variables|all\s+settings.*tokens.*keys)\b/gi,
+		/\b(?:all\s+environment\s+variables|all\s+settings[^\n]{0,512}tokens[^\n]{0,512}keys)\b/gi,
 	];
 	const exfilAbusePatterns = [
 		/\b(?:send|post|upload|forward)\b.{0,120}https?:\/\//gi,
@@ -251,17 +251,17 @@ export function isInThreatListingContext(content: string, matchIndex: number): b
 	const fullLine = content.slice(lineStart, lineEnd);
 
 	// Pattern is in a table row (pipe-separated) — common for threat/pattern tables
-	if (/^\s*\|.*\|/.test(fullLine) && /\b(?:pattern|indicator|type|category|technique|example|critical|high|warning|risk|dangerous|override|jailbreak|injection|exfiltration|attack)\b/i.test(fullLine)) return true;
+	if (/^\s*\|[^\n]{0,512}\|/.test(fullLine) && /\b(?:pattern|indicator|type|category|technique|example|critical|high|warning|risk|dangerous|override|jailbreak|injection|exfiltration|attack)\b/i.test(fullLine)) return true;
 
 	// Pattern is in a list item describing what to detect/block/flag
 	if (/^\s*[-*•]\s*(?:["'""]|pattern|detect|flag|block|scan\s+for|look\s+for|check\s+for)/i.test(fullLine)) return true;
 
 	// Pattern is in a list item with a bold label: `- **label**: "pattern"` or `- **label:**`
-	if (/^\s*[-*•]\s*\*\*[^*]+\*\*\s*[:—–-]\s*["'""]/.test(fullLine)) return true;
-	if (/^\s*[-*•]\s*\*\*[^*]*:\*\*/.test(fullLine)) return true;
+	if (/^\s*[-*•]\s*\*\*[^*]{1,512}\*\*\s*[:—–-]\s*["'""]/.test(fullLine)) return true;
+	if (/^\s*[-*•]\s*\*\*[^*]{0,512}:\*\*/.test(fullLine)) return true;
 
 	// "If a caption says..." / "Evidence:" / "Example:" context
-	if (/\b(?:example|evidence|if\s+.*says?|indicator|caption|sample|test\s+case|detection)\b/i.test(fullLine)) return true;
+	if (/\b(?:example|evidence|if\s+[^\n]{0,512}says?|indicator|caption|sample|test\s+case|detection)\b/i.test(fullLine)) return true;
 
 	// Check preceding lines for context clues
 	const precedingText = content.slice(Math.max(0, lineStart - 500), lineStart);
@@ -272,7 +272,7 @@ export function isInThreatListingContext(content: string, matchIndex: number): b
 
 	// Check broader preceding context (headings within 1000 chars) for security example sections
 	const broaderPreceding = content.slice(Math.max(0, matchIndex - 1000), matchIndex);
-	const headings = broaderPreceding.match(/^#{1,4}\s+.+$/gm);
+	const headings = broaderPreceding.match(/^#{1,4}\s+[^\n]{1,512}$/gm);
 	if (headings && headings.length > 0) {
 		const lastHeading = headings[headings.length - 1]!.toLowerCase();
 		if (/\b(?:detect|ssrf|injection|threat|attack|security|example|exfiltrat|protect|dangerous)\b/.test(lastHeading)) {

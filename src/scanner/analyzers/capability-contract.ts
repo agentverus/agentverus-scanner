@@ -54,7 +54,7 @@ import {
 function tokenizeLower(input: string): string[] {
 	return input
 		.toLowerCase()
-		.split(/[^a-z0-9]+/g)
+		.split(/[^a-z0-9]{1,512}/g)
 		.map((t) => t.trim())
 		.filter(Boolean);
 }
@@ -260,6 +260,55 @@ function collectDeclaredCapabilities(skill: ParsedSkill): {
 	};
 }
 
+/**
+ * Declarative table driving content-based capability inference. Order is
+ * significant: `add` is first-wins, and `network` is also inferred from a bare
+ * URL reference *after* this table runs (so a NETWORK_PATTERNS match here takes
+ * precedence over the URL fallback). `allowCodeBlocks` mirrors the per-rule 4th
+ * argument the previous hand-written calls passed to `firstPositiveMatch`.
+ */
+const CONTENT_INFERENCE_RULES: ReadonlyArray<{
+	readonly capability: CapabilityKind;
+	readonly patterns: readonly RegExp[];
+	readonly allowCodeBlocks: boolean;
+}> = [
+	{ capability: "credential_access", patterns: CREDENTIAL_PATTERNS, allowCodeBlocks: false },
+	{ capability: "credential_handoff", patterns: CREDENTIAL_HANDOFF_PATTERNS, allowCodeBlocks: true },
+	{ capability: "credential_storage", patterns: CREDENTIAL_STORAGE_PATTERNS, allowCodeBlocks: false },
+	{ capability: "auth_state_management", patterns: AUTH_STATE_MANAGEMENT_PATTERNS, allowCodeBlocks: true },
+	{ capability: "exec", patterns: EXEC_PATTERNS, allowCodeBlocks: true },
+	{ capability: "system_modification", patterns: SYSTEM_MOD_PATTERNS, allowCodeBlocks: false },
+	{ capability: "file_write", patterns: FILE_WRITE_PATTERNS, allowCodeBlocks: true },
+	{ capability: "file_read", patterns: FILE_READ_PATTERNS, allowCodeBlocks: false },
+	{ capability: "filesystem_discovery", patterns: FILESYSTEM_DISCOVERY_PATTERNS, allowCodeBlocks: false },
+	{ capability: "configuration_override", patterns: CONFIGURATION_OVERRIDE_PATTERNS, allowCodeBlocks: true },
+	{ capability: "network", patterns: NETWORK_PATTERNS, allowCodeBlocks: true },
+	{ capability: "browser_automation", patterns: BROWSER_AUTOMATION_PATTERNS, allowCodeBlocks: false },
+	{ capability: "browser_session_attachment", patterns: BROWSER_SESSION_ATTACHMENT_PATTERNS, allowCodeBlocks: true },
+	{ capability: "browser_profile_copy", patterns: BROWSER_PROFILE_COPY_PATTERNS, allowCodeBlocks: true },
+	{ capability: "session_management", patterns: SESSION_MANAGEMENT_PATTERNS, allowCodeBlocks: false },
+	{ capability: "content_extraction", patterns: CONTENT_EXTRACTION_PATTERNS, allowCodeBlocks: false },
+	{ capability: "documentation_ingestion", patterns: DOCUMENTATION_INGESTION_PATTERNS, allowCodeBlocks: true },
+	{ capability: "local_input_control", patterns: LOCAL_INPUT_CONTROL_PATTERNS, allowCodeBlocks: true },
+	{ capability: "prompt_file_ingestion", patterns: PROMPT_FILE_INGESTION_PATTERNS, allowCodeBlocks: true },
+	{ capability: "automation_evasion", patterns: AUTOMATION_EVASION_PATTERNS, allowCodeBlocks: true },
+	{ capability: "external_tool_bridge", patterns: EXTERNAL_TOOL_BRIDGE_PATTERNS, allowCodeBlocks: true },
+	{ capability: "package_bootstrap", patterns: PACKAGE_BOOTSTRAP_PATTERNS, allowCodeBlocks: true },
+	{ capability: "cookie_url_handoff", patterns: COOKIE_URL_HANDOFF_PATTERNS, allowCodeBlocks: true },
+	{ capability: "credential_store_persistence", patterns: CREDENTIAL_STORE_PERSISTENCE_PATTERNS, allowCodeBlocks: true },
+	{ capability: "container_runtime_control", patterns: CONTAINER_RUNTIME_CONTROL_PATTERNS, allowCodeBlocks: true },
+	{ capability: "environment_configuration", patterns: ENVIRONMENT_CONFIGURATION_PATTERNS, allowCodeBlocks: true },
+	{ capability: "payment_processing", patterns: PAYMENT_PROCESSING_PATTERNS, allowCodeBlocks: false },
+	{ capability: "unrestricted_scope", patterns: UNRESTRICTED_SCOPE_PATTERNS, allowCodeBlocks: false },
+	{ capability: "credential_form_automation", patterns: CREDENTIAL_FORM_AUTOMATION_PATTERNS, allowCodeBlocks: false },
+	{ capability: "remote_delegation", patterns: REMOTE_DELEGATION_PATTERNS, allowCodeBlocks: false },
+	{ capability: "remote_task_management", patterns: REMOTE_TASK_MANAGEMENT_PATTERNS, allowCodeBlocks: true },
+	{ capability: "server_exposure", patterns: SERVER_EXPOSURE_PATTERNS, allowCodeBlocks: true },
+	{ capability: "local_service_access", patterns: LOCAL_SERVICE_ACCESS_PATTERNS, allowCodeBlocks: true },
+	{ capability: "process_orchestration", patterns: PROCESS_ORCHESTRATION_PATTERNS, allowCodeBlocks: false },
+	{ capability: "ui_state_access", patterns: UI_STATE_ACCESS_PATTERNS, allowCodeBlocks: false },
+];
+
 function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, string> {
 	const inferred = new Map<CapabilityKind, string>();
 	const isDefenseSkill = isSecurityDefenseSkill(skill);
@@ -278,316 +327,14 @@ function inferCapabilities(skill: ParsedSkill): ReadonlyMap<CapabilityKind, stri
 		if (mapped) add(mapped, `Tool: ${tool}`);
 	}
 
-	const credentialMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_PATTERNS, isDefenseSkill);
-	if (credentialMatch) add("credential_access", `Content pattern: ${credentialMatch}`);
-
-	const credentialHandoffMatch = firstPositiveMatch(
-		skill.rawContent,
-		CREDENTIAL_HANDOFF_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (credentialHandoffMatch) {
-		add("credential_handoff", `Content pattern: ${credentialHandoffMatch}`);
-	}
-
-	const credentialStorageMatch = firstPositiveMatch(
-		skill.rawContent,
-		CREDENTIAL_STORAGE_PATTERNS,
-		isDefenseSkill,
-	);
-	if (credentialStorageMatch) {
-		add("credential_storage", `Content pattern: ${credentialStorageMatch}`);
-	}
-
-	const authStateManagementMatch = firstPositiveMatch(
-		skill.rawContent,
-		AUTH_STATE_MANAGEMENT_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (authStateManagementMatch) {
-		add("auth_state_management", `Content pattern: ${authStateManagementMatch}`);
-	}
-
-	const execMatch = firstPositiveMatch(
-		skill.rawContent,
-		EXEC_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (execMatch) add("exec", `Content pattern: ${execMatch}`);
-
-	const systemMatch = firstPositiveMatch(skill.rawContent, SYSTEM_MOD_PATTERNS, isDefenseSkill);
-	if (systemMatch) add("system_modification", `Content pattern: ${systemMatch}`);
-
-	const fileWriteMatch = firstPositiveMatch(
-		skill.rawContent,
-		FILE_WRITE_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (fileWriteMatch) add("file_write", `Content pattern: ${fileWriteMatch}`);
-
-	const fileReadMatch = firstPositiveMatch(skill.rawContent, FILE_READ_PATTERNS, isDefenseSkill);
-	if (fileReadMatch) add("file_read", `Content pattern: ${fileReadMatch}`);
-
-	const filesystemDiscoveryMatch = firstPositiveMatch(
-		skill.rawContent,
-		FILESYSTEM_DISCOVERY_PATTERNS,
-		isDefenseSkill,
-	);
-	if (filesystemDiscoveryMatch) {
-		add("filesystem_discovery", `Content pattern: ${filesystemDiscoveryMatch}`);
-	}
-
-	const configurationOverrideMatch = firstPositiveMatch(
-		skill.rawContent,
-		CONFIGURATION_OVERRIDE_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (configurationOverrideMatch) {
-		add("configuration_override", `Content pattern: ${configurationOverrideMatch}`);
-	}
-
-	const networkMatch = firstPositiveMatch(
-		skill.rawContent,
-		NETWORK_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (networkMatch) add("network", `Content pattern: ${networkMatch}`);
-
-	const browserAutomationMatch = firstPositiveMatch(
-		skill.rawContent,
-		BROWSER_AUTOMATION_PATTERNS,
-		isDefenseSkill,
-	);
-	if (browserAutomationMatch) {
-		add("browser_automation", `Content pattern: ${browserAutomationMatch}`);
-	}
-
-	const browserSessionAttachmentMatch = firstPositiveMatch(
-		skill.rawContent,
-		BROWSER_SESSION_ATTACHMENT_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (browserSessionAttachmentMatch) {
-		add("browser_session_attachment", `Content pattern: ${browserSessionAttachmentMatch}`);
-	}
-
-	const browserProfileCopyMatch = firstPositiveMatch(
-		skill.rawContent,
-		BROWSER_PROFILE_COPY_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (browserProfileCopyMatch) {
-		add("browser_profile_copy", `Content pattern: ${browserProfileCopyMatch}`);
-	}
-
-	const sessionManagementMatch = firstPositiveMatch(
-		skill.rawContent,
-		SESSION_MANAGEMENT_PATTERNS,
-		isDefenseSkill,
-	);
-	if (sessionManagementMatch) {
-		add("session_management", `Content pattern: ${sessionManagementMatch}`);
-	}
-
-	const contentExtractionMatch = firstPositiveMatch(
-		skill.rawContent,
-		CONTENT_EXTRACTION_PATTERNS,
-		isDefenseSkill,
-	);
-	if (contentExtractionMatch) {
-		add("content_extraction", `Content pattern: ${contentExtractionMatch}`);
-	}
-
-	const documentationIngestionMatch = firstPositiveMatch(
-		skill.rawContent,
-		DOCUMENTATION_INGESTION_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (documentationIngestionMatch) {
-		add("documentation_ingestion", `Content pattern: ${documentationIngestionMatch}`);
-	}
-
-	const localInputControlMatch = firstPositiveMatch(
-		skill.rawContent,
-		LOCAL_INPUT_CONTROL_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (localInputControlMatch) {
-		add("local_input_control", `Content pattern: ${localInputControlMatch}`);
-	}
-
-	const promptFileIngestionMatch = firstPositiveMatch(
-		skill.rawContent,
-		PROMPT_FILE_INGESTION_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (promptFileIngestionMatch) {
-		add("prompt_file_ingestion", `Content pattern: ${promptFileIngestionMatch}`);
-	}
-
-	const automationEvasionMatch = firstPositiveMatch(
-		skill.rawContent,
-		AUTOMATION_EVASION_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (automationEvasionMatch) {
-		add("automation_evasion", `Content pattern: ${automationEvasionMatch}`);
-	}
-
-	const externalToolBridgeMatch = firstPositiveMatch(
-		skill.rawContent,
-		EXTERNAL_TOOL_BRIDGE_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (externalToolBridgeMatch) {
-		add("external_tool_bridge", `Content pattern: ${externalToolBridgeMatch}`);
-	}
-
-	const packageBootstrapMatch = firstPositiveMatch(
-		skill.rawContent,
-		PACKAGE_BOOTSTRAP_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (packageBootstrapMatch) {
-		add("package_bootstrap", `Content pattern: ${packageBootstrapMatch}`);
-	}
-
-	const cookieUrlHandoffMatch = firstPositiveMatch(
-		skill.rawContent,
-		COOKIE_URL_HANDOFF_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (cookieUrlHandoffMatch) {
-		add("cookie_url_handoff", `Content pattern: ${cookieUrlHandoffMatch}`);
-	}
-
-	const credentialStorePersistenceMatch = firstPositiveMatch(
-		skill.rawContent,
-		CREDENTIAL_STORE_PERSISTENCE_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (credentialStorePersistenceMatch) {
-		add("credential_store_persistence", `Content pattern: ${credentialStorePersistenceMatch}`);
-	}
-
-	const containerRuntimeControlMatch = firstPositiveMatch(
-		skill.rawContent,
-		CONTAINER_RUNTIME_CONTROL_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (containerRuntimeControlMatch) {
-		add("container_runtime_control", `Content pattern: ${containerRuntimeControlMatch}`);
-	}
-
-	const environmentConfigurationMatch = firstPositiveMatch(
-		skill.rawContent,
-		ENVIRONMENT_CONFIGURATION_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (environmentConfigurationMatch) {
-		add("environment_configuration", `Content pattern: ${environmentConfigurationMatch}`);
-	}
-
-	const paymentProcessingMatch = firstPositiveMatch(
-		skill.rawContent,
-		PAYMENT_PROCESSING_PATTERNS,
-		isDefenseSkill,
-	);
-	if (paymentProcessingMatch) {
-		add("payment_processing", `Content pattern: ${paymentProcessingMatch}`);
-	}
-
-	const unrestrictedScopeMatch = firstPositiveMatch(
-		skill.rawContent,
-		UNRESTRICTED_SCOPE_PATTERNS,
-		isDefenseSkill,
-	);
-	if (unrestrictedScopeMatch) {
-		add("unrestricted_scope", `Content pattern: ${unrestrictedScopeMatch}`);
-	}
-
-	const credentialFormAutomationMatch = firstPositiveMatch(
-		skill.rawContent,
-		CREDENTIAL_FORM_AUTOMATION_PATTERNS,
-		isDefenseSkill,
-	);
-	if (credentialFormAutomationMatch) {
-		add("credential_form_automation", `Content pattern: ${credentialFormAutomationMatch}`);
-	}
-
-	const remoteDelegationMatch = firstPositiveMatch(
-		skill.rawContent,
-		REMOTE_DELEGATION_PATTERNS,
-		isDefenseSkill,
-	);
-	if (remoteDelegationMatch) {
-		add("remote_delegation", `Content pattern: ${remoteDelegationMatch}`);
-	}
-
-	const remoteTaskManagementMatch = firstPositiveMatch(
-		skill.rawContent,
-		REMOTE_TASK_MANAGEMENT_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (remoteTaskManagementMatch) {
-		add("remote_task_management", `Content pattern: ${remoteTaskManagementMatch}`);
-	}
-
-	const serverExposureMatch = firstPositiveMatch(
-		skill.rawContent,
-		SERVER_EXPOSURE_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (serverExposureMatch) {
-		add("server_exposure", `Content pattern: ${serverExposureMatch}`);
-	}
-
-	const localServiceAccessMatch = firstPositiveMatch(
-		skill.rawContent,
-		LOCAL_SERVICE_ACCESS_PATTERNS,
-		isDefenseSkill,
-		true,
-	);
-	if (localServiceAccessMatch) {
-		add("local_service_access", `Content pattern: ${localServiceAccessMatch}`);
-	}
-
-	const processOrchestrationMatch = firstPositiveMatch(
-		skill.rawContent,
-		PROCESS_ORCHESTRATION_PATTERNS,
-		isDefenseSkill,
-	);
-	if (processOrchestrationMatch) {
-		add("process_orchestration", `Content pattern: ${processOrchestrationMatch}`);
-	}
-
-	const uiStateAccessMatch = firstPositiveMatch(
-		skill.rawContent,
-		UI_STATE_ACCESS_PATTERNS,
-		isDefenseSkill,
-	);
-	if (uiStateAccessMatch) {
-		add("ui_state_access", `Content pattern: ${uiStateAccessMatch}`);
+	for (const rule of CONTENT_INFERENCE_RULES) {
+		const match = firstPositiveMatch(
+			skill.rawContent,
+			rule.patterns,
+			isDefenseSkill,
+			rule.allowCodeBlocks,
+		);
+		if (match) add(rule.capability, `Content pattern: ${match}`);
 	}
 
 	if (!inferred.has("network") && !isDefenseSkill) {

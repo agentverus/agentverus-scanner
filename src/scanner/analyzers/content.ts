@@ -1,6 +1,7 @@
 import type { CategoryScore, Finding, ParsedSkill } from "../types.js";
 import { adjustForContext, buildContentContext } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
+import { recomputeScore } from "./score-util.js";
 
 /** Harmful content patterns */
 const HARMFUL_PATTERNS = [
@@ -58,7 +59,7 @@ function isHarmfulMatchNegated(content: string, matchIndex: number): boolean {
 	if (/\b(?:methods?\s+bypass|calls?\s+bypass|queries?\s+bypass)\b/i.test(fullLine)) return true;
 
 	// Check if it's in a table row describing threats/patterns
-	if (/^\s*\|.*\|/.test(fullLine) && /\b(?:critical|high|dangerous|risk|attack|threat|pattern|injection|violation|abuse|manipulation)\b/i.test(fullLine)) return true;
+	if (/^\s*\|[^\n]{0,512}\|/.test(fullLine) && /\b(?:critical|high|dangerous|risk|attack|threat|pattern|injection|violation|abuse|manipulation)\b/i.test(fullLine)) return true;
 
 	// Check if it's about a feature/command that uses "bypass" in an allowlist/exemption sense
 	if (/\b(?:allowlist|whitelist|exempt|trusted\s+items?)\b/i.test(fullLine)) return true;
@@ -306,9 +307,9 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 			// Skip example/placeholder values
 			if (/EXAMPLE|example|placeholder|YOUR_|your_|xxx|XXX|REPLACE|replace/i.test(matchText)) continue;
 			// Skip patterns that are mostly X's, dots, or repeated characters (placeholders)
-			const valueOnly = matchText.replace(/^.*?[:=]\s*["']?/, "").replace(/["']$/, "");
+			const valueOnly = matchText.replace(/^.{0,200}?[:=]\s*["']?/, "").replace(/["']$/, "");
 			if (/^[xX]+$/.test(valueOnly)) continue;
-			if (/^[xX.*]+$/.test(valueOnly)) continue;
+			if (/^[xX[^\n]{0,512}]+$/.test(valueOnly)) continue;
 			// For AWS keys: strip the 4-char prefix and check if the rest is all X/0
 			const awsPrefixes = ["AKIA", "AGPA", "AIDA", "AROA", "AIPA", "ANPA", "ANVA", "ASIA"];
 			const isAwsPlaceholder = awsPrefixes.some(p => matchText.startsWith(p) && /^[X0]+$/.test(matchText.slice(4)));
@@ -428,14 +429,14 @@ export async function analyzeContent(skill: ParsedSkill): Promise<CategoryScore>
 	// Apply declared permissions — downgrade matching findings
 	const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
 
-	// Recalculate score: start at base, add bonuses, subtract adjusted deductions
-	let adjustedScore = 80;
-	if (hasSafetyBoundaries) adjustedScore = Math.min(100, adjustedScore + 10);
-	if (hasOutputConstraints) adjustedScore = Math.min(100, adjustedScore + 5);
-	if (hasErrorHandling) adjustedScore = Math.min(100, adjustedScore + 5);
-	for (const f of adjustedFindings) {
-		adjustedScore = Math.max(0, adjustedScore - f.deduction);
-	}
+	// Recalculate score: start at the content baseline of 80 ("skills must earn the
+	// top 20"), add bonuses for safety boundaries / output constraints / error
+	// handling, then subtract adjusted deductions.
+	let base = 80;
+	if (hasSafetyBoundaries) base = Math.min(100, base + 10);
+	if (hasOutputConstraints) base = Math.min(100, base + 5);
+	if (hasErrorHandling) base = Math.min(100, base + 5);
+	const adjustedScore = recomputeScore(adjustedFindings, base);
 
 	const summary =
 		adjustedFindings.filter((f) => f.severity !== "info").length === 0

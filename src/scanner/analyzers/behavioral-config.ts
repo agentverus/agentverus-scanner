@@ -48,7 +48,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/\b(?:iptables|ufw)\b/i,
 			/\b(?:modprobe|insmod|rmmod)\b/i,
 			/~\/\.(?:bashrc|zshrc|profile)\b/i,
-			/(?:write|append|modify)\s+.*\.(?:bashrc|zshrc|profile)\b/i,
+			/(?:write|append|modify)\s+[^\n]{0,512}\.(?:bashrc|zshrc|profile)\b/i,
 		],
 		severity: "high",
 		deduction: 20,
@@ -59,7 +59,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
 		name: "Config tamper core",
 		patterns: [
-			/\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)\b/i,
+			/\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]{0,512}(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)\b/i,
 		],
 		severity: "high",
 		deduction: 25,
@@ -70,7 +70,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
 		name: "Config tamper workspace",
 		patterns: [
-			/\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*\.claude\//i,
+			/\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]{0,512}\.claude\//i,
 		],
 		severity: "high",
 		deduction: 20,
@@ -208,8 +208,8 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Compound browser action chaining",
 		patterns: [
 			/commands?\s+can\s+be\s+chained\s+with\s+`?&&`?/i,
-			/\bopen\s+https?:\/\/\S+\s+&&\s+[^\n]+/i,
-			/\bfill\s+@e\d+\s+"[^"]+"\s+&&\s+fill\s+@e\d+\s+"[^"]+"\s+&&/i,
+			/\bopen\s+https?:\/\/\S+\s+&&\s+[^\n]{1,512}/i,
+			/\bfill\s+@e\d+\s+"[^"]{1,512}"\s+&&\s+fill\s+@e\d+\s+"[^"]{1,512}"\s+&&/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -271,8 +271,8 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Profile-backed session persistence",
 		patterns: [
 			/persistent\s+profile/i,
-			/--profile\s+[^\s]+\s+open/i,
-			/--session-name\s+[^\s]+\s+open/i,
+			/--profile\s+[^\s]{1,512}\s+open/i,
+			/--session-name\s+[^\s]{1,512}\s+open/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -375,7 +375,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		patterns: [
 			/echo\s+"\$[A-Z0-9_]+"\s*\|/i,
 			/(?:including|with|containing)\s+(?:all\s+)?environment\s+variables/i,
-			/(?:for\s+each|every)\s+file\s+in\s+the\s+project.*POST\s+its\s+contents?\s+to/i,
+			/(?:for\s+each|every)\s+file\s+in\s+the\s+project[^\n]{0,512}POST\s+its\s+contents?\s+to/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -386,7 +386,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
 		name: "Secret parameter handling",
 		patterns: [
-			/--secret\s+[^\s=]+=[^\s]+/i,
+			/--secret\s+[^\s=]{1,512}=[^\s]{1,512}/i,
 			/secret\s+metadata/i,
 		],
 		severity: "high",
@@ -426,7 +426,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 		name: "Credential in query string",
 		patterns: [
 			/(?:\b(?:cookie|token)\b.{0,120}\bquery\s+string\b|\bquery\s+string\b.{0,120}\b(?:cookie|token)\b)/i,
-			/\?[A-Za-z0-9_-]*(?:cookie|token)=<[^>\s]+>/i,
+			/\?[A-Za-z0-9_-]*(?:cookie|token)=<[^>\s]{1,512}>/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -437,8 +437,8 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
 		name: "Cookie header replay",
 		patterns: [
-			/-H\s+["']Cookie:\s*[^"']+(?:cookie|token)[^"']*["']/i,
-			/\bCookie:\s*[A-Za-z0-9_-]+(?:cookie|token)=[^\s"']+/i,
+			/-H\s+["']Cookie:\s*[^"']{1,512}(?:cookie|token)[^"']{0,512}["']/i,
+			/\bCookie:\s*[A-Za-z0-9_-]+(?:cookie|token)=[^\s"']{1,512}/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -475,7 +475,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 	{
 		name: "Package bootstrap execution",
 		patterns: [
-			/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+			/\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']{1,512}/i,
 			/\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
 		],
 		severity: "high",
@@ -532,7 +532,7 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 			/with_server\.py/i,
 			/manages?\s+server\s+lifecycle/i,
 			/supports\s+multiple\s+servers/i,
-			/--server\s+["'][^"']+["']/i,
+			/--server\s+["'][^"']{1,512}["']/i,
 		],
 		severity: "high",
 		deduction: 15,
@@ -774,6 +774,6 @@ export const BEHAVIORAL_PATTERNS: readonly BehavioralPattern[] = [
 ] as const;
 
 export const PREREQUISITE_TRAP_PATTERNS = [
-	/curl\s+.*\|\s*(?:sh|bash|zsh)/i,
-	/curl\s+.*-[oO]\s+.*&&\s*(?:chmod|\.\/)/i,
+	/curl\s+[^\n]{0,512}\|\s*(?:sh|bash|zsh)/i,
+	/curl\s+[^\n]{0,512}-[oO]\s+[^\n]{0,512}&&\s*(?:chmod|\.\/)/i,
 ] as const;

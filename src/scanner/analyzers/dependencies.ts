@@ -3,10 +3,11 @@ import { hasSetupHeadingOrYamlContext } from "../setup-context.js";
 import { hasHighAbuseTldHost, isKnownInstallerTarget } from "../url-risk.js";
 import { adjustForContext, buildContentContext, isInsideCodeBlock, isInThreatListingContext, isSecurityDefenseSkill } from "./context.js";
 import { applyDeclaredPermissions } from "./declared-match.js";
+import { recomputeScore } from "./score-util.js";
 
 /** Trusted domain patterns */
 const TRUSTED_DOMAINS = [
-	/^github\.com\/(?!.*\/raw\/)/,
+	/^github\.com\/(?![^\n]{0,512}\/raw\/)/,
 	/^(?:www\.)?npmjs\.com/,
 	/^registry\.npmjs\.org/,
 	/^(?:www\.)?pypi\.org/,
@@ -140,9 +141,9 @@ const REMOTE_SERVICE_HINT_PATTERNS = [
 /** Download-and-execute patterns */
 const DOWNLOAD_EXECUTE_PATTERNS = [
 	/download\s+and\s+(?:execute|eval)\b/i,
-	/(?:curl|wget)\s+.*?\|\s*(?:sh|bash|zsh|python)/i,
+	/(?:curl|wget)\s+[^\n]{0,512}?\|\s*(?:sh|bash|zsh|python)/i,
 	/eval\s*\(\s*fetch/i,
-	/import\s+.*?from\s+['"]https?:\/\//i,
+	/import\s+[^\n]{0,512}?from\s+['"]https?:\/\//i,
 	/require\s*\(\s*['"]https?:\/\//i,
 ] as const;
 
@@ -163,7 +164,7 @@ const LIFECYCLE_SCRIPTS = new Set([
 
 /** Dangerous script content that indicates command execution/network risk */
 const DANGEROUS_SCRIPT_CONTENT =
-	/\b(?:curl|wget|eval|exec|bash|sh\s+-c|node\s+-e|python\s+-c|base64|nc)\b|\/dev\/tcp|>\(|<\(|\$\(|`[^`]+`|\b\d{1,3}(?:\.\d{1,3}){3}\b|https?:\/\/\S+/i;
+	/\b(?:curl|wget|eval|exec|bash|sh\s+-c|node\s+-e|python\s+-c|base64|nc)\b|\/dev\/tcp|>\(|<\(|\$\(|`[^`]{1,512}`|\b\d{1,3}(?:\.\d{1,3}){3}\b|https?:\/\/\S+/i;
 
 interface JsonCodeBlockCandidate {
 	readonly content: string;
@@ -176,7 +177,7 @@ function isObjectRecord(value: unknown): value is Record<string, unknown> {
 
 function extractJsonCodeBlockCandidates(content: string): JsonCodeBlockCandidate[] {
 	const blocks: JsonCodeBlockCandidate[] = [];
-	const codeBlockRegex = /```([^\n`]*)\r?\n([\s\S]*?)```/g;
+	const codeBlockRegex = /```([^\n`]{0,512})\r?\n([\s\S]*?)```/g;
 	let match: RegExpExecArray | null;
 
 	while ((match = codeBlockRegex.exec(content)) !== null) {
@@ -341,7 +342,7 @@ function extractScriptsFromJsonBlock(blockContent: string): Record<string, unkno
 
 function isExampleDocumentationContext(content: string, offset: number): boolean {
 	const preceding = content.slice(Math.max(0, offset - 1500), offset);
-	const headings = preceding.match(/^#{1,6}\s+.+$/gm);
+	const headings = preceding.match(/^#{1,6}\s+[^\n]{1,512}$/gm);
 	if (!headings || headings.length === 0) return false;
 
 	const lastHeading = headings[headings.length - 1] ?? "";
@@ -377,7 +378,7 @@ function getHostname(url: string): string {
 		return parsed.hostname;
 	} catch {
 		// Handle URLs without protocol
-		const match = url.match(/^(?:https?:\/\/)?([^/:]+)/);
+		const match = url.match(/^(?:https?:\/\/)?([^/:]{1,512})/);
 		return match?.[1] ?? url;
 	}
 }
@@ -438,7 +439,7 @@ function hasSensitiveUnknownUrlContext(content: string, url: string): boolean {
 }
 
 function hasCredentialBearingUrlParam(url: string): boolean {
-	return /[?&][^=#\s]*(?:cookie|token|auth|session)[^=#\s]*=|[?&][^=#\s]*=(?:<[^>]+>|\$\{?[A-Z0-9_]+\}?|\$[A-Z0-9_]+)/i.test(
+	return /[?&][^=#\s]{0,512}(?:cookie|token|auth|session)[^=#\s]{0,512}=|[?&][^=#\s]{0,512}=(?:<[^>]{1,512}>|\$\{?[A-Z0-9_]+\}?|\$[A-Z0-9_]+)/i.test(
 		url,
 	);
 }
@@ -458,7 +459,7 @@ export function extractSelfBaseDomains(skill: ParsedSkill): Set<string> {
 
 	const tokenSource = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
 	const tokens = tokenSource
-		.split(/[^a-z0-9]+/g)
+		.split(/[^a-z0-9]{1,512}/g)
 		.map((t) => t.trim())
 		.filter((t) => t.length >= 3);
 
@@ -669,11 +670,11 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 				const fullLine = content.slice(lineStart, lineEnd);
 
 				// Table rows describing patterns/risks
-				if (/^\s*\|.*\|/.test(fullLine) && /\b(?:critical|high|risk|dangerous|pattern|severity|pipe.to.shell)\b/i.test(fullLine)) return true;
+				if (/^\s*\|[^\n]{0,512}\|/.test(fullLine) && /\b(?:critical|high|risk|dangerous|pattern|severity|pipe.to.shell)\b/i.test(fullLine)) return true;
 
 				// Check preceding text for scan/detect/threat context
 				const precText = content.slice(Math.max(0, matchIndex - 500), matchIndex);
-				return /\b(?:scan\b.*\b(?:for|skill)|detect|flag|block|dangerous\s+(?:instruction|pattern|command)|malicious|malware|threat\s+pattern|what\s+(?:it|we)\s+detect|why\s+(?:it['']?s|this\s+(?:is|exists))\s+dangerous|findings?:|pattern.*risk|catch\s+them)\b/i.test(precText);
+				return /\b(?:scan\b[^\n]{0,512}\b(?:for|skill)|detect|flag|block|dangerous\s+(?:instruction|pattern|command)|malicious|malware|threat\s+pattern|what\s+(?:it|we)\s+detect|why\s+(?:it['']?s|this\s+(?:is|exists))\s+dangerous|findings?:|pattern[^\n]{0,512}risk|catch\s+them)\b/i.test(precText);
 			})();
 
 			if (isLegit || isInThreatDesc) {
@@ -838,10 +839,7 @@ export async function analyzeDependencies(skill: ParsedSkill): Promise<CategoryS
 	const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
 
 	// Recalculate score based on adjusted deductions
-	let adjustedScore = 100;
-	for (const f of adjustedFindings) {
-		adjustedScore = Math.max(0, adjustedScore - f.deduction);
-	}
+	const adjustedScore = recomputeScore(adjustedFindings);
 
 	const summary =
 		adjustedFindings.length === 0

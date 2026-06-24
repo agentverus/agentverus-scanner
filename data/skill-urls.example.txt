@@ -1,0 +1,7 @@
+# Example skill URL list for `agentverus registry scan --urls <path>`.
+# Copy this to data/skill-urls.txt (gitignored) and edit, or pass this file directly.
+# One URL per line; blank lines and lines starting with `#` are ignored.
+# GitHub blob/tree URLs and ClawHub skill pages are normalized automatically.
+https://raw.githubusercontent.com/anthropics/skills/main/skills/mcp-builder/SKILL.md
+https://raw.githubusercontent.com/anthropics/skills/main/skills/webapp-testing/SKILL.md
+https://github.com/browser-use/browser-use/blob/main/skills/browser-use/SKILL.md

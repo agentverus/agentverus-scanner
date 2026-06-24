@@ -7,7 +7,12 @@ packages/*/*.tsbuildinfo
 .env.*
 coverage/
 .cache/
-data/
+data/*
+# keep a committed example URL list (the --urls default points at data/skill-urls.txt)
+!data/skill-urls.example.txt
 
 # autoresearch session scratch
 .auto/
+
+# autoresearch loop session artifacts (loop stopped; regenerable)
+autoresearch.*
