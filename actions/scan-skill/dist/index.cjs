@@ -69,7 +69,7 @@ function buildContentContext(content) {
       lineOffsets.push(i + 1);
     }
   }
-  const fenceRegex = /^(```|~~~).*$/gm;
+  const fenceRegex = /^(```|~~~)[^\n]{0,512}$/gm;
   let fenceOpen = null;
   let match;
   while ((match = fenceRegex.exec(content)) !== null) {
@@ -80,7 +80,7 @@ function buildContentContext(content) {
       fenceOpen = null;
     }
   }
-  const inlineCodeRegex = /`[^`\n]+`/g;
+  const inlineCodeRegex = /`[^`\n]{1,512}`/g;
   while ((match = inlineCodeRegex.exec(content)) !== null) {
     codeBlocks.push({ start: match.index, end: match.index + match[0].length });
   }
@@ -146,7 +146,7 @@ function isSecurityDefenseSkill(skill) {
   const abuseCtx = buildContentContext(skill.rawContent);
   const credAbusePatterns = [
     /\b(?:read|cat|dump)\b.{0,80}(?:~\/\.ssh|\.aws\/credentials|\.env\b|id_rsa|id_ed25519)/gi,
-    /\b(?:all\s+environment\s+variables|all\s+settings.*tokens.*keys)\b/gi
+    /\b(?:all\s+environment\s+variables|all\s+settings[^\n]{0,512}tokens[^\n]{0,512}keys)\b/gi
   ];
   const exfilAbusePatterns = [
     /\b(?:send|post|upload|forward)\b.{0,120}https?:\/\//gi,
@@ -212,15 +212,15 @@ function isInThreatListingContext(content, matchIndex) {
   if (lineEnd < 0)
     lineEnd = content.length;
   const fullLine = content.slice(lineStart, lineEnd);
-  if (/^\s*\|.*\|/.test(fullLine) && /\b(?:pattern|indicator|type|category|technique|example|critical|high|warning|risk|dangerous|override|jailbreak|injection|exfiltration|attack)\b/i.test(fullLine))
+  if (/^\s*\|[^\n]{0,512}\|/.test(fullLine) && /\b(?:pattern|indicator|type|category|technique|example|critical|high|warning|risk|dangerous|override|jailbreak|injection|exfiltration|attack)\b/i.test(fullLine))
     return true;
   if (/^\s*[-*•]\s*(?:["'""]|pattern|detect|flag|block|scan\s+for|look\s+for|check\s+for)/i.test(fullLine))
     return true;
-  if (/^\s*[-*•]\s*\*\*[^*]+\*\*\s*[:—–-]\s*["'""]/.test(fullLine))
+  if (/^\s*[-*•]\s*\*\*[^*]{1,512}\*\*\s*[:—–-]\s*["'""]/.test(fullLine))
     return true;
-  if (/^\s*[-*•]\s*\*\*[^*]*:\*\*/.test(fullLine))
+  if (/^\s*[-*•]\s*\*\*[^*]{0,512}:\*\*/.test(fullLine))
     return true;
-  if (/\b(?:example|evidence|if\s+.*says?|indicator|caption|sample|test\s+case|detection)\b/i.test(fullLine))
+  if (/\b(?:example|evidence|if\s+[^\n]{0,512}says?|indicator|caption|sample|test\s+case|detection)\b/i.test(fullLine))
     return true;
   const precedingText = content.slice(Math.max(0, lineStart - 500), lineStart);
   const precedingLines = precedingText.split("\n").slice(-5).join(" ");
@@ -228,7 +228,7 @@ function isInThreatListingContext(content, matchIndex) {
     return true;
   }
   const broaderPreceding = content.slice(Math.max(0, matchIndex - 1e3), matchIndex);
-  const headings = broaderPreceding.match(/^#{1,4}\s+.+$/gm);
+  const headings = broaderPreceding.match(/^#{1,4}\s+[^\n]{1,512}$/gm);
   if (headings && headings.length > 0) {
     const lastHeading = headings[headings.length - 1].toLowerCase();
     if (/\b(?:detect|ssrf|injection|threat|attack|security|example|exfiltrat|protect|dangerous)\b/.test(lastHeading)) {
@@ -379,7 +379,7 @@ var BEHAVIORAL_PATTERNS = [
       /\b(?:iptables|ufw)\b/i,
       /\b(?:modprobe|insmod|rmmod)\b/i,
       /~\/\.(?:bashrc|zshrc|profile)\b/i,
-      /(?:write|append|modify)\s+.*\.(?:bashrc|zshrc|profile)\b/i
+      /(?:write|append|modify)\s+[^\n]{0,512}\.(?:bashrc|zshrc|profile)\b/i
     ],
     severity: "high",
     deduction: 20,
@@ -389,7 +389,7 @@ var BEHAVIORAL_PATTERNS = [
   {
     name: "Config tamper core",
     patterns: [
-      /\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)\b/i
+      /\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]{0,512}(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)\b/i
     ],
     severity: "high",
     deduction: 25,
@@ -399,7 +399,7 @@ var BEHAVIORAL_PATTERNS = [
   {
     name: "Config tamper workspace",
     patterns: [
-      /\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]*\.claude\//i
+      /\b(?:write|edit|modify|append|overwrite|replace|patch|update|change|add\s+to)\b[^\n]{0,512}\.claude\//i
     ],
     severity: "high",
     deduction: 20,
@@ -527,8 +527,8 @@ var BEHAVIORAL_PATTERNS = [
     name: "Compound browser action chaining",
     patterns: [
       /commands?\s+can\s+be\s+chained\s+with\s+`?&&`?/i,
-      /\bopen\s+https?:\/\/\S+\s+&&\s+[^\n]+/i,
-      /\bfill\s+@e\d+\s+"[^"]+"\s+&&\s+fill\s+@e\d+\s+"[^"]+"\s+&&/i
+      /\bopen\s+https?:\/\/\S+\s+&&\s+[^\n]{1,512}/i,
+      /\bfill\s+@e\d+\s+"[^"]{1,512}"\s+&&\s+fill\s+@e\d+\s+"[^"]{1,512}"\s+&&/i
     ],
     severity: "high",
     deduction: 15,
@@ -585,8 +585,8 @@ var BEHAVIORAL_PATTERNS = [
     name: "Profile-backed session persistence",
     patterns: [
       /persistent\s+profile/i,
-      /--profile\s+[^\s]+\s+open/i,
-      /--session-name\s+[^\s]+\s+open/i
+      /--profile\s+[^\s]{1,512}\s+open/i,
+      /--session-name\s+[^\s]{1,512}\s+open/i
     ],
     severity: "high",
     deduction: 15,
@@ -681,7 +681,7 @@ var BEHAVIORAL_PATTERNS = [
     patterns: [
       /echo\s+"\$[A-Z0-9_]+"\s*\|/i,
       /(?:including|with|containing)\s+(?:all\s+)?environment\s+variables/i,
-      /(?:for\s+each|every)\s+file\s+in\s+the\s+project.*POST\s+its\s+contents?\s+to/i
+      /(?:for\s+each|every)\s+file\s+in\s+the\s+project[^\n]{0,512}POST\s+its\s+contents?\s+to/i
     ],
     severity: "high",
     deduction: 15,
@@ -691,7 +691,7 @@ var BEHAVIORAL_PATTERNS = [
   {
     name: "Secret parameter handling",
     patterns: [
-      /--secret\s+[^\s=]+=[^\s]+/i,
+      /--secret\s+[^\s=]{1,512}=[^\s]{1,512}/i,
       /secret\s+metadata/i
     ],
     severity: "high",
@@ -728,7 +728,7 @@ var BEHAVIORAL_PATTERNS = [
     name: "Credential in query string",
     patterns: [
       /(?:\b(?:cookie|token)\b.{0,120}\bquery\s+string\b|\bquery\s+string\b.{0,120}\b(?:cookie|token)\b)/i,
-      /\?[A-Za-z0-9_-]*(?:cookie|token)=<[^>\s]+>/i
+      /\?[A-Za-z0-9_-]*(?:cookie|token)=<[^>\s]{1,512}>/i
     ],
     severity: "high",
     deduction: 15,
@@ -738,8 +738,8 @@ var BEHAVIORAL_PATTERNS = [
   {
     name: "Cookie header replay",
     patterns: [
-      /-H\s+["']Cookie:\s*[^"']+(?:cookie|token)[^"']*["']/i,
-      /\bCookie:\s*[A-Za-z0-9_-]+(?:cookie|token)=[^\s"']+/i
+      /-H\s+["']Cookie:\s*[^"']{1,512}(?:cookie|token)[^"']{0,512}["']/i,
+      /\bCookie:\s*[A-Za-z0-9_-]+(?:cookie|token)=[^\s"']{1,512}/i
     ],
     severity: "high",
     deduction: 15,
@@ -773,7 +773,7 @@ var BEHAVIORAL_PATTERNS = [
   {
     name: "Package bootstrap execution",
     patterns: [
-      /\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+      /\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']{1,512}/i,
       /\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i
     ],
     severity: "high",
@@ -826,7 +826,7 @@ var BEHAVIORAL_PATTERNS = [
       /with_server\.py/i,
       /manages?\s+server\s+lifecycle/i,
       /supports\s+multiple\s+servers/i,
-      /--server\s+["'][^"']+["']/i
+      /--server\s+["'][^"']{1,512}["']/i
     ],
     severity: "high",
     deduction: 15,
@@ -1051,18 +1051,31 @@ var BEHAVIORAL_PATTERNS = [
   }
 ];
 var PREREQUISITE_TRAP_PATTERNS = [
-  /curl\s+.*\|\s*(?:sh|bash|zsh)/i,
-  /curl\s+.*-[oO]\s+.*&&\s*(?:chmod|\.\/)/i
+  /curl\s+[^\n]{0,512}\|\s*(?:sh|bash|zsh)/i,
+  /curl\s+[^\n]{0,512}-[oO]\s+[^\n]{0,512}&&\s*(?:chmod|\.\/)/i
 ];
 
-// dist/scanner/analyzers/behavioral.js
+// dist/scanner/analyzers/score-util.js
 function downgradeSeverity(severity) {
-  if (severity === "high")
-    return "medium";
-  if (severity === "medium")
-    return "low";
-  return "info";
+  switch (severity) {
+    case "critical":
+      return "high";
+    case "high":
+      return "medium";
+    case "medium":
+      return "low";
+    case "low":
+      return "info";
+    default:
+      return "info";
+  }
 }
+function recomputeScore(findings, base = 100) {
+  const totalDeduction = findings.reduce((sum, f) => sum + f.deduction, 0);
+  return Math.max(0, Math.min(100, base - totalDeduction));
+}
+
+// dist/scanner/analyzers/behavioral.js
 async function analyzeBehavioral(skill) {
   const findings = [];
   let score = 100;
@@ -1161,8 +1174,8 @@ async function analyzeBehavioral(skill) {
       break;
     }
   }
-  const activeCredentialAccess = /(?:cat|read|dump|exfiltrate|steal|harvest)\s+.*?(?:\.env|\.ssh|id_rsa|credentials|secrets)/i;
-  const suspiciousExfiltration = /(?:webhook\.site|requests\.post\s*\(|curl\s+-X\s+POST\s+.*?(?:\$|secret|key|token|password|credential))/i;
+  const activeCredentialAccess = /(?:cat|read|dump|exfiltrate|steal|harvest)\s+[^\n]{0,512}?(?:\.env|\.ssh|id_rsa|credentials|secrets)/i;
+  const suspiciousExfiltration = /(?:webhook\.site|requests\.post\s*\(|curl\s+-X\s+POST\s+[^\n]{0,512}?(?:\$|secret|key|token|password|credential))/i;
   if (activeCredentialAccess.test(content) && suspiciousExfiltration.test(content)) {
     score = Math.max(0, score - 25);
     findings.push({
@@ -1178,10 +1191,7 @@ async function analyzeBehavioral(skill) {
     });
   }
   const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
-  let adjustedScore = 100;
-  for (const f of adjustedFindings) {
-    adjustedScore = Math.max(0, adjustedScore - f.deduction);
-  }
+  const adjustedScore = recomputeScore(adjustedFindings);
   const summary = adjustedFindings.length === 0 ? "No behavioral risk concerns detected." : `Found ${adjustedFindings.length} behavioral risk findings. ${adjustedFindings.some((f) => f.severity === "high") ? "High-risk behavioral patterns detected." : "Moderate behavioral concerns noted."}`;
   return {
     score: Math.max(0, Math.min(100, adjustedScore)),
@@ -1226,7 +1236,7 @@ var LINE_RULES = [
     severity: "medium",
     title: "WebSocket connection to non-standard port",
     description: "WebSocket connection to an unusual port detected. Could indicate C2 communication, data tunneling, or connection to unauthorized services.",
-    pattern: /new\s+WebSocket\s*\(\s*["']wss?:\/\/[^"']*:(\d+)/,
+    pattern: /new\s+WebSocket\s*\(\s*["']wss?:\/\/[^"']{0,512}:(\d+)/,
     owaspCategory: "ASST-02",
     deduction: 10
   },
@@ -1235,7 +1245,7 @@ var LINE_RULES = [
     severity: "high",
     title: "Download-and-execute pattern (curl|wget pipe to shell)",
     description: "Piping a downloaded script directly to a shell interpreter. This executes remote code without verification \u2014 a classic supply chain attack vector.",
-    pattern: /\b(curl|wget)\b.*\|\s*(bash|sh|zsh|node|python|perl)\b/,
+    pattern: /\b(curl|wget)\b[^\n]{0,512}\|\s*(bash|sh|zsh|node|python|perl)\b/,
     owaspCategory: "ASST-04",
     deduction: 20
   },
@@ -1254,7 +1264,7 @@ var LINE_RULES = [
     severity: "critical",
     title: "Write to workspace trust-boundary file (AGENTS/TOOLS/CLAUDE.md)",
     description: "Code writes to a core workspace configuration file (AGENTS.md, TOOLS.md, or CLAUDE.md). These files define the agent's trust boundaries \u2014 modifying them can escalate privileges, disable safety rules, or inject persistent malicious instructions.",
-    pattern: /(?:writeFileSync|appendFileSync|>>|>)\s*.*(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)/i,
+    pattern: /(?:writeFileSync|appendFileSync|>>|>)\s*[^\n]{0,512}(?:AGENTS\.md|TOOLS\.md|CLAUDE\.md)/i,
     owaspCategory: "ASST-03",
     deduction: 30
   },
@@ -1263,7 +1273,7 @@ var LINE_RULES = [
     severity: "high",
     title: "Write to .claude/ policy directory",
     description: "Code writes to the .claude/ directory, which contains workspace policies and safety configuration. Modifying these files can disable safety checks, override policy boundaries, or inject persistent instructions.",
-    pattern: /(?:writeFileSync|appendFileSync|>>|>|mkdir)\s*.*\.claude\//i,
+    pattern: /(?:writeFileSync|appendFileSync|>>|>|mkdir)\s*[^\n]{0,512}\.claude\//i,
     owaspCategory: "ASST-03",
     deduction: 20
   }
@@ -1320,7 +1330,7 @@ function extractCodeBlocks(rawContent) {
   const EXAMPLE_HEADINGS = /\b(examples?|usage|demo|output|samples?|tutorial|getting.started|how.to)\b/i;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const headingMatch = line.match(/^#{1,4}\s+(.+)/);
+    const headingMatch = line.match(/^#{1,4}\s+([^\n]{1,512})/);
     if (headingMatch) {
       lastHeading = headingMatch[1] ?? "";
     }
@@ -1404,7 +1414,7 @@ function scanCodeBlock(block, isDefenseSkill) {
         effectiveSeverity = "critical";
         effectiveDeduction = Math.max(rule.deduction, 30);
       } else if (isReducedContext) {
-        effectiveSeverity = downgrade(rule.severity);
+        effectiveSeverity = downgradeSeverity(rule.severity);
         effectiveDeduction = Math.ceil(rule.deduction / 3);
       } else {
         effectiveSeverity = rule.severity;
@@ -1446,7 +1456,7 @@ function scanCodeBlock(block, isDefenseSkill) {
     }
     if (!matchEvidence)
       matchEvidence = source.slice(0, 120);
-    const effectiveSeverity = block.isExample ? downgrade(rule.severity) : rule.severity;
+    const effectiveSeverity = block.isExample ? downgradeSeverity(rule.severity) : rule.severity;
     const effectiveDeduction = block.isExample ? Math.ceil(rule.deduction / 3) : rule.deduction;
     findings.push({
       id: rule.id,
@@ -1463,20 +1473,6 @@ function scanCodeBlock(block, isDefenseSkill) {
     matchedSourceRules.add(rule.id);
   }
   return findings;
-}
-function downgrade(severity) {
-  switch (severity) {
-    case "critical":
-      return "high";
-    case "high":
-      return "medium";
-    case "medium":
-      return "low";
-    case "low":
-      return "info";
-    case "info":
-      return "info";
-  }
 }
 var WEIGHT = 0.15;
 async function analyzeCodeSafety(skill) {
@@ -1576,7 +1572,7 @@ function isHarmfulMatchNegated(content, matchIndex) {
     return true;
   if (/\b(?:methods?\s+bypass|calls?\s+bypass|queries?\s+bypass)\b/i.test(fullLine))
     return true;
-  if (/^\s*\|.*\|/.test(fullLine) && /\b(?:critical|high|dangerous|risk|attack|threat|pattern|injection|violation|abuse|manipulation)\b/i.test(fullLine))
+  if (/^\s*\|[^\n]{0,512}\|/.test(fullLine) && /\b(?:critical|high|dangerous|risk|attack|threat|pattern|injection|violation|abuse|manipulation)\b/i.test(fullLine))
     return true;
   if (/\b(?:allowlist|whitelist|exempt|trusted\s+items?)\b/i.test(fullLine))
     return true;
@@ -1783,10 +1779,10 @@ async function analyzeContent(skill) {
       const matchText = keyMatch[0];
       if (/EXAMPLE|example|placeholder|YOUR_|your_|xxx|XXX|REPLACE|replace/i.test(matchText))
         continue;
-      const valueOnly = matchText.replace(/^.*?[:=]\s*["']?/, "").replace(/["']$/, "");
+      const valueOnly = matchText.replace(/^.{0,200}?[:=]\s*["']?/, "").replace(/["']$/, "");
       if (/^[xX]+$/.test(valueOnly))
         continue;
-      if (/^[xX.*]+$/.test(valueOnly))
+      if (/^[xX[^\n]{0,512}]+$/.test(valueOnly))
         continue;
       const awsPrefixes = ["AKIA", "AGPA", "AIDA", "AROA", "AIPA", "ANPA", "ANVA", "ASIA"];
       const isAwsPlaceholder = awsPrefixes.some((p) => matchText.startsWith(p) && /^[X0]+$/.test(matchText.slice(4)));
@@ -1876,16 +1872,14 @@ ${content}`;
     });
   }
   const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
-  let adjustedScore = 80;
+  let base = 80;
   if (hasSafetyBoundaries)
-    adjustedScore = Math.min(100, adjustedScore + 10);
+    base = Math.min(100, base + 10);
   if (hasOutputConstraints)
-    adjustedScore = Math.min(100, adjustedScore + 5);
+    base = Math.min(100, base + 5);
   if (hasErrorHandling)
-    adjustedScore = Math.min(100, adjustedScore + 5);
-  for (const f of adjustedFindings) {
-    adjustedScore = Math.max(0, adjustedScore - f.deduction);
-  }
+    base = Math.min(100, base + 5);
+  const adjustedScore = recomputeScore(adjustedFindings, base);
   const summary = adjustedFindings.filter((f) => f.severity !== "info").length === 0 ? "Content quality is good with proper safety boundaries." : `Found ${adjustedFindings.filter((f) => f.severity !== "info").length} content-related concerns. ${adjustedFindings.some((f) => f.severity === "critical") ? "CRITICAL: Harmful content detected." : "Some content quality improvements recommended."}`;
   return {
     score: Math.max(0, Math.min(100, adjustedScore)),
@@ -1897,7 +1891,7 @@ ${content}`;
 
 // dist/scanner/analyzers/dependencies.js
 var TRUSTED_DOMAINS = [
-  /^github\.com\/(?!.*\/raw\/)/,
+  /^github\.com\/(?![^\n]{0,512}\/raw\/)/,
   /^(?:www\.)?npmjs\.com/,
   /^registry\.npmjs\.org/,
   /^(?:www\.)?pypi\.org/,
@@ -2012,9 +2006,9 @@ var REMOTE_SERVICE_HINT_PATTERNS = [
 ];
 var DOWNLOAD_EXECUTE_PATTERNS = [
   /download\s+and\s+(?:execute|eval)\b/i,
-  /(?:curl|wget)\s+.*?\|\s*(?:sh|bash|zsh|python)/i,
+  /(?:curl|wget)\s+[^\n]{0,512}?\|\s*(?:sh|bash|zsh|python)/i,
   /eval\s*\(\s*fetch/i,
-  /import\s+.*?from\s+['"]https?:\/\//i,
+  /import\s+[^\n]{0,512}?from\s+['"]https?:\/\//i,
   /require\s*\(\s*['"]https?:\/\//i
 ];
 var LIFECYCLE_SCRIPTS = /* @__PURE__ */ new Set([
@@ -2030,13 +2024,13 @@ var LIFECYCLE_SCRIPTS = /* @__PURE__ */ new Set([
   "postpack",
   "prepare"
 ]);
-var DANGEROUS_SCRIPT_CONTENT = /\b(?:curl|wget|eval|exec|bash|sh\s+-c|node\s+-e|python\s+-c|base64|nc)\b|\/dev\/tcp|>\(|<\(|\$\(|`[^`]+`|\b\d{1,3}(?:\.\d{1,3}){3}\b|https?:\/\/\S+/i;
+var DANGEROUS_SCRIPT_CONTENT = /\b(?:curl|wget|eval|exec|bash|sh\s+-c|node\s+-e|python\s+-c|base64|nc)\b|\/dev\/tcp|>\(|<\(|\$\(|`[^`]{1,512}`|\b\d{1,3}(?:\.\d{1,3}){3}\b|https?:\/\/\S+/i;
 function isObjectRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 function extractJsonCodeBlockCandidates(content) {
   const blocks = [];
-  const codeBlockRegex = /```([^\n`]*)\r?\n([\s\S]*?)```/g;
+  const codeBlockRegex = /```([^\n`]{0,512})\r?\n([\s\S]*?)```/g;
   let match;
   while ((match = codeBlockRegex.exec(content)) !== null) {
     const langRaw = (match[1] ?? "").trim().toLowerCase();
@@ -2178,7 +2172,7 @@ function extractScriptsFromJsonBlock(blockContent) {
 }
 function isExampleDocumentationContext(content, offset) {
   const preceding = content.slice(Math.max(0, offset - 1500), offset);
-  const headings = preceding.match(/^#{1,6}\s+.+$/gm);
+  const headings = preceding.match(/^#{1,6}\s+[^\n]{1,512}$/gm);
   if (!headings || headings.length === 0)
     return false;
   const lastHeading = headings[headings.length - 1] ?? "";
@@ -2200,7 +2194,7 @@ function getHostname(url) {
     const parsed = new URL(url);
     return parsed.hostname;
   } catch {
-    const match = url.match(/^(?:https?:\/\/)?([^/:]+)/);
+    const match = url.match(/^(?:https?:\/\/)?([^/:]{1,512})/);
     return match?.[1] ?? url;
   }
 }
@@ -2244,12 +2238,12 @@ function hasSensitiveUnknownUrlContext(content, url) {
   return /\b(?:auth|authentication|cookie|token|login|dashboard|session|mcp|api|endpoint|provider|oauth|2fa|refresh|credential|secret)\b/i.test(window);
 }
 function hasCredentialBearingUrlParam(url) {
-  return /[?&][^=#\s]*(?:cookie|token|auth|session)[^=#\s]*=|[?&][^=#\s]*=(?:<[^>]+>|\$\{?[A-Z0-9_]+\}?|\$[A-Z0-9_]+)/i.test(url);
+  return /[?&][^=#\s]{0,512}(?:cookie|token|auth|session)[^=#\s]{0,512}=|[?&][^=#\s]{0,512}=(?:<[^>]{1,512}>|\$\{?[A-Z0-9_]+\}?|\$[A-Z0-9_]+)/i.test(url);
 }
 function extractSelfBaseDomains(skill) {
   const selfBaseDomains = /* @__PURE__ */ new Set();
   const tokenSource = `${skill.name ?? ""} ${skill.description ?? ""}`.toLowerCase();
-  const tokens = tokenSource.split(/[^a-z0-9]+/g).map((t) => t.trim()).filter((t) => t.length >= 3);
+  const tokens = tokenSource.split(/[^a-z0-9]{1,512}/g).map((t) => t.trim()).filter((t) => t.length >= 3);
   const getBaseDomain = (hostnameRaw) => {
     const hostname = hostnameRaw.toLowerCase().replace(/\.$/, "").replace(/^www\./, "");
     if (!hostname || hostname === "localhost")
@@ -2410,10 +2404,10 @@ async function analyzeDependencies(skill) {
         if (lineEnd < 0)
           lineEnd = content.length;
         const fullLine = content.slice(lineStart, lineEnd);
-        if (/^\s*\|.*\|/.test(fullLine) && /\b(?:critical|high|risk|dangerous|pattern|severity|pipe.to.shell)\b/i.test(fullLine))
+        if (/^\s*\|[^\n]{0,512}\|/.test(fullLine) && /\b(?:critical|high|risk|dangerous|pattern|severity|pipe.to.shell)\b/i.test(fullLine))
           return true;
         const precText = content.slice(Math.max(0, matchIndex - 500), matchIndex);
-        return /\b(?:scan\b.*\b(?:for|skill)|detect|flag|block|dangerous\s+(?:instruction|pattern|command)|malicious|malware|threat\s+pattern|what\s+(?:it|we)\s+detect|why\s+(?:it['']?s|this\s+(?:is|exists))\s+dangerous|findings?:|pattern.*risk|catch\s+them)\b/i.test(precText);
+        return /\b(?:scan\b[^\n]{0,512}\b(?:for|skill)|detect|flag|block|dangerous\s+(?:instruction|pattern|command)|malicious|malware|threat\s+pattern|what\s+(?:it|we)\s+detect|why\s+(?:it['']?s|this\s+(?:is|exists))\s+dangerous|findings?:|pattern[^\n]{0,512}risk|catch\s+them)\b/i.test(precText);
       })();
       if (isLegit || isInThreatDesc) {
         findings.push({
@@ -2539,10 +2533,7 @@ async function analyzeDependencies(skill) {
     });
   }
   const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
-  let adjustedScore = 100;
-  for (const f of adjustedFindings) {
-    adjustedScore = Math.max(0, adjustedScore - f.deduction);
-  }
+  const adjustedScore = recomputeScore(adjustedFindings);
   const summary = adjustedFindings.length === 0 ? "No dependency concerns detected." : `Found ${adjustedFindings.length} dependency-related findings. ${adjustedFindings.some((f) => f.severity === "critical") ? "CRITICAL: Dependency execution patterns detected." : adjustedFindings.some((f) => f.severity === "high") ? "High-risk external dependencies detected." : "Minor dependency concerns noted."}`;
   return {
     score: Math.max(0, Math.min(100, adjustedScore)),
@@ -2582,9 +2573,14 @@ var INJECTION_PATTERNS = [
     name: "Data exfiltration instruction",
     patterns: [
       /(?:send|post|transmit|upload|forward)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:data|content|files?|information|keys?|secrets?|credentials?|tokens?|variables?)\s+(?:to|at|via)\s+https?:\/\//i,
-      /curl\s+.*?-d\s+.*?https?:\/\//i,
-      /wget\s+.*?--post-data/i,
-      /cat\s+.*?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
+      // Line-confined bounded windows ([^\n]{0,512}?), NOT an unbounded lazy
+      // dot-scan: real exfil one-liners are short and single-line, and an
+      // unbounded lazy scan backtracks O(n^2) on a long no-match input (a 2MB
+      // "curl x curl x …" skill took ~104s before this bound). 512 chars covers
+      // realistic commands with headers/flags. See regex-redos.test.ts.
+      /curl\s+[^\n]{0,512}?-d\s+[^\n]{0,512}?https?:\/\//i,
+      /wget\s+[^\n]{0,512}?--post-data/i,
+      /cat\s+[^\n]{0,512}?(?:\.env|\.ssh|id_rsa|id_ed25519)\s*\|\s*(?:curl|wget|nc|netcat)/i,
       /\b(?:send|post)\s+(?:a\s+)?(?:\w+\s+){0,3}(?:report|summary|results?)\s+to\s+https?:\/\/\S+\s+(?:including|with|containing)\s+(?:all\s+)?(?:environment\s+variables?|secrets?|credentials?|tokens?)/i,
       /\bpost\s+its\s+contents?\s+to\s+https?:\/\//i,
       /\b(?:concatenate|combine|collect|gather)\b.{0,60}\b(?:send|post|transmit|upload|forward)\s+(?:to|it\s+to)\s+https?:\/\//i,
@@ -2599,8 +2595,8 @@ var INJECTION_PATTERNS = [
     name: "URL-parameter data exfiltration",
     patterns: [
       /(?:encode|embed|include|pack)\s+(?:the\s+)?(?:\w+\s+){0,4}(?:as|into|in)\s+(?:a\s+)?(?:URL|query|parameter|string)\b/i,
-      /\?(?:data|payload|report|summary|info|content|result)=\{[^}]*(?:encoded|summary|data|payload)/i,
-      /https?:\/\/[^\s]+\?[^\s]*\{[^\s}]*(?:summary|encoded|data|content|payload)/i
+      /\?(?:data|payload|report|summary|info|content|result)=\{[^}]{0,512}(?:encoded|summary|data|payload)/i,
+      /https?:\/\/[^\s]{1,512}\?[^\s]{0,512}\{[^\s}]{0,512}(?:summary|encoded|data|content|payload)/i
     ],
     severity: "critical",
     deduction: 40,
@@ -2622,8 +2618,8 @@ var INJECTION_PATTERNS = [
   {
     name: "Suspicious download-and-execute",
     patterns: [
-      /\b(?:curl|wget)\b[^\n]*(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]*\|\s*(?:bash|sh|zsh|python)\b/i,
-      new RegExp(`\\b(?:curl|wget)\\b[^\\n]*https?:\\/\\/[^\\s]+\\.${HIGH_ABUSE_TLD_PATTERN}\\b[^\\n]*\\|\\s*(?:bash|sh|zsh|python)\\b`, "i")
+      /\b(?:curl|wget)\b[^\n]{0,512}(?:https?:\/\/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|http:\/\/)[^\n]{0,512}\|\s*(?:bash|sh|zsh|python)\b/i,
+      new RegExp(`\\b(?:curl|wget)\\b[^\\n]{0,512}https?:\\/\\/[^\\s]{1,512}\\.${HIGH_ABUSE_TLD_PATTERN}\\b[^\\n]{0,512}\\|\\s*(?:bash|sh|zsh|python)\\b`, "i")
     ],
     severity: "critical",
     deduction: 35,
@@ -2645,9 +2641,9 @@ var INJECTION_PATTERNS = [
   {
     name: "Command-substitution remote execution",
     patterns: [
-      /(?:sh|bash|zsh|eval)\s+(?:-c\s+)?["']?\$\(\s*(?:curl|wget)\b[^)]*https?:\/\//i,
-      /\$\(\s*(?:curl|wget)\b[^)]*https?:\/\/[^)]*\)/i,
-      /`\s*(?:curl|wget)\b[^`]*https?:\/\/[^`]*`/i
+      /(?:sh|bash|zsh|eval)\s+(?:-c\s+)?["']?\$\(\s*(?:curl|wget)\b[^)]{0,512}https?:\/\//i,
+      /\$\(\s*(?:curl|wget)\b[^)]{0,512}https?:\/\/[^)]{0,512}\)/i,
+      /`\s*(?:curl|wget)\b[^`]{0,512}https?:\/\/[^`]{0,512}`/i
     ],
     severity: "critical",
     deduction: 35,
@@ -2674,11 +2670,11 @@ var INJECTION_PATTERNS = [
   {
     name: "Reverse shell / backconnect",
     patterns: [
-      /\bbash\s+-i\b[^\n]*\/dev\/tcp\//i,
+      /\bbash\s+-i\b[^\n]{0,512}\/dev\/tcp\//i,
       /\/dev\/tcp\/(?:\d{1,3}(?:\.\d{1,3}){3}|[\w.-]+)\/\d+/i,
-      /\b(?:nc|ncat|netcat)\b[^\n]{0,40}\s-[a-z]*e[a-z]*\b[^\n]*(?:\/bin\/)?(?:bash|sh)\b/i,
+      /\b(?:nc|ncat|netcat)\b[^\n]{0,40}\s-[a-z]*e[a-z]*\b[^\n]{0,512}(?:\/bin\/)?(?:bash|sh)\b/i,
       /\b(?:0>&1|>&\s*\/dev\/tcp)\b/i,
-      /python[0-9]?\b[^\n]*socket[^\n]*(?:pty\.spawn|subprocess|exec\()/i
+      /python[0-9]?\b[^\n]{0,512}socket[^\n]{0,512}(?:pty\.spawn|subprocess|exec\()/i
     ],
     severity: "critical",
     deduction: 40,
@@ -2688,11 +2684,11 @@ var INJECTION_PATTERNS = [
   {
     name: "Credential access",
     patterns: [
-      /(?:read|access|get|cat|echo)\s+.*?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
-      /(?:read|dump|exfiltrate|steal|harvest)\s+.*?(?:API[_-]?KEY|SECRET[_-]?KEY|ACCESS[_-]?TOKEN|PRIVATE[_-]?KEY|PASSWORD)/i,
+      /(?:read|access|get|cat|echo)\s+[^\n]{0,512}?(?:\.env|\.ssh\/id_rsa|\.ssh\/id_ed25519)\b/i,
+      /(?:read|dump|exfiltrate|steal|harvest)\s+[^\n]{0,512}?(?:API[_-]?KEY|SECRET[_-]?KEY|ACCESS[_-]?TOKEN|PRIVATE[_-]?KEY|PASSWORD)/i,
       /~\/\.ssh\/(?:id_rsa|id_ed25519|authorized_keys|config)\b/i,
       /credentials?\s*(?:file|store|manager|dump)/i,
-      /(?:dump|exfiltrate|steal)\s+.*?environment\s+variables/i
+      /(?:dump|exfiltrate|steal)\s+[^\n]{0,512}?environment\s+variables/i
     ],
     severity: "high",
     deduction: 25,
@@ -2723,7 +2719,7 @@ var INJECTION_PATTERNS = [
     patterns: [
       /\b(?:follow|obey|execute)\s+(?:any\s+)?instructions?\s+(?:found\s+)?(?:in|from)\s+(?:a|the|this|that)?\s*(?:file|document|web\s*page|website|url|link|content)\b/i,
       /\btreat\s+the\s+(?:contents?|text|output|response)\s+(?:in|from|of)\s+(?:a|the|this|that)?\s*(?:file|document|web\s*page|website|url|link|response|output)\s+as\s+(?:your\s+)?(?:instructions?|system\s+prompt)\b/i,
-      /\b(?:read|load|fetch)\s+.*?\s+and\s+(?:then\s+)?(?:follow|obey|execute)\s+(?:its\s+)?instructions?\b/i,
+      /\b(?:read|load|fetch)\s+[^\n]{0,512}?\s+and\s+(?:then\s+)?(?:follow|obey|execute)\s+(?:its\s+)?instructions?\b/i,
       /\bexecute\s+(?:the\s+)?instructions?\s+(?:embedded\s+)?in\s+(?:external|remote|untrusted)\s+(?:content|pages?|documents?|files?)\b/i
     ],
     severity: "high",
@@ -2800,15 +2796,21 @@ var INJECTION_PATTERNS = [
 ];
 function detectHtmlCommentInjections(content) {
   const findings = [];
-  const commentRegex = /<!--([\s\S]*?)-->/g;
-  let match;
-  while ((match = commentRegex.exec(content)) !== null) {
-    const commentContent = match[1]?.trim() ?? "";
+  let from = 0;
+  while (true) {
+    const open2 = content.indexOf("<!--", from);
+    if (open2 === -1)
+      break;
+    const close = content.indexOf("-->", open2 + 4);
+    if (close === -1)
+      break;
+    const commentContent = content.slice(open2 + 4, close).trim();
+    from = close + 3;
     if (commentContent.length < 10)
       continue;
     const isInstructional = /(?:step|override|important|system|silently|secretly|do not|must|always|never|after|before)\s/i.test(commentContent) || /(?:send|post|read|write|execute|fetch|curl|delete|access|download)\s/i.test(commentContent);
     if (isInstructional) {
-      const lineNumber = content.slice(0, match.index).split("\n").length;
+      const lineNumber = content.slice(0, open2).split("\n").length;
       findings.push({
         id: `INJ-COMMENT-${findings.length + 1}`,
         category: "injection",
@@ -2969,13 +2971,6 @@ function detectUnicodeObfuscation(content) {
   }
   return findings;
 }
-function downgradeSeverity2(severity) {
-  if (severity === "critical")
-    return "high";
-  if (severity === "high")
-    return "medium";
-  return "low";
-}
 async function analyzeInjection(skill) {
   const findings = [];
   let score = 100;
@@ -3018,7 +3013,7 @@ async function analyzeInjection(skill) {
         if (severityMultiplier === 0)
           continue;
         const effectiveDeduction = Math.round(pattern.deduction * severityMultiplier);
-        const effectiveSeverity = severityMultiplier < 1 ? downgradeSeverity2(pattern.severity) : pattern.severity;
+        const effectiveSeverity = severityMultiplier < 1 ? downgradeSeverity(pattern.severity) : pattern.severity;
         score = Math.max(0, score - effectiveDeduction);
         findings.push({
           id: `INJ-${pattern.name.replace(/\s+/g, "-").toUpperCase()}-${findings.length + 1}`,
@@ -3054,10 +3049,7 @@ async function analyzeInjection(skill) {
     findings.push(finding);
   }
   const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
-  let adjustedScore = 100;
-  for (const f of adjustedFindings) {
-    adjustedScore = Math.max(0, adjustedScore - f.deduction);
-  }
+  const adjustedScore = recomputeScore(adjustedFindings);
   const hasCritical = adjustedFindings.some((f) => f.severity === "critical");
   const summary = adjustedFindings.length === 0 ? "No injection patterns detected." : `Found ${adjustedFindings.length} injection-related findings. ${hasCritical ? "CRITICAL: Active injection attacks detected. This skill is dangerous." : "Suspicious patterns detected that warrant review."}`;
   return {
@@ -3200,7 +3192,7 @@ var CREDENTIAL_PATTERNS = [
   /~\/\.ssh\/(?:id_rsa|id_ed25519|authorized_keys|config)\b/i,
   /(?:api[_-]?key|access[_-]?token|private[_-]?key|secret(?:s)?|password)\b.{0,80}\b(?:read|dump|exfiltrate|steal|harvest)/i,
   /(?:auth(?:entication)?\s+cookie|http-?only\s+cookie|session\s+tokens?\s+in\s+plaintext|cookies?\s+(?:export|import|get|set|clear)\b|state\s+(?:save|load)\s+\S*auth\.json|profile\s+sync\b|actual\s+Chrome\s+profile|real\s+Chrome\s+with\s+your\s+login\s+sessions|connect\s+to\s+the\s+user'?s\s+running\s+Chrome)/i,
-  /(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|browser\s+session\s+is\s+authenticated|cookies?\s+and\s+localStorage|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile|full\s+profile\s+sync|sync\s+ALL\s+cookies|entire\s+browser\s+state|--secret\s+[^\s=]+=[^\s]+)/i
+  /(?:--auto-connect\b|--cdp\b|get\s+cdp-url|remote-debugging-port|browser\s+session\s+is\s+authenticated|cookies?\s+and\s+localStorage|session\s+saved|already\s+authenticated|default\s+Chrome\s+profile|full\s+profile\s+sync|sync\s+ALL\s+cookies|entire\s+browser\s+state|--secret\s+[^\s=]{1,512}=[^\s]{1,512})/i
 ];
 var EXEC_PATTERNS = [
   /\b(?:exec(?:ute)?|shell|spawn(?:ing)?|sub-?process|child_process|run\s+(?:bash|sh|zsh|cmd|powershell|python|node)|eval\s*\()/i,
@@ -3216,9 +3208,9 @@ var FILE_WRITE_PATTERNS = [
   /\b(?:write|save|store|persist)\b.{0,40}\b(?:database|cache|state)\b/i,
   /\bset\s+up\s+project\s+structure\b/i,
   /\bproject\s+structure,\s*package\.json,\s*tsconfig\.json\b/i,
-  /\bcreate\s+`[^`\n]+(?:\.[a-z0-9]+|\/[a-z0-9._-]+)`/i,
+  /\bcreate\s+`[^`\n]{1,512}(?:\.[a-z0-9]+|\/[a-z0-9._-]+)`/i,
   /\bscreenshot\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
-  /\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]+\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
+  /\bpage\.screenshot\s*\(\s*path\s*=\s*['"][^'"]{1,512}\.(?:png|jpg|jpeg|webp|gif|pdf)['"]/i,
   /--image\s+\S+\.(?:png|jpg|jpeg|webp|gif)\b/i,
   /\bsaved\s+to\s+\/tmp\//i
 ];
@@ -3279,7 +3271,7 @@ var AUTH_STATE_MANAGEMENT_PATTERNS = [
   /actual\s+Chrome\s+profile\s*\(cookies,\s*logins,\s*extensions\)/i
 ];
 var NETWORK_PATTERNS = [
-  /https?:\/\/[^\s`"'<>()[\]{}]+/i,
+  /https?:\/\/[^\s`"'<>()[\]{}]{1,512}/i,
   /\b(?:fetch|curl|wget|webhook|network_unrestricted|network_restricted|api\s+(?:endpoint|request)|post\s+to\s+https?:\/\/|HEALTHCHECK|EXPOSE\s+\d{2,5})\b/i
 ];
 var BROWSER_AUTOMATION_PATTERNS = [
@@ -3395,8 +3387,8 @@ var DOCUMENTATION_INGESTION_PATTERNS = [
   /web\s+search\s+and\s+WebFetch\s+as\s+needed/i,
   /fetch\s+specific\s+pages\s+with\s+`?\.md/i,
   /For\s+more\s+information,\s+see/i,
-  /For\s+full\s+.+\s+details:/i,
-  /For\s+deeper\s+.+\s+familiarity,\s+see/i,
+  /For\s+full\s+[^\n]{1,512}\s+details:/i,
+  /For\s+deeper\s+[^\n]{1,512}\s+familiarity,\s+see/i,
   /Reference\s+implementation/i,
   /See\s+\[references?\//i,
   /\breferences?\//i,
@@ -3444,7 +3436,7 @@ var CREDENTIAL_FORM_AUTOMATION_PATTERNS = [
   /login\s+flow/i
 ];
 var PACKAGE_BOOTSTRAP_PATTERNS = [
-  /\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']+/i,
+  /\b(?:npx|pnpm\s+dlx|bunx)\b(?:\s+-y)?\s+[A-Za-z0-9@][^\s`"']{1,512}/i,
   /\bnpm\s+install\b(?!\s+(?:-g|--global)\b)/i,
   /\bpackage(?:\*|)\.json\b/i
 ];
@@ -3485,7 +3477,7 @@ var UI_STATE_ACCESS_PATTERNS = [
 
 // dist/scanner/analyzers/capability-contract.js
 function tokenizeLower(input) {
-  return input.toLowerCase().split(/[^a-z0-9]+/g).map((t) => t.trim()).filter(Boolean);
+  return input.toLowerCase().split(/[^a-z0-9]{1,512}/g).map((t) => t.trim()).filter(Boolean);
 }
 function normalizeCapability(rawKind) {
   const tokens = tokenizeLower(rawKind);
@@ -3650,6 +3642,43 @@ function collectDeclaredCapabilities(skill) {
     explicitDeclared
   };
 }
+var CONTENT_INFERENCE_RULES = [
+  { capability: "credential_access", patterns: CREDENTIAL_PATTERNS, allowCodeBlocks: false },
+  { capability: "credential_handoff", patterns: CREDENTIAL_HANDOFF_PATTERNS, allowCodeBlocks: true },
+  { capability: "credential_storage", patterns: CREDENTIAL_STORAGE_PATTERNS, allowCodeBlocks: false },
+  { capability: "auth_state_management", patterns: AUTH_STATE_MANAGEMENT_PATTERNS, allowCodeBlocks: true },
+  { capability: "exec", patterns: EXEC_PATTERNS, allowCodeBlocks: true },
+  { capability: "system_modification", patterns: SYSTEM_MOD_PATTERNS, allowCodeBlocks: false },
+  { capability: "file_write", patterns: FILE_WRITE_PATTERNS, allowCodeBlocks: true },
+  { capability: "file_read", patterns: FILE_READ_PATTERNS, allowCodeBlocks: false },
+  { capability: "filesystem_discovery", patterns: FILESYSTEM_DISCOVERY_PATTERNS, allowCodeBlocks: false },
+  { capability: "configuration_override", patterns: CONFIGURATION_OVERRIDE_PATTERNS, allowCodeBlocks: true },
+  { capability: "network", patterns: NETWORK_PATTERNS, allowCodeBlocks: true },
+  { capability: "browser_automation", patterns: BROWSER_AUTOMATION_PATTERNS, allowCodeBlocks: false },
+  { capability: "browser_session_attachment", patterns: BROWSER_SESSION_ATTACHMENT_PATTERNS, allowCodeBlocks: true },
+  { capability: "browser_profile_copy", patterns: BROWSER_PROFILE_COPY_PATTERNS, allowCodeBlocks: true },
+  { capability: "session_management", patterns: SESSION_MANAGEMENT_PATTERNS, allowCodeBlocks: false },
+  { capability: "content_extraction", patterns: CONTENT_EXTRACTION_PATTERNS, allowCodeBlocks: false },
+  { capability: "documentation_ingestion", patterns: DOCUMENTATION_INGESTION_PATTERNS, allowCodeBlocks: true },
+  { capability: "local_input_control", patterns: LOCAL_INPUT_CONTROL_PATTERNS, allowCodeBlocks: true },
+  { capability: "prompt_file_ingestion", patterns: PROMPT_FILE_INGESTION_PATTERNS, allowCodeBlocks: true },
+  { capability: "automation_evasion", patterns: AUTOMATION_EVASION_PATTERNS, allowCodeBlocks: true },
+  { capability: "external_tool_bridge", patterns: EXTERNAL_TOOL_BRIDGE_PATTERNS, allowCodeBlocks: true },
+  { capability: "package_bootstrap", patterns: PACKAGE_BOOTSTRAP_PATTERNS, allowCodeBlocks: true },
+  { capability: "cookie_url_handoff", patterns: COOKIE_URL_HANDOFF_PATTERNS, allowCodeBlocks: true },
+  { capability: "credential_store_persistence", patterns: CREDENTIAL_STORE_PERSISTENCE_PATTERNS, allowCodeBlocks: true },
+  { capability: "container_runtime_control", patterns: CONTAINER_RUNTIME_CONTROL_PATTERNS, allowCodeBlocks: true },
+  { capability: "environment_configuration", patterns: ENVIRONMENT_CONFIGURATION_PATTERNS, allowCodeBlocks: true },
+  { capability: "payment_processing", patterns: PAYMENT_PROCESSING_PATTERNS, allowCodeBlocks: false },
+  { capability: "unrestricted_scope", patterns: UNRESTRICTED_SCOPE_PATTERNS, allowCodeBlocks: false },
+  { capability: "credential_form_automation", patterns: CREDENTIAL_FORM_AUTOMATION_PATTERNS, allowCodeBlocks: false },
+  { capability: "remote_delegation", patterns: REMOTE_DELEGATION_PATTERNS, allowCodeBlocks: false },
+  { capability: "remote_task_management", patterns: REMOTE_TASK_MANAGEMENT_PATTERNS, allowCodeBlocks: true },
+  { capability: "server_exposure", patterns: SERVER_EXPOSURE_PATTERNS, allowCodeBlocks: true },
+  { capability: "local_service_access", patterns: LOCAL_SERVICE_ACCESS_PATTERNS, allowCodeBlocks: true },
+  { capability: "process_orchestration", patterns: PROCESS_ORCHESTRATION_PATTERNS, allowCodeBlocks: false },
+  { capability: "ui_state_access", patterns: UI_STATE_ACCESS_PATTERNS, allowCodeBlocks: false }
+];
 function inferCapabilities(skill) {
   const inferred = /* @__PURE__ */ new Map();
   const isDefenseSkill = isSecurityDefenseSkill(skill);
@@ -3667,139 +3696,10 @@ function inferCapabilities(skill) {
     if (mapped)
       add(mapped, `Tool: ${tool}`);
   }
-  const credentialMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_PATTERNS, isDefenseSkill);
-  if (credentialMatch)
-    add("credential_access", `Content pattern: ${credentialMatch}`);
-  const credentialHandoffMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_HANDOFF_PATTERNS, isDefenseSkill, true);
-  if (credentialHandoffMatch) {
-    add("credential_handoff", `Content pattern: ${credentialHandoffMatch}`);
-  }
-  const credentialStorageMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_STORAGE_PATTERNS, isDefenseSkill);
-  if (credentialStorageMatch) {
-    add("credential_storage", `Content pattern: ${credentialStorageMatch}`);
-  }
-  const authStateManagementMatch = firstPositiveMatch(skill.rawContent, AUTH_STATE_MANAGEMENT_PATTERNS, isDefenseSkill, true);
-  if (authStateManagementMatch) {
-    add("auth_state_management", `Content pattern: ${authStateManagementMatch}`);
-  }
-  const execMatch = firstPositiveMatch(skill.rawContent, EXEC_PATTERNS, isDefenseSkill, true);
-  if (execMatch)
-    add("exec", `Content pattern: ${execMatch}`);
-  const systemMatch = firstPositiveMatch(skill.rawContent, SYSTEM_MOD_PATTERNS, isDefenseSkill);
-  if (systemMatch)
-    add("system_modification", `Content pattern: ${systemMatch}`);
-  const fileWriteMatch = firstPositiveMatch(skill.rawContent, FILE_WRITE_PATTERNS, isDefenseSkill, true);
-  if (fileWriteMatch)
-    add("file_write", `Content pattern: ${fileWriteMatch}`);
-  const fileReadMatch = firstPositiveMatch(skill.rawContent, FILE_READ_PATTERNS, isDefenseSkill);
-  if (fileReadMatch)
-    add("file_read", `Content pattern: ${fileReadMatch}`);
-  const filesystemDiscoveryMatch = firstPositiveMatch(skill.rawContent, FILESYSTEM_DISCOVERY_PATTERNS, isDefenseSkill);
-  if (filesystemDiscoveryMatch) {
-    add("filesystem_discovery", `Content pattern: ${filesystemDiscoveryMatch}`);
-  }
-  const configurationOverrideMatch = firstPositiveMatch(skill.rawContent, CONFIGURATION_OVERRIDE_PATTERNS, isDefenseSkill, true);
-  if (configurationOverrideMatch) {
-    add("configuration_override", `Content pattern: ${configurationOverrideMatch}`);
-  }
-  const networkMatch = firstPositiveMatch(skill.rawContent, NETWORK_PATTERNS, isDefenseSkill, true);
-  if (networkMatch)
-    add("network", `Content pattern: ${networkMatch}`);
-  const browserAutomationMatch = firstPositiveMatch(skill.rawContent, BROWSER_AUTOMATION_PATTERNS, isDefenseSkill);
-  if (browserAutomationMatch) {
-    add("browser_automation", `Content pattern: ${browserAutomationMatch}`);
-  }
-  const browserSessionAttachmentMatch = firstPositiveMatch(skill.rawContent, BROWSER_SESSION_ATTACHMENT_PATTERNS, isDefenseSkill, true);
-  if (browserSessionAttachmentMatch) {
-    add("browser_session_attachment", `Content pattern: ${browserSessionAttachmentMatch}`);
-  }
-  const browserProfileCopyMatch = firstPositiveMatch(skill.rawContent, BROWSER_PROFILE_COPY_PATTERNS, isDefenseSkill, true);
-  if (browserProfileCopyMatch) {
-    add("browser_profile_copy", `Content pattern: ${browserProfileCopyMatch}`);
-  }
-  const sessionManagementMatch = firstPositiveMatch(skill.rawContent, SESSION_MANAGEMENT_PATTERNS, isDefenseSkill);
-  if (sessionManagementMatch) {
-    add("session_management", `Content pattern: ${sessionManagementMatch}`);
-  }
-  const contentExtractionMatch = firstPositiveMatch(skill.rawContent, CONTENT_EXTRACTION_PATTERNS, isDefenseSkill);
-  if (contentExtractionMatch) {
-    add("content_extraction", `Content pattern: ${contentExtractionMatch}`);
-  }
-  const documentationIngestionMatch = firstPositiveMatch(skill.rawContent, DOCUMENTATION_INGESTION_PATTERNS, isDefenseSkill, true);
-  if (documentationIngestionMatch) {
-    add("documentation_ingestion", `Content pattern: ${documentationIngestionMatch}`);
-  }
-  const localInputControlMatch = firstPositiveMatch(skill.rawContent, LOCAL_INPUT_CONTROL_PATTERNS, isDefenseSkill, true);
-  if (localInputControlMatch) {
-    add("local_input_control", `Content pattern: ${localInputControlMatch}`);
-  }
-  const promptFileIngestionMatch = firstPositiveMatch(skill.rawContent, PROMPT_FILE_INGESTION_PATTERNS, isDefenseSkill, true);
-  if (promptFileIngestionMatch) {
-    add("prompt_file_ingestion", `Content pattern: ${promptFileIngestionMatch}`);
-  }
-  const automationEvasionMatch = firstPositiveMatch(skill.rawContent, AUTOMATION_EVASION_PATTERNS, isDefenseSkill, true);
-  if (automationEvasionMatch) {
-    add("automation_evasion", `Content pattern: ${automationEvasionMatch}`);
-  }
-  const externalToolBridgeMatch = firstPositiveMatch(skill.rawContent, EXTERNAL_TOOL_BRIDGE_PATTERNS, isDefenseSkill, true);
-  if (externalToolBridgeMatch) {
-    add("external_tool_bridge", `Content pattern: ${externalToolBridgeMatch}`);
-  }
-  const packageBootstrapMatch = firstPositiveMatch(skill.rawContent, PACKAGE_BOOTSTRAP_PATTERNS, isDefenseSkill, true);
-  if (packageBootstrapMatch) {
-    add("package_bootstrap", `Content pattern: ${packageBootstrapMatch}`);
-  }
-  const cookieUrlHandoffMatch = firstPositiveMatch(skill.rawContent, COOKIE_URL_HANDOFF_PATTERNS, isDefenseSkill, true);
-  if (cookieUrlHandoffMatch) {
-    add("cookie_url_handoff", `Content pattern: ${cookieUrlHandoffMatch}`);
-  }
-  const credentialStorePersistenceMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_STORE_PERSISTENCE_PATTERNS, isDefenseSkill, true);
-  if (credentialStorePersistenceMatch) {
-    add("credential_store_persistence", `Content pattern: ${credentialStorePersistenceMatch}`);
-  }
-  const containerRuntimeControlMatch = firstPositiveMatch(skill.rawContent, CONTAINER_RUNTIME_CONTROL_PATTERNS, isDefenseSkill, true);
-  if (containerRuntimeControlMatch) {
-    add("container_runtime_control", `Content pattern: ${containerRuntimeControlMatch}`);
-  }
-  const environmentConfigurationMatch = firstPositiveMatch(skill.rawContent, ENVIRONMENT_CONFIGURATION_PATTERNS, isDefenseSkill, true);
-  if (environmentConfigurationMatch) {
-    add("environment_configuration", `Content pattern: ${environmentConfigurationMatch}`);
-  }
-  const paymentProcessingMatch = firstPositiveMatch(skill.rawContent, PAYMENT_PROCESSING_PATTERNS, isDefenseSkill);
-  if (paymentProcessingMatch) {
-    add("payment_processing", `Content pattern: ${paymentProcessingMatch}`);
-  }
-  const unrestrictedScopeMatch = firstPositiveMatch(skill.rawContent, UNRESTRICTED_SCOPE_PATTERNS, isDefenseSkill);
-  if (unrestrictedScopeMatch) {
-    add("unrestricted_scope", `Content pattern: ${unrestrictedScopeMatch}`);
-  }
-  const credentialFormAutomationMatch = firstPositiveMatch(skill.rawContent, CREDENTIAL_FORM_AUTOMATION_PATTERNS, isDefenseSkill);
-  if (credentialFormAutomationMatch) {
-    add("credential_form_automation", `Content pattern: ${credentialFormAutomationMatch}`);
-  }
-  const remoteDelegationMatch = firstPositiveMatch(skill.rawContent, REMOTE_DELEGATION_PATTERNS, isDefenseSkill);
-  if (remoteDelegationMatch) {
-    add("remote_delegation", `Content pattern: ${remoteDelegationMatch}`);
-  }
-  const remoteTaskManagementMatch = firstPositiveMatch(skill.rawContent, REMOTE_TASK_MANAGEMENT_PATTERNS, isDefenseSkill, true);
-  if (remoteTaskManagementMatch) {
-    add("remote_task_management", `Content pattern: ${remoteTaskManagementMatch}`);
-  }
-  const serverExposureMatch = firstPositiveMatch(skill.rawContent, SERVER_EXPOSURE_PATTERNS, isDefenseSkill, true);
-  if (serverExposureMatch) {
-    add("server_exposure", `Content pattern: ${serverExposureMatch}`);
-  }
-  const localServiceAccessMatch = firstPositiveMatch(skill.rawContent, LOCAL_SERVICE_ACCESS_PATTERNS, isDefenseSkill, true);
-  if (localServiceAccessMatch) {
-    add("local_service_access", `Content pattern: ${localServiceAccessMatch}`);
-  }
-  const processOrchestrationMatch = firstPositiveMatch(skill.rawContent, PROCESS_ORCHESTRATION_PATTERNS, isDefenseSkill);
-  if (processOrchestrationMatch) {
-    add("process_orchestration", `Content pattern: ${processOrchestrationMatch}`);
-  }
-  const uiStateAccessMatch = firstPositiveMatch(skill.rawContent, UI_STATE_ACCESS_PATTERNS, isDefenseSkill);
-  if (uiStateAccessMatch) {
-    add("ui_state_access", `Content pattern: ${uiStateAccessMatch}`);
+  for (const rule of CONTENT_INFERENCE_RULES) {
+    const match = firstPositiveMatch(skill.rawContent, rule.patterns, isDefenseSkill, rule.allowCodeBlocks);
+    if (match)
+      add(rule.capability, `Content pattern: ${match}`);
   }
   if (!inferred.has("network") && !isDefenseSkill) {
     const firstUrl = skill.urls[0];
@@ -3905,7 +3805,7 @@ var SUSPICIOUS_FOR_LIMITED = [
   "file_write"
 ];
 function tokenizePermission(input) {
-  return input.toLowerCase().split(/[^a-z0-9]+/g).map((t) => t.trim()).filter(Boolean);
+  return input.toLowerCase().split(/[^a-z0-9]{1,512}/g).map((t) => t.trim()).filter(Boolean);
 }
 function getPermissionTier(perm) {
   const tokens = tokenizePermission(perm);
@@ -4018,10 +3918,7 @@ async function analyzePermissions(skill) {
     findings.push(finding);
   }
   const adjustedFindings = applyDeclaredPermissions(findings, skill.declaredPermissions);
-  let adjustedScore = 100;
-  for (const f of adjustedFindings) {
-    adjustedScore = Math.max(0, adjustedScore - f.deduction);
-  }
+  const adjustedScore = recomputeScore(adjustedFindings);
   const summary = adjustedFindings.length === 0 ? "No permission concerns detected." : `Found ${adjustedFindings.length} permission-related findings. ${adjustedFindings.some((f) => f.severity === "critical") ? "CRITICAL: Dangerous permissions detected." : adjustedFindings.some((f) => f.severity === "high") ? "High-risk permissions detected that may not match the skill's purpose." : "Minor permission concerns."}`;
   return {
     score: Math.max(0, Math.min(100, adjustedScore)),
