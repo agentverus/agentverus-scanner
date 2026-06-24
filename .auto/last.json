@@ -1,0 +1,1 @@
+{"ok":true,"metric":0.9412,"metrics":{"f1":0.9412,"precision":1,"recall":0.8889,"specificity":1,"category_recall":0.9167},"checksPassed":true,"seconds":0.983,"ts":"2026-06-24T03:24:57.975Z"}
