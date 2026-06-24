@@ -79,6 +79,11 @@ async function main() {
   let extTotal = 0, extCaught = 0;
   let catHit = 0, catTotal = 0;
   const benignFP: string[] = [];
+  // 3-way ALLOW/REVIEW/BLOCK accounting (the correct frame for a trust scanner:
+  // a benign-but-powerful skill flagged for REVIEW is not a precision failure;
+  // only wrongly BLOCKING a benign skill, or ALLOWing a malicious one, is).
+  const tri = (b: string) => (b === "rejected" ? "BLOCK" : b === "suspicious" || b === "conditional" ? "REVIEW" : "ALLOW");
+  let benignBlocked = 0, malBlocked = 0, malAllowed = 0;
 
   for (const s of samples) {
     const report: any = await scanSkill(readFileSync(s.path, "utf8"));
@@ -97,6 +102,11 @@ async function main() {
     if (holdout) tally(hold);
 
     if (!actualMal && predMal) benignFP.push(`${s.bucket}/${s.path.split("/").pop()} (badge=${badge})`);
+
+    const verdict = tri(badge);
+    if (!actualMal && verdict === "BLOCK") benignBlocked++;
+    if (actualMal && verdict === "BLOCK") malBlocked++;
+    if (actualMal && verdict === "ALLOW") malAllowed++;
 
     if (s.bucket === "external") {
       extTotal++;
@@ -119,6 +129,10 @@ async function main() {
   console.error(`benign false-positives (${benignFP.length}):`);
   for (const m of benignFP) console.error("  FP " + m);
 
+  // 3-way: block_precision = of BLOCKED skills, fraction truly malicious (1.0 = never
+  // wrongly blocks a benign skill). allow_leak = malicious skills wrongly ALLOWED.
+  const blockPrecision = malBlocked + benignBlocked === 0 ? 1 : malBlocked / (malBlocked + benignBlocked);
+
   console.log(`METRIC f1=${f(f1Of(all))}`);
   console.log(`METRIC holdout_f1=${f(f1Of(hold))}`);
   console.log(`METRIC external_recall=${f(extRecall)}`);
@@ -126,6 +140,9 @@ async function main() {
   console.log(`METRIC recall=${f(recall)}`);
   console.log(`METRIC specificity=${f(specificity)}`);
   console.log(`METRIC category_recall=${f(catRecall)}`);
+  console.log(`METRIC block_precision=${f(blockPrecision)}`);
+  console.log(`METRIC allow_leak=${malAllowed}`);
+  console.log(`METRIC benign_blocked=${benignBlocked}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
