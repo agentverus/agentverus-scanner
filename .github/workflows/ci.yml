@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  pull_request: {}
+  push:
+    branches: [main]
+    tags: ["**"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Build dist/ first: the MCP smoke test imports the built `agentverus-scanner`
+      # package (resolves to dist/), so tests need it present on a fresh checkout.
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      # The GitHub Action ships a committed bundle; it must match source.
+      - run: pnpm build:actions
+      - name: Action bundle must match source
+        run: git diff --exit-code actions/scan-skill/dist/
+      # Shipped dependency tree must be free of high/critical advisories (T0.1).
+      - run: pnpm audit --prod --audit-level high
+
+  # Publish on a version tag, but only if the committed version matches the tag.
+  # Makes the live npm package attestable (closes audit finding C1 / T0.3 permanently).
+  # Tag format: "<package>@<version>" (e.g. agentverus-scanner-mcp@0.1.2) or "v<version>".
+  publish:
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Resolve target package + verify version matches tag
+        id: target
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" == *@* ]]; then
+            PKG="${TAG%@*}"; VER="${TAG##*@}"
+          else
+            PKG="agentverus-scanner"; VER="${TAG#v}"
+          fi
+          # Allowlist publishable packages -> directory. Never derive a path from
+          # the (attacker-influenceable) tag name; reject anything unrecognized.
+          case "$PKG" in
+            agentverus-scanner) DIR="." ;;
+            agentverus-scanner-mcp) DIR="packages/agentverus-scanner-mcp" ;;
+            *) echo "::error::tag $TAG references unknown package '$PKG'"; exit 1 ;;
+          esac
+          # Read the committed version via argv so no shell value is interpolated
+          # into a JS string literal (tag-name code-injection guard).
+          ACTUAL=$(node -e 'const fs=require("node:fs");process.stdout.write(JSON.parse(fs.readFileSync(process.argv[1],"utf8")).version)' "$DIR/package.json")
+          if [[ "$ACTUAL" != "$VER" ]]; then
+            echo "::error::tag $TAG wants $PKG@$VER but committed version is $ACTUAL"; exit 1
+          fi
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+      - name: Publish
+        working-directory: ${{ steps.target.outputs.dir }}
+        run: pnpm publish --no-git-checks --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

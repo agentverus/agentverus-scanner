@@ -2611,7 +2611,7 @@ var INJECTION_PATTERNS = [
     name: "Comprehensive secret collection",
     patterns: [
       /\b(?:all|every|comprehensive|complete)\s+(?:\w+\s+){0,3}(?:settings|tokens?|keys?|secrets?|credentials?|passwords?|api[_-]?keys?)\b/i,
-      /\b(?:extract|collect|gather|enumerate|list|build\s+a\s+(?:comprehensive|complete)\s+(?:summary|list|inventory))\s+(?:\w+\s+){0,4}(?:tokens?|keys?|secrets?|credentials?|endpoints?|passwords?)\b/i,
+      /\b(?:extract|collect|gather|enumerate|list|build\s+a\s+(?:comprehensive|complete)\s+(?:summary|list|inventory))\s+(?:\w+\s+){0,4}(?:tokens?|keys?|secrets?|credentials?|passwords?)\b/i,
       /\b(?:environment\s+files?|connection\s+strings?|authentication\s+parameters?)\s+are\s+(?:especially\s+)?important\b/i
     ],
     severity: "high",
@@ -2629,6 +2629,61 @@ var INJECTION_PATTERNS = [
     deduction: 35,
     owaspCategory: "ASST-04",
     recommendation: "Remove download-and-execute patterns targeting suspicious domains or IP addresses. These are strong indicators of supply chain attacks."
+  },
+  {
+    name: "Private key material access",
+    patterns: [
+      /(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}(?:~\/)?\.ssh\/(?:id_rsa|id_ed25519|id_ecdsa)\b/i,
+      /(?:read|access|get|cat|echo|dump|copy|exfiltrate|steal|harvest)\b[^\n]{0,40}\bid_(?:rsa|ed25519|ecdsa)\b/i,
+      /(?:read|access|get|cat|echo|dump|copy|collect|gather|exfiltrate|steal|harvest)\b[^\n]{0,80}\.aws\/credentials\b/i
+    ],
+    severity: "critical",
+    deduction: 35,
+    owaspCategory: "ASST-05",
+    recommendation: "Skills must never read private key material (~/.ssh/id_rsa, id_ed25519, id_ecdsa) or cloud credential files (~/.aws/credentials). Reading private keys is a near-certain credential-exfiltration indicator."
+  },
+  {
+    name: "Command-substitution remote execution",
+    patterns: [
+      /(?:sh|bash|zsh|eval)\s+(?:-c\s+)?["']?\$\(\s*(?:curl|wget)\b[^)]*https?:\/\//i,
+      /\$\(\s*(?:curl|wget)\b[^)]*https?:\/\/[^)]*\)/i,
+      /`\s*(?:curl|wget)\b[^`]*https?:\/\/[^`]*`/i
+    ],
+    severity: "critical",
+    deduction: 35,
+    owaspCategory: "ASST-04",
+    recommendation: "Remove command-substitution remote execution ($(curl http://\u2026), `wget \u2026`). Fetching and executing remote content as a command is remote code execution and a supply-chain compromise vector."
+  },
+  {
+    name: "Hardcoded credential literal",
+    patterns: [
+      /\bsk-ant-[A-Za-z0-9_-]{20,}/,
+      /\bsk-proj-[A-Za-z0-9_-]{20,}/,
+      /\bAKIA[0-9A-Z]{16}\b/,
+      /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b/,
+      /\bgithub_pat_[A-Za-z0-9_]{60,}/,
+      /\bAIza[0-9A-Za-z_-]{35}\b/,
+      /\bxox[baprs]-[A-Za-z0-9-]{10,}/,
+      /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/
+    ],
+    severity: "critical",
+    deduction: 35,
+    owaspCategory: "ASST-05",
+    recommendation: "Remove hardcoded credential literals (API keys, tokens, private keys) from the skill. Shipping a live secret in a skill file is a credential leak; load secrets from the environment or a secret store at runtime."
+  },
+  {
+    name: "Reverse shell / backconnect",
+    patterns: [
+      /\bbash\s+-i\b[^\n]*\/dev\/tcp\//i,
+      /\/dev\/tcp\/(?:\d{1,3}(?:\.\d{1,3}){3}|[\w.-]+)\/\d+/i,
+      /\b(?:nc|ncat|netcat)\b[^\n]{0,40}\s-[a-z]*e[a-z]*\b[^\n]*(?:\/bin\/)?(?:bash|sh)\b/i,
+      /\b(?:0>&1|>&\s*\/dev\/tcp)\b/i,
+      /python[0-9]?\b[^\n]*socket[^\n]*(?:pty\.spawn|subprocess|exec\()/i
+    ],
+    severity: "critical",
+    deduction: 40,
+    owaspCategory: "ASST-04",
+    recommendation: "Remove reverse-shell / backconnect patterns (bash -i >& /dev/tcp, nc -e, socket+pty.spawn). These establish remote interactive control and are unambiguous compromise indicators."
   },
   {
     name: "Credential access",
@@ -2939,7 +2994,11 @@ async function analyzeInjection(skill) {
           "Data exfiltration instruction",
           "URL-parameter data exfiltration",
           "Comprehensive secret collection",
-          "Suspicious download-and-execute"
+          "Suspicious download-and-execute",
+          "Private key material access",
+          "Reverse shell / backconnect",
+          "Hardcoded credential literal",
+          "Command-substitution remote execution"
         ]);
         let { severityMultiplier, reason } = adjustForContext(match.index, content, ctx);
         if (NEVER_REDUCE_PATTERNS.has(pattern.name) && severityMultiplier > 0 && severityMultiplier < 1) {
