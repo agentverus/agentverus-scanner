@@ -50,7 +50,11 @@ const PATH_PATTERNS = [
  */
 export function parseSitemap(xml: string): SkillsShEntry[] {
 	const entries: SkillsShEntry[] = [];
-	const urlPattern = /https:\/\/skills\.sh\/([^/\s<]+)\/([^/\s<]+)\/([^/\s<]+)/g;
+	// skills.sh serves skill URLs under both the apex and the www host
+	// (the apex 308-redirects to www). Accept either. The three captured
+	// segments are owner/repo/slug; child sitemap URLs (sitemap-skills-1.xml,
+	// owner-only pages) have fewer segments and are correctly skipped.
+	const urlPattern = /https:\/\/(?:www\.)?skills\.sh\/([^/\s<]+)\/([^/\s<]+)\/([^/\s<]+)/g;
 	let match: RegExpExecArray | null;
 
 	while ((match = urlPattern.exec(xml)) !== null) {
@@ -206,7 +210,7 @@ export async function resolveSkillsShUrl(
 		throw new Error(`Invalid skills.sh URL: ${skillsShUrl}`);
 	}
 
-	if (parsed.hostname !== "skills.sh") {
+	if (parsed.hostname !== "skills.sh" && parsed.hostname !== "www.skills.sh") {
 		throw new Error(`Not a skills.sh URL: ${skillsShUrl}`);
 	}
 
@@ -305,19 +309,61 @@ export async function resolveSkillsShUrls(
 	};
 }
 
-/**
- * Fetch the skills.sh sitemap and return parsed entries.
- */
-export async function fetchSkillsShSitemap(): Promise<SkillsShEntry[]> {
-	const response = await fetch("https://skills.sh/sitemap.xml", {
+const SKILLS_SH_SITEMAP_URL = "https://skills.sh/sitemap.xml";
+
+async function fetchSitemapXml(url: string): Promise<string> {
+	const response = await fetch(url, {
 		headers: { "User-Agent": `AgentVerusScanner/${SCANNER_VERSION}` },
 		signal: AbortSignal.timeout(30_000),
 	});
 	if (!response.ok) {
-		throw new Error(`Failed to fetch skills.sh sitemap: ${response.status}`);
+		throw new Error(`Failed to fetch sitemap ${url}: ${response.status}`);
 	}
-	const xml = await response.text();
-	return parseSitemap(xml);
+	return response.text();
+}
+
+/**
+ * Extract child sitemap `<loc>` URLs from a `<sitemapindex>` document.
+ */
+export function parseSitemapIndex(xml: string): string[] {
+	const locs: string[] = [];
+	const locPattern = /<loc>\s*([^<\s]+)\s*<\/loc>/g;
+	let match: RegExpExecArray | null;
+	while ((match = locPattern.exec(xml)) !== null) {
+		locs.push(match[1] as string);
+	}
+	return locs;
+}
+
+/**
+ * Fetch the skills.sh sitemap and return parsed entries.
+ *
+ * skills.sh now serves a `<sitemapindex>` at /sitemap.xml that points at child
+ * sitemaps (sitemap-skills-1.xml, ...) where the actual skill URLs live. Older
+ * deployments served a flat sitemap of skill URLs directly. Handle both: if the
+ * root is an index, fetch every child sitemap and parse skill URLs out of the
+ * combined XML; otherwise parse the root directly.
+ */
+export async function fetchSkillsShSitemap(): Promise<SkillsShEntry[]> {
+	const root = await fetchSitemapXml(SKILLS_SH_SITEMAP_URL);
+
+	if (/<sitemapindex[\s>]/i.test(root)) {
+		const childUrls = parseSitemapIndex(root);
+		const childXmls = await Promise.all(
+			childUrls.map(async (url) => {
+				try {
+					return await fetchSitemapXml(url);
+				} catch {
+					// A single unreachable child sitemap should not abort the whole
+					// collection — skip it and parse whatever else resolved.
+					return "";
+				}
+			}),
+		);
+		return parseSitemap(childXmls.join("\n"));
+	}
+
+	return parseSitemap(root);
 }
 
 /**
